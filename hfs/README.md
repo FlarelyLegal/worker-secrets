@@ -94,6 +94,28 @@ hfs token register abc.access -n ci-pipeline -s read
 hfs audit -n 50
 ```
 
+## Shell integration
+
+Load secrets into your shell on startup. Add to `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# Load secrets from vault (requires hfs login session)
+if command -v hfs &>/dev/null && hfs health &>/dev/null 2>&1; then
+  eval $(hfs env -e CLOUDFLARE_API_KEY GITHUB_TOKEN 2>/dev/null)
+fi
+```
+
+This silently skips if `hfs` isn't installed, the vault is unreachable, or the session is expired. Secrets are fetched fresh on each shell startup.
+
+For CI/CD, use service token env vars instead:
+
+```bash
+export HFS_URL=https://vault.example.com
+export HFS_CLIENT_ID=abc123.access
+export HFS_CLIENT_SECRET=your-secret
+eval $(hfs env -e DEPLOY_KEY DB_PASSWORD)
+```
+
 ## Backup and restore
 
 ```bash
