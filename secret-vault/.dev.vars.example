@@ -1,0 +1,17 @@
+# Copy to .dev.vars and fill in real values
+# .dev.vars is gitignored — never commit it
+
+# Generate with: npm run generate-keys
+ENCRYPTION_KEY = "your-64-char-hex-key-here"
+
+# Comma-separated emails allowed for interactive auth
+ALLOWED_EMAILS = "tim@yourdomain.com"
+
+# Cloudflare Access team domain
+TEAM_DOMAIN = "https://yourteam.cloudflareaccess.com"
+
+# Access application audience tag
+POLICY_AUD = "your-access-application-aud-tag"
+
+# Set to "true" to bypass auth for local dev (never in production)
+DEV_AUTH_BYPASS = "true"

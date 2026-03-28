@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install root deps
+        run: npm ci
+
+      - name: Install Worker deps
+        run: cd secret-vault && npm ci
+
+      - name: Install CLI deps
+        run: cd hfs && npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check Worker
+        run: cd secret-vault && npx tsc --noEmit
+
+      - name: Type-check CLI
+        run: cd hfs && npx tsc --noEmit
+
+      - name: Build CLI
+        run: cd hfs && npm run build
+
+      - name: Publish to GitHub Packages
+        run: cd hfs && npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate changelog
+        run: npm run changelog
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG.md

@@ -1,0 +1,29 @@
+{
+  "name": "secrets",
+  "version": "1.0.0",
+  "description": "Encrypted secret management for Cloudflare Workers — a self-hosted vault with CLI.",
+  "private": true,
+  "scripts": {
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format --fix .",
+    "changelog": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)} git-cliff -o CHANGELOG.md || git-cliff --offline -o CHANGELOG.md",
+    "changelog:unreleased": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)} git-cliff --unreleased || git-cliff --offline --unreleased",
+    "sync-version": "npm --prefix hfs pkg set version=$(cat VERSION) && printf 'export const VERSION = \"%s\";\\n' $(cat VERSION) > secret-vault/src/version.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FlarelyLegal/worker-secrets.git"
+  },
+  "keywords": [],
+  "author": "Timothy Schneider <tim@taslabs.net> (https://flarelylegal.com/)",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/FlarelyLegal/worker-secrets/issues"
+  },
+  "homepage": "https://github.com/FlarelyLegal/worker-secrets#readme",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.9"
+  }
+}

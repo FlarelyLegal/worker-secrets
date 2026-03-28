@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "secret-vault",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-28",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Deploy-specific values below are set by `hfs deploy`.
+  // For local dev, use .dev.vars (see .dev.vars.example).
+  // Do NOT commit real account_id, database_id, or POLICY_AUD here.
+
+  "account_id": "",
+  "routes": [
+    {
+      "pattern": "YOUR_DOMAIN_HERE",
+      "custom_domain": true
+    }
+  ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "secret-vault-db",
+      "database_id": ""
+    }
+  ],
+
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    }
+  }
+
+  // Production vars are set by `hfs deploy`. For local dev, use .dev.vars:
+  // "vars": {
+  //   "ALLOWED_EMAILS": "",
+  //   "TEAM_DOMAIN": "",
+  //   "POLICY_AUD": ""
+  // }
+}
