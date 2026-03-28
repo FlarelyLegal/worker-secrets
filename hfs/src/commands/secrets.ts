@@ -29,7 +29,7 @@ export function registerSecretCommands(program: Command): void {
 
   program
     .command("set <key> [value]")
-    .description("Store a secret")
+    .description("Store a secret (use --from-stdin or --from-file for sensitive values)")
     .option("-d, --description <desc>", "Description for the secret")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
@@ -88,14 +88,14 @@ export function registerSecretCommands(program: Command): void {
     .option("-j, --json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
       try {
-        const secrets = await client().list();
+        const { secrets, total } = await client().list();
 
         if (opts.json) {
-          console.log(JSON.stringify(secrets, null, 2));
+          console.log(JSON.stringify({ secrets, total }, null, 2));
           return;
         }
 
-        if (secrets.length === 0) {
+        if (total === 0) {
           console.log(chalk.dim("No secrets stored."));
           return;
         }
@@ -115,7 +115,9 @@ export function registerSecretCommands(program: Command): void {
           );
         }
 
-        console.log(chalk.dim(`\n${secrets.length} secret(s)`));
+        const countLabel =
+          total > secrets.length ? `${secrets.length} of ${total} secret(s)` : `${total} secret(s)`;
+        console.log(chalk.dim(`\n${countLabel}`));
       } catch (e) {
         die(errorMessage(e));
       }
@@ -134,7 +136,7 @@ export function registerSecretCommands(program: Command): void {
           console.error(
             chalk.dim("Bulk export unavailable (interactive only), fetching individually..."),
           );
-          const list = await c.list();
+          const { secrets: list } = await c.list();
           secrets = [];
           for (const s of list) {
             secrets.push(await c.get(s.key));
@@ -166,7 +168,7 @@ export function registerSecretCommands(program: Command): void {
           console.error(
             chalk.dim("Bulk import unavailable (interactive only), importing individually..."),
           );
-          const existing = await c.list();
+          const { secrets: existing } = await c.list();
           const existingKeys = new Set(existing.map((s) => s.key));
           let imported = 0;
           let skipped = 0;
@@ -200,7 +202,8 @@ export function registerSecretCommands(program: Command): void {
           const secret = await c.get(key);
           const escaped = (secret.value || "").replace(/'/g, "'\\''");
           const prefix = opts.export ? "export " : "";
-          process.stdout.write(`${prefix}${key}='${escaped}'\n`);
+          const shellKey = key.replace(/[^a-zA-Z0-9_]/g, "_");
+          process.stdout.write(`${prefix}${shellKey}='${escaped}'\n`);
         }
       } catch (e) {
         die(errorMessage(e));

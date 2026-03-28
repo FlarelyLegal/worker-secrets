@@ -5,8 +5,10 @@ import {
   checkWrangler,
   copyWorkerSource,
   type DeployState,
+  emptyState,
   installDeps,
   loadState,
+  saveState,
 } from "../deploy/index.js";
 import { fail, phaseAccess, phaseAssets, phaseWorker } from "../deploy/phases.js";
 import { die, errorMessage } from "../helpers.js";
@@ -135,5 +137,21 @@ export function registerDeployCommands(program: Command): void {
       console.log(`  encryption:  ${f(s.encryptionKeySet)}`);
       console.log(`  deployed:    ${f(s.deployedAt)}`);
       console.log("");
+    });
+
+  cmd
+    .command("reset")
+    .description("Clear deploy state (does not delete cloud resources)")
+    .action(async () => {
+      const { confirm } = await import("../helpers.js");
+      const confirmed = await confirm(
+        "Clear all deploy state? Cloud resources will not be deleted.",
+      );
+      if (!confirmed) {
+        console.log("Cancelled.");
+        return;
+      }
+      saveState(emptyState());
+      console.log(`${chalk.green("✓")} Deploy state cleared`);
     });
 }

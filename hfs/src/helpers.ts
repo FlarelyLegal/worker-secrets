@@ -20,14 +20,25 @@ export function errorMessage(e: unknown): string {
 export function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = "";
+    const timeout = setTimeout(() => reject(new Error("Timed out waiting for stdin input")), 30000);
     process.stdin.setEncoding("utf-8");
     process.stdin.on("data", (chunk) => (data += chunk));
-    process.stdin.on("end", () => resolve(data));
-    process.stdin.on("error", reject);
+    process.stdin.on("end", () => {
+      clearTimeout(timeout);
+      resolve(data);
+    });
+    process.stdin.on("error", (e) => {
+      clearTimeout(timeout);
+      reject(e);
+    });
   });
 }
 
 export function confirm(message: string): Promise<boolean> {
+  if (!process.stdin.isTTY) {
+    console.error(chalk.dim("Non-interactive mode detected, use --force to skip confirmation"));
+    return Promise.resolve(false);
+  }
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(`${message} [y/N] `, (answer) => {
