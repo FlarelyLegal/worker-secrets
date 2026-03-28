@@ -52,7 +52,7 @@ secrets.openapi(listRoute, async (c) => {
   ).all();
   const total = (countResult[0] as { total: number }).total;
   const { results } = await c.env.DB.prepare(
-    "SELECT key, description, created_at, updated_at FROM secrets ORDER BY key LIMIT ? OFFSET ?",
+    "SELECT key, description, created_by, updated_by, created_at, updated_at FROM secrets ORDER BY key LIMIT ? OFFSET ?",
   )
     .bind(limit, offset)
     .all();
@@ -102,6 +102,8 @@ secrets.openapi(getRoute, async (c) => {
       key: row.key,
       value: plaintext,
       description: row.description,
+      created_by: row.created_by,
+      updated_by: row.updated_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
     },

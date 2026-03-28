@@ -9,7 +9,8 @@ pub.get("/", (c) => {
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
   const repoUrl = c.env.REPO_URL;
-  return c.html(landingPage(brand, origin, repoUrl));
+  const pkg = c.env.PROJECT_NAME ? `${c.env.PROJECT_NAME}-cli` : undefined;
+  return c.html(landingPage(brand, origin, repoUrl, pkg));
 });
 
 const healthRoute = createRoute({

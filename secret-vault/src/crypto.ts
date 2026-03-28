@@ -3,6 +3,9 @@ let _cachedKeyHex = "";
 
 async function getKey(hexKey: string): Promise<CryptoKey> {
   if (_cachedKey && _cachedKeyHex === hexKey) return _cachedKey;
+  if (!/^[0-9a-fA-F]{64}$/.test(hexKey)) {
+    throw new Error("ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)");
+  }
   const raw = hexToBytes(hexKey);
   _cachedKey = await crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, "AES-GCM", false, [
     "encrypt",

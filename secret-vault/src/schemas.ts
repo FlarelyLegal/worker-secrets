@@ -26,6 +26,8 @@ export type SecretRow = {
   value: string;
   iv: string;
   description: string;
+  created_by: string;
+  updated_by: string;
   created_at: string;
   updated_at: string;
 };
@@ -83,6 +85,15 @@ export const AuditQuery = z.object({
       param: { name: "limit", in: "query" },
       example: 50,
     }),
+  offset: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .openapi({
+      param: { name: "offset", in: "query" },
+      example: 0,
+    }),
 });
 
 // --- Secrets ---
@@ -91,6 +102,8 @@ export const SecretListItemSchema = z
   .object({
     key: z.string().openapi({ example: "api-key" }),
     description: z.string().openapi({ example: "Anthropic API key" }),
+    created_by: z.string().openapi({ example: "you@example.com" }),
+    updated_by: z.string().openapi({ example: "you@example.com" }),
     created_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
     updated_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
   })
@@ -130,13 +143,21 @@ export const SecretDeleteResponse = z
   })
   .openapi("SecretDeleteResponse");
 
-export const SecretImportItem = z
-  .object({
-    key: z.string().min(1, "key is required").max(256, "key exceeds 256 char limit"),
-    value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
-    description: z.string().max(1000).optional().default(""),
-  })
-  .passthrough();
+export const SecretImportItem = z.object({
+  key: z
+    .string()
+    .min(1, "key is required")
+    .max(256, "key exceeds 256 char limit")
+    .refine((k) => k !== "export" && k !== "import", {
+      message: '"export" and "import" are reserved key names',
+    }),
+  value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
+  description: z.string().max(1000).optional().default(""),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  created_by: z.string().optional(),
+  updated_by: z.string().optional(),
+});
 
 export const SecretImportBody = z.object({
   secrets: z.array(SecretImportItem).min(1, "at least one secret is required"),
@@ -164,10 +185,23 @@ export const ServiceTokenSchema = z
   })
   .openapi("ServiceToken");
 
+export const VALID_SCOPES = ["*", "read", "write", "delete"] as const;
+
 export const TokenCreateBody = z.object({
-  name: z.string().min(1, "name is required"),
-  description: z.string().optional().default(""),
-  scopes: z.string().optional().default("*"),
+  name: z.string().min(1, "name is required").max(256, "name exceeds 256 char limit"),
+  description: z.string().max(1000).optional().default(""),
+  scopes: z
+    .string()
+    .optional()
+    .default("*")
+    .refine(
+      (s) =>
+        s
+          .split(",")
+          .map((v) => v.trim())
+          .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
+      { message: "Valid scopes: *, read, write, delete (comma-separated)" },
+    ),
 });
 
 export const TokenCreateResponse = z
@@ -191,6 +225,7 @@ export const TokenDeleteResponse = z
 export const HealthSchema = z
   .object({
     status: z.string().openapi({ example: "ok" }),
+    database: z.string().openapi({ example: "ok" }),
   })
   .openapi("Health");
 

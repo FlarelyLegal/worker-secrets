@@ -91,7 +91,8 @@ bulk.openapi(importRoute, async (c) => {
 
   const { secrets: items, overwrite } = c.req.valid("json");
 
-  let imported = 0;
+  // First pass: encrypt and check overwrites
+  const toInsert: { key: string; ciphertext: string; iv: string; description: string }[] = [];
   let skipped = 0;
 
   for (const item of items) {
@@ -104,7 +105,6 @@ bulk.openapi(importRoute, async (c) => {
         continue;
       }
     }
-
     let ciphertext: string;
     let iv: string;
     try {
@@ -112,20 +112,25 @@ bulk.openapi(importRoute, async (c) => {
     } catch {
       return c.json({ error: `Encryption failed for key: ${item.key}` }, 500);
     }
-
-    await c.env.DB.prepare(
-      `INSERT INTO secrets (key, value, iv, description, created_by, updated_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-       ON CONFLICT(key) DO UPDATE SET
-         value = excluded.value, iv = excluded.iv,
-         description = excluded.description, updated_by = excluded.updated_by,
-         updated_at = datetime('now')`,
-    )
-      .bind(item.key, ciphertext, iv, item.description, auth.identity, auth.identity)
-      .run();
-
-    imported++;
+    toInsert.push({ key: item.key, ciphertext, iv, description: item.description });
   }
+
+  // Atomic batch insert
+  if (toInsert.length > 0) {
+    const stmts = toInsert.map((item) =>
+      c.env.DB.prepare(
+        `INSERT INTO secrets (key, value, iv, description, created_by, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET
+           value = excluded.value, iv = excluded.iv,
+           description = excluded.description, updated_by = excluded.updated_by,
+           updated_at = datetime('now')`,
+      ).bind(item.key, item.ciphertext, item.iv, item.description, auth.identity, auth.identity),
+    );
+    await c.env.DB.batch(stmts);
+  }
+
+  const imported = toInsert.length;
 
   await audit(c.env, auth, "import", null, c.get("ip"), c.get("ua"));
   return c.json({ ok: true, imported, skipped }, 200);

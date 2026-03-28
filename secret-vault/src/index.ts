@@ -27,8 +27,11 @@ app.onError((err, c) => {
 app.use("*", async (c, next) => {
   await next();
   c.res.headers.set("X-Content-Type-Options", "nosniff");
-  c.res.headers.set("X-Frame-Options", "DENY");
+  c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  const requestId = crypto.randomUUID();
+  c.res.headers.set("X-Request-ID", requestId);
   if (c.res.headers.get("Content-Type")?.includes("text/html")) {
+    c.res.headers.set("X-Frame-Options", "DENY");
     const isScalar = c.req.path === "/doc";
     c.res.headers.set(
       "Content-Security-Policy",
@@ -96,7 +99,7 @@ app.get("/doc", (c) => {
     hideDownloadButton: true,
     metaData: { title: `${brand} API` },
   })}'></script>
-  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1"></script>
 </body>
 </html>`);
 });
@@ -105,11 +108,37 @@ app.get("/doc", (c) => {
 
 app.use("*", async (c, next) => {
   const user = await authenticate(c.req.raw, c.env);
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  if (!user) {
+    // Log failed auth attempt (best-effort, don't block the 401 response)
+    try {
+      await c.env.DB.prepare(
+        "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+        .bind(
+          "rejected",
+          "unknown",
+          "auth_failed",
+          null,
+          c.req.header("CF-Connecting-IP") ?? null,
+          c.req.header("User-Agent") ?? null,
+        )
+        .run();
+    } catch {
+      // Don't fail the 401 if audit logging fails
+    }
+    return c.json({ error: "Unauthorized" }, 401);
+  }
   c.set("auth", user);
   c.set("ip", c.req.header("CF-Connecting-IP") ?? null);
   c.set("ua", c.req.header("User-Agent") ?? null);
-  return next();
+  await next();
+
+  // Background audit cleanup (~1% of requests)
+  if (Math.random() < 0.01) {
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', '-90 days')").run(),
+    );
+  }
 });
 
 // --- Mount routes ---

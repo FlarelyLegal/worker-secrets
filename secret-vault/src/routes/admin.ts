@@ -50,11 +50,11 @@ admin.openapi(auditRoute, async (c) => {
   const auth = c.get("auth");
   if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
 
-  const { limit } = c.req.valid("query");
+  const { limit, offset } = c.req.valid("query");
   const { results } = await c.env.DB.prepare(
-    "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?",
+    "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ? OFFSET ?",
   )
-    .bind(limit)
+    .bind(limit, offset)
     .all();
 
   return c.json({ entries: results as z.infer<typeof AuditEntrySchema>[] }, 200);

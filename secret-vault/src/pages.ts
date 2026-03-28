@@ -16,8 +16,14 @@ function favicon(initial: string): string {
   return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${initial}</text></svg>" />`;
 }
 
-export function landingPage(brand: string, origin: string, repoUrl?: string): string {
+export function landingPage(
+  brand: string,
+  origin: string,
+  repoUrl?: string,
+  packageName?: string,
+): string {
   const repo = repoUrl || "https://github.com/FlarelyLegal/worker-secrets";
+  const pkg = packageName || "@FlarelyLegal/hfs-cli";
   const initial = brand.charAt(0).toUpperCase();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -104,7 +110,7 @@ export function landingPage(brand: string, origin: string, repoUrl?: string): st
           <span class="link-arrow">\u2192</span>
         </a>
         <a class="link" href="${repo}/releases/latest" target="_blank" rel="noopener">
-          <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g @FlarelyLegal/hfs-cli</div></div>
+          <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g ${pkg}</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
       </div>

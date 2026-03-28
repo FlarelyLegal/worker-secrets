@@ -47,8 +47,6 @@ tokens.openapi(listRoute, async (c) => {
 
 // --- Register ---
 
-const VALID_SCOPES = ["*", "read", "write", "delete"];
-
 const registerRoute = createRoute({
   method: "put",
   path: "/{clientId}",
@@ -73,12 +71,6 @@ const registerRoute = createRoute({
 tokens.openapi(registerRoute, async (c) => {
   const { clientId } = c.req.valid("param");
   const { name, description, scopes } = c.req.valid("json");
-
-  for (const s of scopes.split(",").map((s) => s.trim())) {
-    if (!VALID_SCOPES.includes(s)) {
-      return c.json({ error: `Invalid scope: ${s}. Valid: ${VALID_SCOPES.join(", ")}` }, 400);
-    }
-  }
 
   await c.env.DB.prepare(
     `INSERT INTO service_tokens (client_id, name, description, scopes, created_at)

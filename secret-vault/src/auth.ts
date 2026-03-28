@@ -96,8 +96,6 @@ export function hasScope(auth: AuthUser, required: string): boolean {
 
 // --- Audit logging ---
 
-const AUDIT_RETENTION_DAYS = 90;
-
 export async function audit(
   env: Env,
   auth: AuthUser,
@@ -118,11 +116,4 @@ export async function audit(
       userAgent,
     )
     .run();
-
-  // Probabilistic cleanup: ~1% of requests prune entries older than retention period
-  if (Math.random() < 0.01) {
-    await env.DB.prepare(
-      `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${AUDIT_RETENTION_DAYS} days')`,
-    ).run();
-  }
 }
