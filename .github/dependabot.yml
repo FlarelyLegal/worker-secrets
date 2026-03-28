@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # Root (biome)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Worker (hono, jose, zod, wrangler)
+  - package-ecosystem: "npm"
+    directory: "/secret-vault"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # CLI (commander, conf, chalk)
+  - package-ecosystem: "npm"
+    directory: "/hfs"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(ci)"
