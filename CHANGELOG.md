@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Miscellaneous
+
+- Filter merge commits from changelog
+
 ## [0.5.0] - 2026-03-28
-
-### Documentation
-
-- Update all skills, references, and AGENTS.md to match v0.4.0 codebase
-- Add shell integration section to CLI README
 
 ### Features
 
