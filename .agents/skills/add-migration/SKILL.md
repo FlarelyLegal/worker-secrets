@@ -20,7 +20,9 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 
 ## EXISTING SCHEMA
 
-- `0001_init.sql` — `secrets` (HMAC, tags), `secret_versions`, `roles` (seeded), `users` (RBAC, enabled flag), `service_tokens` (role FK), `audit_log` (request_id)
+- `0001_init.sql` — Consolidated: `secrets` (HMAC, tags), `secret_versions`, `roles` (seeded), `users` (RBAC), `service_tokens` (role FK), `audit_log` (request_id)
+- `0002_rbac.sql` — Incremental: `roles` + `users` tables (for upgrades from v0.7.x/v0.8.x)
+- `0003_production_hardening.sql` — Incremental: role FK, tags, request_id columns (for upgrades)
 
 See [current schema](references/current-schema.md) for full DDL.
 
