@@ -234,6 +234,51 @@ export function registerSecretCommands(program: Command): void {
     });
 
   program
+    .command("versions <key>")
+    .description("List version history for a secret")
+    .option("-j, --json", "Output as JSON")
+    .action(async (key: string, opts: { json?: boolean }) => {
+      try {
+        const versions = await client().listVersions(key);
+        if (opts.json) {
+          console.log(JSON.stringify(versions, null, 2));
+          return;
+        }
+        if (versions.length === 0) {
+          console.log(chalk.dim("No version history."));
+          return;
+        }
+        console.log(chalk.dim(`${"ID".padEnd(8)}${"CHANGED BY".padEnd(32)}CHANGED AT`));
+        for (const v of versions) {
+          console.log(
+            `${String(v.id).padEnd(8)}${v.changed_by.padEnd(32)}${chalk.dim(v.changed_at)}`,
+          );
+        }
+        console.log(chalk.dim(`\n${versions.length} version(s)`));
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  program
+    .command("restore <key> <version-id>")
+    .description("Restore a secret to a previous version")
+    .option("-f, --force", "Skip confirmation")
+    .action(async (key: string, versionId: string, opts: { force?: boolean }) => {
+      try {
+        if (!opts.force) {
+          if (!(await confirm(`Restore ${chalk.bold(key)} to version ${versionId}?`))) return;
+        }
+        const result = await client().restoreVersion(key, parseInt(versionId, 10));
+        console.log(
+          `${chalk.green("✓")} Restored ${chalk.bold(result.key)} from version ${result.restored_from}`,
+        );
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  program
     .command("cp <source> <destination>")
     .description("Copy a secret to a new key")
     .option("-m, --move", "Move instead of copy (deletes source)")

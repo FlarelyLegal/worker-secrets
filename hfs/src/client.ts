@@ -246,6 +246,24 @@ export class VaultClient {
     return this.request("DELETE", `/flags/${encodeURIComponent(key)}`);
   }
 
+  // --- Versions ---
+
+  async listVersions(
+    key: string,
+  ): Promise<{ id: number; changed_by: string; changed_at: string }[]> {
+    const data = await this.request<{
+      versions: { id: number; changed_by: string; changed_at: string }[];
+    }>("GET", `/secrets/${encodeURIComponent(key)}/versions`);
+    return data.versions;
+  }
+
+  async restoreVersion(
+    key: string,
+    id: number,
+  ): Promise<{ ok: boolean; key: string; restored_from: number }> {
+    return this.request("POST", `/secrets/${encodeURIComponent(key)}/versions/${id}/restore`);
+  }
+
   // --- Users ---
 
   async listUsers(): Promise<UserEntry[]> {

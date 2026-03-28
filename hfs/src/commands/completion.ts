@@ -16,7 +16,7 @@ export function registerCompletionCommands(program: Command): void {
 
   case "$prev" in
     hfs)
-      COMPREPLY=($(compgen -W "health login logout get set rm ls export import env cp token user role flag audit whoami config deploy completion" -- "$cur"))
+      COMPREPLY=($(compgen -W "health login logout get set rm ls export import env cp versions restore token user role flag audit whoami config deploy completion" -- "$cur"))
       ;;
     token)
       COMPREPLY=($(compgen -W "register revoke ls" -- "$cur"))
@@ -64,6 +64,8 @@ _hfs() {
     'export:Export all secrets as JSON'
     'import:Import secrets from JSON file'
     'env:Output secrets as KEY=value for shell'
+    'versions:List version history for a secret'
+    'restore:Restore a secret to a previous version'
     'token:Manage service token identities'
     'user:Manage users (admin only)'
     'role:Manage roles (admin only)'
