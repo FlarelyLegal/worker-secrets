@@ -4,6 +4,18 @@ import type { Command } from "commander";
 import { clearConfig, getConfig, getConfigPath, resolveAuth, setConfig } from "../config.js";
 import { confirm, errorMessage } from "../helpers.js";
 
+function validateUrl(input: string): string {
+  try {
+    const parsed = new URL(input);
+    if (!parsed.protocol.startsWith("http")) {
+      throw new Error("URL must use http or https");
+    }
+    return parsed.origin;
+  } catch {
+    throw new Error(`Invalid URL: ${input}`);
+  }
+}
+
 export function registerConfigCommands(program: Command): void {
   const configCmd = program.command("config").description("Manage CLI configuration");
 
@@ -13,7 +25,7 @@ export function registerConfigCommands(program: Command): void {
     .option("--url <url>", "Vault URL (e.g. https://vault.example.com)")
     .action(async (opts: { url?: string }) => {
       if (opts.url) {
-        setConfig("url", opts.url);
+        setConfig("url", validateUrl(opts.url));
       } else {
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const ask = (q: string): Promise<string> => new Promise((r) => rl.question(q, r));
@@ -22,7 +34,7 @@ export function registerConfigCommands(program: Command): void {
         const url = await ask(`Vault URL${cfg.url ? ` [${cfg.url}]` : ""}: `);
         rl.close();
 
-        if (url) setConfig("url", url);
+        if (url) setConfig("url", validateUrl(url));
       }
 
       console.log(`${chalk.green("✓")} Config saved to ${getConfigPath()}`);

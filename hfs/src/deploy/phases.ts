@@ -140,7 +140,7 @@ export async function phaseWorker(state: DeployState, dry: boolean): Promise<voi
 
   try {
     writeWranglerConfig(state);
-    ok("Wrangler config written", dry);
+    ok(dry ? "Wrangler config validated" : "Wrangler config written", dry);
   } catch (e) {
     fail("Wrangler config generation", e);
   }
