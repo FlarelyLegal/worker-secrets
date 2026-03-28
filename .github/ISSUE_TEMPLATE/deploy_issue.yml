@@ -1,0 +1,64 @@
+name: Deploy Issue
+description: Problem deploying the vault with hfs deploy
+labels: ["deploy"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Deployment issues are often configuration-related. Please include your deploy status and error output.
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase failed?
+      description: "Run `hfs deploy status` to see which phase is incomplete"
+      options:
+        - "Phase 1: Access Application"
+        - "Phase 2: Infrastructure (D1)"
+        - "Phase 3: Worker (secrets, migrations, deploy)"
+        - "Setup (worker source, dependencies)"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy_type
+    attributes:
+      label: Deploy type
+      options:
+        - First deploy (clean)
+        - Redeployment (update)
+        - Dry run (--dry-run)
+
+  - type: textarea
+    id: status
+    attributes:
+      label: Deploy status
+      description: "Paste output of `hfs deploy status`"
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error output
+      description: "Paste the full error output from `hfs deploy`"
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Cloudflare plan, custom domain setup, Access configuration, etc.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: CLOUDFLARE_API_KEY is set in my environment
+        - label: I have wrangler authenticated (`wrangler whoami` works)
+        - label: My domain's zone is active in Cloudflare
