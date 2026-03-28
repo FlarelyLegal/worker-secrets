@@ -39,7 +39,7 @@ export function landingPage(brand: string, origin: string): string {
     .link-label { font-size: 0.8125rem; font-weight: 500; }
     .link-path { font-family: var(--mono); font-size: 0.6875rem; color: var(--muted); }
     .link-arrow { color: var(--muted); font-size: 0.875rem; }
-    .footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .footer { grid-column: 1 / -1; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .footer-text { font-size: 0.6875rem; color: var(--muted); }
     .status { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: var(--green); }
     .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
@@ -75,10 +75,6 @@ export function landingPage(brand: string, origin: string): string {
           <span class="link-arrow">\u2192</span>
         </a>
       </div>
-      <div class="footer">
-        <span class="footer-text">by <a href="https://homeflare.dev" style="color:var(--muted);text-decoration:none;">The HomeFlare Project</a> \u00b7 Powered by Cloudflare Workers</span>
-        <span class="status">Healthy</span>
-      </div>
     </div>
     <div class="right">
       <h2>Security</h2>
@@ -100,6 +96,10 @@ export function landingPage(brand: string, origin: string): string {
           <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
         </div>
       </div>
+    </div>
+    <div class="footer">
+      <span class="footer-text">by <a href="https://homeflare.dev" style="color:var(--muted);text-decoration:none;">The HomeFlare Project</a> \u00b7 Powered by Cloudflare Workers</span>
+      <span class="status">Healthy</span>
     </div>
   </div>
 </body>
