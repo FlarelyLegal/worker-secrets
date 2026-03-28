@@ -26,7 +26,8 @@ export function landingPage(brand: string, origin: string): string {
   <title>${brand}</title>
   ${favicon(initial)}
   <style>${STYLES}
-    .page { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; max-width: 920px; width: 100%; }
+    .page { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem 3rem; max-width: 920px; width: 100%; }
+    .header { grid-column: 1 / -1; margin-bottom: 0.5rem; }
     @media (max-width: 720px) { .page { grid-template-columns: 1fr; } }
     .brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; }
     .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
@@ -44,7 +45,7 @@ export function landingPage(brand: string, origin: string): string {
     .status { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: var(--green); }
     .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .right { padding-top: 3.75rem; }
+    .right { }
     h2 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
     .features { display: flex; flex-direction: column; gap: 0.5rem; }
     .feature { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
@@ -54,12 +55,14 @@ export function landingPage(brand: string, origin: string): string {
 </head>
 <body>
   <div class="page">
-    <div class="left">
+    <div class="header">
       <div class="brand">
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
       <p class="desc">Self-hosted secret vault that runs on your own Cloudflare account. Store API keys, tokens, certificates, and credentials with a CLI or REST API. Protected by Cloudflare Access, supporting any identity provider, passkeys, YubiKeys, OTP, and hardware security keys. Like Vaultwarden, but on the edge.</p>
+    </div>
+    <div class="left">
       <h2>Security</h2>
       <div class="features">
         <div class="feature">
