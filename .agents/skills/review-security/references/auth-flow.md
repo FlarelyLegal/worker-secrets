@@ -52,6 +52,12 @@ Any of these returns `null` → middleware responds 401:
 - Service token not registered in D1
 - Email doesn't match `ALLOWED_EMAILS`
 
+Failed auth attempts are logged to audit_log with `method: "rejected"` and `action: "auth_failed"`.
+
+### DEV_AUTH_BYPASS
+
+When `DEV_AUTH_BYPASS` is set in the environment and the request has no `CF-Connecting-IP` header (i.e., local development, not production edge), authentication is bypassed with a synthetic owner identity. This must never be set in production.
+
 ## Scope enforcement
 
 After auth, individual routes check scopes:

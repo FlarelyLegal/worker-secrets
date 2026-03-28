@@ -9,9 +9,11 @@ Applied via `secret-vault/migrations/`.
 ```sql
 CREATE TABLE IF NOT EXISTS secrets (
   key TEXT PRIMARY KEY,
-  value TEXT NOT NULL,        -- AES-256-GCM encrypted, base64 encoded
-  iv TEXT NOT NULL,           -- initialization vector, base64 encoded
+  value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64 encoded
+  iv TEXT NOT NULL,               -- initialization vector, base64 encoded
   description TEXT DEFAULT '',
+  created_by TEXT DEFAULT '',     -- identity of creator
+  updated_by TEXT DEFAULT '',     -- identity of last updater
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -24,9 +26,9 @@ CREATE INDEX idx_secrets_updated_at ON secrets(updated_at);
 ```sql
 CREATE TABLE IF NOT EXISTS service_tokens (
   client_id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT NOT NULL,             -- e.g. "code-review-worker", "ci-pipeline"
   description TEXT DEFAULT '',
-  scopes TEXT DEFAULT '*',    -- comma-separated: '*', 'read', 'write', 'delete'
+  scopes TEXT DEFAULT '*',        -- comma-separated: '*' = all, 'read', 'write', 'delete'
   created_at TEXT DEFAULT (datetime('now')),
   last_used_at TEXT
 );
@@ -38,15 +40,18 @@ CREATE TABLE IF NOT EXISTS service_tokens (
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   timestamp TEXT DEFAULT (datetime('now')),
-  method TEXT NOT NULL,       -- 'interactive' or service token name
-  identity TEXT NOT NULL,     -- email or client_id
-  action TEXT NOT NULL,       -- 'get', 'set', 'delete', 'list', 'export', etc.
-  secret_key TEXT,            -- which secret (null for list operations)
-  ip TEXT
+  method TEXT NOT NULL,           -- 'interactive' or service token name
+  identity TEXT NOT NULL,         -- email or client_id
+  action TEXT NOT NULL,           -- 'get', 'set', 'delete', 'list', 'export', 'import'
+  secret_key TEXT,                -- which secret was accessed (null for list/export/import)
+  ip TEXT,
+  user_agent TEXT
 );
 
 CREATE INDEX idx_audit_log_timestamp ON audit_log(timestamp);
 CREATE INDEX idx_audit_log_identity ON audit_log(identity);
+CREATE INDEX idx_audit_log_secret_key ON audit_log(secret_key, timestamp);
+CREATE INDEX idx_audit_log_action ON audit_log(action, timestamp);
 ```
 
 ## Conventions

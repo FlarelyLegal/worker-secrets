@@ -11,6 +11,10 @@ interface Env {
   ALLOWED_EMAILS: string;   // comma-separated emails for interactive sessions
   TEAM_DOMAIN: string;      // https://<team>.cloudflareaccess.com
   POLICY_AUD: string;       // Access application AUD tag
+  PROJECT_NAME: string;     // display name for the project
+  BRAND_NAME: string;       // brand name for UI/landing page
+  REPO_URL: string;         // repository URL for links
+  DEV_AUTH_BYPASS: string;  // dev-only: bypass auth when set (requires no CF-Connecting-IP)
 }
 ```
 
@@ -29,6 +33,7 @@ type HonoEnv = {
   Variables: {
     auth: AuthUser;
     ip: string | null;
+    ua: string | null;
   };
 };
 ```
@@ -52,8 +57,8 @@ hasScope(auth: AuthUser, required: string): boolean
 ## Audit helper
 
 ```typescript
-audit(env: Env, auth: AuthUser, action: string, secretKey: string | null, ip: string | null): Promise<void>
-// Inserts into audit_log. method is "interactive" or token name.
+audit(env: Env, auth: AuthUser, action: string, secretKey: string | null, ip: string | null, userAgent: string | null): Promise<void>
+// Inserts into audit_log. method is "interactive" or token name. userAgent from request headers.
 ```
 
 ## API schemas

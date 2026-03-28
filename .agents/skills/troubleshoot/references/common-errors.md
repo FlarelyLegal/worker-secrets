@@ -11,10 +11,13 @@
 | `{"error":"Token not found"}` | 404 | Client ID not in service_tokens table | Check `hfs token ls` |
 | `{"error":"name is required"}` | 400 | PUT /tokens without `name` in body | Pass `-n <name>` in CLI |
 | `{"error":"value is required"}` | 400 | PUT /secrets without `value` in body | Pass value as argument or `--from-stdin`/`--from-file` |
-| `{"error":"\"export\" is a reserved key name"}` | 400 | PUT /secrets/export | Use a different key name |
+| `{"error":"\"export\" and \"import\" are reserved key names"}` | 400 | PUT /secrets/export or /secrets/import | Use a different key name |
 | `{"error":"Invalid scope: X"}` | 400 | Unrecognized scope string | Valid: `read`, `write`, `delete`, `*` |
 | `{"error":"Encryption failed"}` | 500 | `ENCRYPTION_KEY` invalid or crypto error | Verify key is 64-char hex |
 | `{"error":"Decryption failed"}` | 500 | Secret encrypted with a different key or corrupted | Verify `ENCRYPTION_KEY` matches |
+| `{"error":"ENCRYPTION_KEY must be exactly 64 hex characters"}` | 500 | Invalid key format | Regenerate with `npm run generate-keys` |
+| `{"error":"value exceeds 1MB limit"}` | 400 | Secret value too large | Reduce value size |
+| `{"error":"key exceeds 256 char limit"}` | 400 | Key name too long | Use shorter key |
 | `{"error":"Internal error"}` | 500 | Unhandled exception (D1 down, unexpected state) | Check `wrangler tail` for stack trace |
 
 ## CLI errors

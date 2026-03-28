@@ -8,12 +8,21 @@ description: Deploy the secret-vault Cloudflare Worker and run pending D1 migrat
 ## CONVENTIONS
 
 - **ALWAYS** type-check before deploying: `cd secret-vault && npx tsc --noEmit`
-- **ALWAYS** run `npm run sync-version` before publishing the CLI
 - **ALWAYS** apply D1 migrations before deploying if new migration files exist
 - **ALWAYS** verify deployment with `/health` endpoint
 - **NEVER** deploy without type-checking and linting first
+- Version syncs automatically during `npm run build` in the CLI. Manual: `npm run sync-version`
 
-## DEPLOY THE WORKER
+## DEPLOY WITH `hfs deploy` (RECOMMENDED)
+
+```bash
+# Full guided deployment — handles wrangler config, migrations, secrets, and deploy
+hfs deploy
+```
+
+`hfs deploy` generates the real `wrangler.jsonc`, applies migrations, sets secrets, and deploys the Worker in one flow.
+
+## DEPLOY MANUALLY (ALTERNATIVE)
 
 ```bash
 # 1. Type-check
@@ -26,7 +35,7 @@ npm run db:migrate
 npm run deploy
 
 # 4. Verify
-curl https://secrets.homeflare.dev/health
+curl https://vault.example.com/health
 
 # 5. Tail logs for errors
 wrangler tail
@@ -40,10 +49,7 @@ SELECT name FROM sqlite_master WHERE type='table'
 ## PUBLISH THE CLI
 
 ```bash
-# 1. Sync version from root VERSION file
-npm run sync-version
-
-# 2. Build and publish
+# 1. Build (version auto-syncs from root VERSION file)
 cd hfs
 npm run build
 npm publish

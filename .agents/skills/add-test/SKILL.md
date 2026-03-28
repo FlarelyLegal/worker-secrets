@@ -51,12 +51,16 @@ export default defineWorkersConfig({
 ### Critical paths (test first)
 
 1. Encrypt → decrypt round-trip
-2. Auth rejects missing JWT (401)
-3. Auth rejects unregistered service token (401)
-4. Scope enforcement: read-only token can't write/delete (403)
-5. CRUD: create, read, update, delete a secret
-6. Audit log records every operation
-7. Reserved key `"export"` rejected on PUT (400)
+2. Hex key validation (non-hex ENCRYPTION_KEY → error)
+3. Auth rejects missing JWT (401)
+4. Auth rejects unregistered service token (401)
+5. Failed auth audit logging (method: "rejected", action: "auth_failed")
+6. Scope enforcement: read-only token can't write/delete (403)
+7. CRUD: create, read, update, delete a secret
+8. Body size limits (value >1MB → 400, key >256 chars → 400)
+9. Audit log records every operation
+10. Reserved keys `"export"` and `"import"` rejected on PUT (400)
+11. Reserved key names rejected in bulk import
 
 ## CLI TESTS (vitest)
 

@@ -27,8 +27,13 @@ This is an encrypted secret store — security mistakes leak credentials.
 - Scopes: `read`, `write`, `delete`, `*`
 - Token management + audit: restricted to `interactive` auth only
 
+### Input validation
+- **ALWAYS** validate `ENCRYPTION_KEY` format (64 hex chars) — validated on first use
+- Body size limits enforced via Zod: value 1MB, key 256 chars, description 1000 chars
+- Failed auth attempts logged: `method: "rejected"`, `action: "auth_failed"`
+- Security headers: HSTS, X-Request-ID, CSP (HTML only), X-Content-Type-Options
+
 ### Error handling
-- **ALWAYS** wrap `c.req.json()` in try-catch → 400
 - **ALWAYS** wrap `encrypt()`/`decrypt()` in try-catch → 500
 - **NEVER** return stack traces, SQL errors, or key fragments in error responses
 
@@ -46,7 +51,6 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 - [ ] No raw `ENCRYPTION_KEY` exposure outside `encrypt`/`decrypt`
 - [ ] Auth middleware cannot be bypassed (route ordering in Hono)
 - [ ] D1 queries use `.bind()`, never string interpolation
-- [ ] `c.req.json()` wrapped in try-catch
 - [ ] Crypto ops wrapped in try-catch
 - [ ] No new routes above auth middleware in `index.ts` unless intentionally public
 - [ ] Error responses don't leak internals
@@ -54,7 +58,5 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 ## KNOWN GAPS
 
 - No rate limiting — only Cloudflare edge DDoS protection
-- No audit log retention — grows unbounded
-- No failed auth logging — rejected requests not in audit_log
 - No key rotation — changing `ENCRYPTION_KEY` breaks all secrets
 - Email case in audit — stored as-is from JWT, could show mixed case

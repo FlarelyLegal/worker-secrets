@@ -7,7 +7,7 @@ description: Diagnose and fix issues with the secret-vault Worker, hfs CLI, D1 d
 
 ## QUICK DIAGNOSIS
 
-1. **Worker up?** `curl https://secrets.homeflare.dev/health` → `{"status":"ok"}`
+1. **Worker up?** `curl https://vault.example.com/health` → `{"status":"ok","database":"ok"}`
 2. **Auth working?** `hfs whoami` → method, identity, scopes
 3. **D1 reachable?** `hfs ls` → if hangs, D1 binding misconfigured
 4. **CLI configured?** `hfs config show` → URL, session status, active auth
@@ -64,5 +64,5 @@ echo $JWT | cut -d. -f2 | base64 -d | jq .  # Inspect JWT claims
 ## KNOWN LIMITATIONS
 
 - No rate limiting — Cloudflare's edge DDoS protection only
-- Audit log grows unbounded — no retention policy
-- `"export"` is a reserved secret key name (collides with `/secrets/export` route)
+- `"export"` and `"import"` are reserved secret key names (collide with `/secrets/export` and `/secrets/import` routes)
+- X-Request-ID header on every response for debugging

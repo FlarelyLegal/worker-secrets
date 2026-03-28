@@ -1,29 +1,31 @@
 # Existing API endpoints
 
-Source: `secret-vault/src/routes/secrets.ts`, `secret-vault/src/routes/tokens.ts`, `secret-vault/src/index.ts`
+Source: `secret-vault/src/routes/`
 
 ## Public (no auth)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Returns `{ status: "ok" }` |
+| `GET` | `/health` | Returns `{ status, database }` (503 if DB unreachable) |
 | `GET` | `/doc` | Scalar API reference UI |
-| `GET` | `/doc/json` | OpenAPI 3.0 spec (JSON) |
+| `GET` | `/doc/json` | OpenAPI 3.0 spec (JSON, dynamic server URL) |
+| `GET` | `/` | Landing page (HTML) |
 
-## Authenticated (all require valid JWT via Cf-Access-Jwt-Assertion)
+## Authenticated (require valid JWT via Cf-Access-Jwt-Assertion)
 
 | Method | Path | Scope | Description |
 |--------|------|-------|-------------|
-| `GET` | `/whoami` | any | Returns auth method, identity, name, scopes |
-| `GET` | `/secrets` | read | List all keys (no values) |
-| `GET` | `/secrets/export` | interactive + read | Export all secrets decrypted in one response |
-| `GET` | `/secrets/:key` | read | Get decrypted secret |
-| `PUT` | `/secrets/:key` | write | Create or update secret (`"export"` is a reserved key name) |
-| `DELETE` | `/secrets/:key` | delete | Delete a secret |
-| `GET` | `/audit` | interactive only | View audit log (accepts `?limit=N`) |
+| `GET` | `/whoami` | any | Auth method, identity, name, scopes |
+| `GET` | `/secrets?limit=&offset=` | read | Paginated list (returns `{ secrets, total }`) |
+| `GET` | `/secrets/export` | interactive + read | Bulk export all secrets decrypted |
+| `POST` | `/secrets/import` | interactive + write | Bulk import from JSON (atomic via db.batch) |
+| `GET` | `/secrets/{key}` | read | Get decrypted secret (includes `created_by`, `updated_by`) |
+| `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys) |
+| `DELETE` | `/secrets/{key}` | delete | Delete a secret |
+| `GET` | `/audit?limit=&offset=` | interactive only | Paginated audit log |
 | `GET` | `/tokens` | interactive only | List registered service tokens |
-| `PUT` | `/tokens/:clientId` | interactive only | Register a service token |
-| `DELETE` | `/tokens/:clientId` | interactive only | Revoke a service token |
+| `PUT` | `/tokens/{clientId}` | interactive only | Register a service token |
+| `DELETE` | `/tokens/{clientId}` | interactive only | Revoke a service token |
 
 ## Request/response patterns
 
@@ -31,14 +33,33 @@ Source: `secret-vault/src/routes/secrets.ts`, `secret-vault/src/routes/tokens.ts
 ```json
 { "value": "secret-text", "description": "optional" }
 ```
+Limits: value max 1MB, key max 256 chars, description max 1000 chars.
+
+### POST body (import)
+```json
+{ "secrets": [{ "key": "k", "value": "v", "description": "d" }], "overwrite": false }
+```
 
 ### PUT body (tokens)
 ```json
 { "name": "token-name", "description": "optional", "scopes": "read,write" }
+```
+Valid scopes: `*`, `read`, `write`, `delete` (comma-separated). Name max 256, description max 1000.
+
+### List response (paginated)
+```json
+{ "secrets": [...], "total": 42 }
 ```
 
 ### Error responses
 ```json
 { "error": "message" }
 ```
-Status codes: 400 (bad input), 401 (no auth), 403 (wrong scope/role), 404 (not found).
+Status codes: 400 (bad input/validation), 401 (no auth), 403 (wrong scope/role), 404 (not found), 500 (internal), 503 (degraded).
+
+### Security headers (all responses)
+- `X-Content-Type-Options: nosniff`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `X-Request-ID: <uuid>` (for debugging)
+- `Content-Security-Policy` (HTML only)
+- `X-Frame-Options: DENY` (HTML only)

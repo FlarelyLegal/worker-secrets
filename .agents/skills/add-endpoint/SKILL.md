@@ -12,36 +12,20 @@ Routes live in `secret-vault/src/routes/` as Hono sub-routers, mounted in `src/i
 ### Guards (CRITICAL)
 
 - **ALWAYS** call `hasScope(auth, "read"|"write"|"delete")` before touching secrets
-- **ALWAYS** call `audit(env, auth, action, key, ip)` after every data access or mutation
-- **ALWAYS** wrap `c.req.json()` in try-catch → return 400 on malformed JSON
+- **ALWAYS** call `audit(env, auth, action, key, ip, userAgent)` after every data access or mutation
 - **ALWAYS** wrap crypto and D1 calls in try-catch → return 500 with generic message
 - **NEVER** add routes above the auth middleware in `index.ts` unless intentionally public
 - **NEVER** return internal details in errors (stack traces, SQL, key fragments)
 
 ### Structure
 
-- Sub-routers: `const things = new Hono<HonoEnv>()` mounted via `app.route("/things", things)`
+- Sub-routers: `const things = new OpenAPIHono<HonoEnv>()` mounted via `app.route("/things", things)`
 - Interactive-only routes: add middleware `if (auth.method !== "interactive") return 403`
-- Auth context available after middleware: `c.get("auth")`, `c.get("ip")`, `c.env.DB`
+- Auth context available after middleware: `c.get("auth")`, `c.get("ip")`, `c.get("ua")`, `c.env.DB`
 
 ### Pattern
 
-```typescript
-const things = new Hono<HonoEnv>();
-
-things.get("/:id", async (c) => {
-  const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
-
-  const id = decodeURIComponent(c.req.param("id"));
-  // ... D1 query with .bind() ...
-
-  await audit(c.env, auth, "get_thing", id, c.get("ip"));
-  return c.json({ thing: result });
-});
-
-app.route("/things", things);
-```
+Use the `createRoute()` + `app.openapi()` pattern. See the [zod-openapi skill](../zod-openapi/SKILL.md) for full examples with schema definitions, route creation, and handler registration.
 
 ## CHECKLIST
 

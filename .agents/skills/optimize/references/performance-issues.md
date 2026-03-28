@@ -24,33 +24,16 @@ const limit = Math.min(Math.max(Number.isNaN(raw) ? 50 : raw, 1), 500);
 
 ## Remaining
 
-### 1. Audit log growth
+### Audit log growth (DONE)
 
-**Current:** No retention. Every operation inserts a row. At 100 ops/day, that's 36,500 rows/year.
+Background cleanup via `waitUntil()` with 90-day retention. No longer unbounded.
 
-**Fix options:**
+### CLI bulk export (PARTIALLY DONE)
 
-A. Scheduled Worker cleanup (add to wrangler.jsonc):
-```toml
-[triggers]
-crons = ["0 0 * * 0"]  # Weekly
-```
+The CLI tries the bulk `/secrets/export` endpoint first, then falls back to N+1 for service tokens (which cannot use the interactive-only bulk endpoint). Acceptable for small vaults.
 
-B. Migration with manual cleanup:
-```sql
-DELETE FROM audit_log WHERE timestamp < datetime('now', '-90 days');
-```
+### CLI export N+1 for service tokens
 
-C. Piggyback cleanup on audit insert:
-```typescript
-if (Math.random() < 0.01) {  // 1% of requests
-  await env.DB.prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', '-90 days')").run();
-}
-```
-
-### 2. CLI export N+1
-
-`hfs export` does 1 list + N get calls sequentially. The Worker's `/secrets/export` endpoint is interactive-only, so the CLI uses N+1 to support both auth modes. For small vaults (< 100 secrets) this is acceptable. If it becomes a bottleneck, options:
-
-- Add a `VaultClient.export()` method that tries `/secrets/export` first, falls back to N+1
+Service tokens still use N+1 (`list()` + `get()` per secret). If this becomes a bottleneck, options:
 - Parallelize the N+1 with bounded concurrency (`Promise.all` in batches of 5)
+- Add a service-token-compatible bulk endpoint

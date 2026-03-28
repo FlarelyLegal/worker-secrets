@@ -89,12 +89,21 @@ export type SecretEntry = z.infer<typeof SecretEntrySchema>;
 - Derive from Zod schemas with `z.infer<>`
 - Keeps types and validation in sync
 
+## Size limits
+
+```typescript
+value: z.string().min(1, "required").max(1_000_000, "exceeds 1MB limit"),
+key: z.string().min(1).max(256, "exceeds 256 char limit"),
+description: z.string().optional().default("").pipe(z.string().max(1000, "exceeds 1000 char limit")),
+```
+
+- Use `.max()` for server-enforced size limits
+- Error messages from `.max()` become the API error text
+
 ## Scope validation
 
-Scopes are validated in handlers (business logic), not Zod schemas:
+Token scopes are validated by Zod `.refine()` on `TokenCreateBody`. Secret scope checks (`hasScope`) remain in handlers since they depend on the authenticated user.
 
 ```typescript
 if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
 ```
-
-Zod handles input shape validation. Auth/scope is business logic.

@@ -183,20 +183,37 @@ app.use("*", async (c, next) => { ... });
 app.route("/secrets", secrets);
 app.route("/tokens", tokens);
 
-// Serve the auto-generated spec
-app.doc("/doc", {
-  openapi: "3.0.0",
-  info: { title: "Secret Vault API", version: "1.0.0" },
-  tags: [
-    { name: "Secrets", description: "Encrypted secret management" },
-    { name: "Tokens", description: "Service token management" },
-    { name: "Admin", description: "Audit and system info" },
-  ],
-});
+// Serve the spec JSON at /doc/json (dynamic, includes server URL)
+// Scalar UI served at /doc via a dedicated route
 ```
+
+## Paginated list pattern
+
+```typescript
+const listSecretsRoute = createRoute({
+  method: "get",
+  path: "/",
+  tags: ["Secrets"],
+  summary: "List all secret keys",
+  request: {
+    query: PaginationQuery,  // limit + offset, coerced numbers with defaults
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: SecretListResponseSchema } },
+      description: "Paginated list of secrets",
+    },
+  },
+});
+
+// Response includes total for pagination:
+// { "secrets": [...], "total": 42 }
+```
+
+- Use `PaginationQuery` schema with `limit` (default 50, max 500) and `offset` (default 0)
+- Always return `total` alongside the array for client-side pagination
 
 ## What NOT to put in OpenAPI routes
 
 - Auth middleware — uses regular `app.use()`, not `createRoute()`
-- `/health` — simple public endpoint, can use regular `app.get()`
 - Internal helpers — `hasScope()`, `audit()` are called from handlers, not routes

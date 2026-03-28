@@ -24,7 +24,7 @@ describe("health", () => {
   it("returns ok without auth", async () => {
     const res = await app.fetch(makeRequest("/health"), env);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: "ok" });
+    expect(await res.json()).toEqual({ status: "ok", database: "ok" });
   });
 });
 

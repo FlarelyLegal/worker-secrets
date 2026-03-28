@@ -16,21 +16,16 @@ description: Optimize the secret-vault Worker and hfs CLI for performance, laten
 - [x] CryptoKey cached at module level (`getKey()`)
 - [x] JWKS set cached at module level (`getJWKS()`)
 - [x] Bulk export endpoint (`GET /secrets/export`) — one D1 query, server-side decrypt
-- [x] parseInt guard on audit limit — NaN-safe with clamp to 1–500
+- [x] parseInt guard on audit limit — NaN-safe with clamp to 1-500
+- [x] Audit log retention — background cleanup via `waitUntil()`, 90-day retention
+- [x] Bulk import atomic — `db.batch()` for all-or-nothing imports
+- [x] CLI bulk export — tries `/secrets/export` first, falls back to N+1
 
 ## REMAINING ISSUES
 
-### Audit log growth (LOW but compounds)
+### CLI export N+1 for service tokens (LOW)
 
-`audit_log` grows unbounded. Large tables slow `ORDER BY timestamp DESC`.
-
-Check size: `SELECT COUNT(*) as total, MIN(timestamp) as oldest FROM audit_log`
-
-Fix options: scheduled Worker cleanup, manual `DELETE WHERE timestamp < datetime('now', '-90 days')`, or piggyback cleanup on insert.
-
-### CLI export N+1 (LOW)
-
-`hfs export` calls `list()` + `get()` per secret sequentially. Worker has bulk `/secrets/export` but it's interactive-only. N+1 works for both auth modes. Acceptable for small vaults.
+Service tokens cannot use the bulk `/secrets/export` endpoint (interactive-only). The CLI falls back to N+1 (`list()` + `get()` per secret) for service token auth. Acceptable for small vaults.
 
 ## REFERENCES
 
