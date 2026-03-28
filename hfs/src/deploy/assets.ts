@@ -90,7 +90,8 @@ export function writeWranglerConfig(state: DeployState): void {
       BRAND_NAME: state.brandName,
     },
   };
-  if (state.workersDev) cfg.workers_dev = true;
+  cfg.workers_dev = state.workersDev;
+  cfg.preview_urls = false;
   if (state.observability) {
     cfg.observability = {
       enabled: false,
