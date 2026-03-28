@@ -59,7 +59,7 @@ export function landingPage(brand: string, origin: string): string {
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <p class="desc">Encrypted secret management powered by Cloudflare Workers and D1. All secrets are encrypted at rest with AES-256-GCM. Authentication is handled through Cloudflare Access with two paths for humans and machines.</p>
+      <p class="desc">A self-hosted API for storing and retrieving secrets on Cloudflare's edge. Manage API keys, tokens, certificates, and credentials through the CLI or directly via the REST API. Built for teams that need auditable, scoped access to secrets from CI pipelines, Workers, and internal tools.</p>
       <div class="links">
         <a class="link" href="/doc">
           <div><div class="link-label">API Reference</div><div class="link-path">${origin}/doc</div></div>
