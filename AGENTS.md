@@ -2,23 +2,23 @@
 
 ## OVERVIEW
 
-Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`secret-vault/`) + CLI (`hfs/`). Dual auth via Cloudflare Access (interactive IdP + hardware key, or registered service tokens). AES-256-GCM at rest.
+Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`secret-vault/`) + CLI (`hfs/`). Dual auth via Cloudflare Access (interactive IdP, optionally with hardware keys) or registered service tokens. RBAC with roles (admin, operator, reader, custom). AES-256-GCM at rest with HMAC-SHA256 integrity.
 
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
 |------|----------|-------|
 | Worker entry | `secret-vault/src/index.ts` | OpenAPIHono app, security headers, middleware, route mounting |
-| Worker schemas | `secret-vault/src/schemas.ts` | All Zod schemas, shared response helpers, D1 row types |
-| Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, audit, JWKS cache |
+| Worker schemas | `secret-vault/src/schemas*.ts` | Split by domain: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts` |
+| Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, isAdmin, audit, JWKS cache, RBAC scope resolution |
 | Worker crypto | `secret-vault/src/crypto.ts` | AES-256-GCM encrypt/decrypt, hex validation, key cache |
-| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `tokens.ts`, `bulk.ts`, `admin.ts`, `public.ts` |
-| Worker flags | `secret-vault/src/routes/flags.ts` | Feature flags CRUD (KV-backed) |
+| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `bulk.ts`, `admin.ts`, `public.ts`, `flags.ts` |
+| Worker flags | `secret-vault/src/flags.ts` | `getFlagValue()` helper for reading typed flags from KV |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
 | Worker pages | `secret-vault/src/pages.ts` | Landing page and health page HTML templates |
 | Worker version | `secret-vault/src/version.ts` | Auto-synced from VERSION file during build |
 | CLI entry | `hfs/src/cli.ts` | Program setup, command registration |
-| CLI commands | `hfs/src/commands/` | `auth.ts`, `secrets.ts`, `tokens.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts` |
+| CLI commands | `hfs/src/commands/` | `auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts` |
 | CLI client | `hfs/src/client.ts` | `VaultClient` with typed methods and 30s timeout |
 | CLI config | `hfs/src/config.ts` | `resolveAuth()`, JWT storage |
 | CLI helpers | `hfs/src/helpers.ts` | `die()`, `client()`, `confirm()`, `readStdin()` |
@@ -46,15 +46,19 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 - **NEVER** fall back between auth modes — partial config is a hard error
 - **NEVER** store service token credentials on disk — env vars only (`HFS_CLIENT_ID`, `HFS_CLIENT_SECRET`)
 - **ALWAYS** validate JWT signature against Cloudflare JWKS + check issuer + AUD
+- **ALWAYS** check `users` table first, fall back to `ALLOWED_EMAILS` only if table is empty (grants reader, not admin)
+- **ALWAYS** use `isAdmin(auth)` for user/role management endpoints
+- Scopes resolved from role via `roles` table — not hardcoded
 - Unregistered service tokens are rejected even if Access JWT is valid
+- Disabled users (`enabled = 0`) are rejected even with valid JWT
 
 ### Worker
 
 - **ALWAYS** define routes with `createRoute()` + `app.openapi()` — see `zod-openapi` skill
-- **ALWAYS** define request/response schemas in `schemas.ts` with Zod
+- **ALWAYS** define request/response schemas in the appropriate `schemas-*.ts` file with Zod
 - **ALWAYS** use `c.req.valid("json")` / `c.req.valid("param")` — never `c.req.json()`
 - **ALWAYS** call `hasScope(auth, scope)` before any endpoint touching secrets
-- **ALWAYS** call `audit(env, auth, action, key, ip, userAgent)` after every data access or mutation
+- **ALWAYS** call `audit(env, auth, action, key, ip, userAgent, requestId)` after every data access or mutation
 - **ALWAYS** use parameterized D1 queries with `.bind()` — never interpolate user input
 - **NEVER** add routes above the auth middleware in `index.ts` unless intentionally public
 - **NEVER** return stack traces, SQL errors, or key fragments in error responses
@@ -152,6 +156,5 @@ hfs flag rm <key>               # Delete a flag
 
 ## KNOWN GAPS
 
-- No rate limiting (relying on Cloudflare edge protection)
-- No encryption key rotation (changing the key breaks all secrets)
-- Tests exist (28 total: 23 Worker + 5 CLI) and run in CI (`ci.yml`) and release (`release.yml`) workflows
+- No rate limiting — relying on Cloudflare edge protection
+- No encryption key rotation — changing `ENCRYPTION_KEY` breaks all secrets (export first, rotate, re-import)
