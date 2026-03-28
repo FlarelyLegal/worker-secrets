@@ -23,7 +23,20 @@ async function collectConfig(state: DeployState): Promise<DeployState> {
   s.projectName = s.projectName || (await ask(rl, "Project name", "secret-vault"));
   s.brandName = s.brandName || (await ask(rl, "Brand name", "Secret Vault"));
   s.accountId = s.accountId || (await ask(rl, "Account ID"));
-  s.domain = s.domain || (await ask(rl, "Domain"));
+  s.domain = s.domain || (await ask(rl, "Primary domain"));
+  const extraDomains = await ask(
+    rl,
+    "Additional domains (comma-separated, or empty)",
+    s.domains.length > 1 ? s.domains.slice(1).join(",") : "",
+  );
+  s.domains = [
+    s.domain,
+    ...extraDomains
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean),
+  ];
+  s.domains = [...new Set(s.domains)];
   s.emails = s.emails || (await ask(rl, "Allowed emails (comma-separated)"));
   s.teamDomain =
     s.teamDomain ||
@@ -42,6 +55,14 @@ async function setup(opts: Record<string, unknown>): Promise<DeployState> {
   const state = loadState();
   if (opts.accountId) state.accountId = opts.accountId as string;
   if (opts.domain) state.domain = opts.domain as string;
+  if (opts.domains) {
+    const all = (opts.domains as string)
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean);
+    state.domain = state.domain || all[0];
+    state.domains = [...new Set([state.domain, ...all])];
+  }
   if (opts.emails) state.emails = opts.emails as string;
   if (opts.teamDomain) state.teamDomain = opts.teamDomain as string;
   if (opts.workersDev !== undefined) state.workersDev = opts.workersDev as boolean;
@@ -67,7 +88,8 @@ export function registerDeployCommands(program: Command): void {
 
   cmd
     .option("--account-id <id>", "Cloudflare account ID")
-    .option("--domain <domain>", "Custom domain")
+    .option("--domain <domain>", "Primary custom domain")
+    .option("--domains <domains>", "All custom domains (comma-separated)")
     .option("--emails <emails>", "Comma-separated allowed emails")
     .option("--team-domain <domain>", "Access team domain URL")
     .option("--workers-dev", "Enable workers.dev subdomain")
@@ -105,6 +127,8 @@ export function registerDeployCommands(program: Command): void {
       console.log(chalk.bold("\n  Deploy state\n"));
       console.log(`  account:     ${f(s.accountId)}`);
       console.log(`  domain:      ${f(s.domain)}`);
+      if (s.domains.length > 1)
+        console.log(`  domains:     ${s.domains.map((d) => chalk.green(d)).join(", ")}`);
       console.log(`  access app:  ${f(s.accessAppId)}`);
       console.log(`  policy AUD:  ${f(s.policyAud)}`);
       console.log(`  database:    ${f(s.databaseId)}`);
