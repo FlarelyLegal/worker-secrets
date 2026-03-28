@@ -27,8 +27,8 @@ export function registerAuthCommands(program: Command): void {
       console.log(chalk.dim("Tap your YubiKey or confirm your passkey when prompted.\n"));
 
       try {
-        // cloudflared needs a protected path — Access only covers /secrets, /tokens, etc.
-        const loginUrl = `${url.replace(/\/+$/, "")}/whoami`;
+        // cloudflared needs a path protected by Access (/secrets, /tokens)
+        const loginUrl = `${url.replace(/\/+$/, "")}/secrets`;
         const output = execFileSync("cloudflared", ["access", "login", loginUrl], {
           encoding: "utf-8",
           stdio: ["inherit", "pipe", "inherit"],
