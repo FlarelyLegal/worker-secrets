@@ -101,3 +101,11 @@ export function writeWranglerConfig(state: DeployState): void {
   }
   writeFileSync(join(WORKER_DIR, "wrangler.jsonc"), JSON.stringify(cfg, null, 2));
 }
+
+export function deleteD1(dbId: string): void {
+  execFileSync("npx", ["wrangler", "d1", "delete", dbId, "--skip-confirmation"], {
+    cwd: WORKER_DIR,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}

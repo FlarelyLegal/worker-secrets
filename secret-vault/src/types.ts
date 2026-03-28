@@ -7,6 +7,7 @@ export interface Env {
   PROJECT_NAME?: string; // worker/DB name prefix (default: "secret-vault")
   BRAND_NAME?: string; // display name in UI (default: "Secret Vault")
   REPO_URL?: string; // GitHub repo URL for landing page links
+  CORS_ORIGINS?: string; // comma-separated allowed origins (empty = no CORS)
   DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only — never set in production
 }
 

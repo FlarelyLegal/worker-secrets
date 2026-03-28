@@ -193,7 +193,7 @@ export function registerSecretCommands(program: Command): void {
 
   program
     .command("env <keys...>")
-    .description("Output secrets as KEY=value for shell sourcing")
+    .description("Output secrets as KEY=value for shell (dashes converted to underscores)")
     .option("-e, --export", "Prefix each line with 'export'")
     .action(async (keys: string[], opts: { export?: boolean }) => {
       try {

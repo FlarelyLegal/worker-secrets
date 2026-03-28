@@ -34,8 +34,14 @@ jobs:
       - name: Type-check Worker
         run: cd secret-vault && npx tsc --noEmit
 
+      - name: Test Worker
+        run: cd secret-vault && npx vitest run
+
       - name: Type-check CLI
         run: cd hfs && npx tsc --noEmit
 
       - name: Build CLI
         run: cd hfs && npm run build
+
+      - name: Test CLI
+        run: cd hfs && npx vitest run

@@ -36,7 +36,7 @@ hfs set <key> <value>      Store a secret
 hfs set <key> --from-file  Read value from a file
 hfs rm <key>               Delete a secret (confirms first)
 hfs ls                     List all secret keys
-hfs env <key> [key...]     Output as KEY=value for shell
+hfs env <key> [key...]     Output as KEY=value (dashes → underscores)
 hfs env -e <key> [key...]  Same with export prefix
 hfs export                 Export all as JSON
 hfs import <file>          Import from JSON

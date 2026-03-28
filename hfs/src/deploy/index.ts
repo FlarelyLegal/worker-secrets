@@ -1,9 +1,10 @@
-export { createAccessApp, findAccessApp, updateAccessApp } from "./access.js";
+export { createAccessApp, deleteAccessApp, findAccessApp, updateAccessApp } from "./access.js";
 export {
   checkD1Exists,
   checkWrangler,
   copyWorkerSource,
   createD1,
+  deleteD1,
   installDeps,
   writeWranglerConfig,
 } from "./assets.js";
@@ -13,6 +14,7 @@ export { type DeployState, emptyState, loadState, saveState, WORKER_DIR } from "
 export {
   applyMigrations,
   checkSecretExists,
+  deleteWorker,
   deployWorker,
   dryRunDeploy,
   listPendingMigrations,

@@ -10,9 +10,9 @@ import { registerDeployCommands } from "./commands/deploy.js";
 import { registerSecretCommands } from "./commands/secrets.js";
 import { registerTokenCommands } from "./commands/tokens.js";
 
-const VERSION = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
-).version;
+const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
+const VERSION: string = pkg.version;
+const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/, "") || "";
 
 registerAuthCommands(program);
 registerSecretCommands(program);
@@ -28,3 +28,20 @@ program
   .version(VERSION);
 
 program.parse();
+
+// Non-blocking version check (only on TTY, not in pipes/CI)
+if (process.stdout.isTTY && REPO) {
+  const apiUrl = `${REPO.replace("github.com", "api.github.com/repos")}/releases/latest`;
+  fetch(apiUrl, {
+    headers: { Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(3000),
+  })
+    .then((r) => r.json() as Promise<{ tag_name?: string }>)
+    .then((data) => {
+      const latest = data.tag_name?.replace(/^v/, "");
+      if (latest && latest !== VERSION) {
+        console.error(`\nhfs update available: ${VERSION} → ${latest} (${REPO}/releases/latest)\n`);
+      }
+    })
+    .catch(() => {});
+}

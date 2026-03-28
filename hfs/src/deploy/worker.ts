@@ -69,3 +69,11 @@ export function dryRunDeploy(): void {
     timeout: 60000,
   });
 }
+
+export function deleteWorker(projectName: string): void {
+  execFileSync("npx", ["wrangler", "delete", projectName, "--force"], {
+    cwd: WORKER_DIR,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}

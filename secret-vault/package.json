@@ -7,7 +7,8 @@
     "db:create": "wrangler d1 create secret-vault-db",
     "db:migrate": "wrangler d1 migrations apply secret-vault-db",
     "db:migrate:local": "wrangler d1 migrations apply secret-vault-db --local",
-    "generate-keys": "node -e \"console.log('ENCRYPTION_KEY:', require('crypto').randomBytes(32).toString('hex'))\""
+    "generate-keys": "node -e \"console.log('ENCRYPTION_KEY:', require('crypto').randomBytes(32).toString('hex'))\"",
+    "test": "vitest"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.2.4",
@@ -15,8 +16,10 @@
     "jose": "^6.2.2"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.13.5",
     "@cloudflare/workers-types": "^4.20260317.1",
     "typescript": "^6.0.2",
+    "vitest": "^4.1.2",
     "wrangler": "^4.78.0"
   }
 }

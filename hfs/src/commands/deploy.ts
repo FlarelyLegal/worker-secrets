@@ -5,13 +5,17 @@ import {
   checkWrangler,
   copyWorkerSource,
   type DeployState,
+  deleteAccessApp,
+  deleteD1,
+  deleteWorker,
   emptyState,
   installDeps,
   loadState,
+  resolveCfAuth,
   saveState,
 } from "../deploy/index.js";
 import { fail, phaseAccess, phaseAssets, phaseWorker } from "../deploy/phases.js";
-import { die, errorMessage } from "../helpers.js";
+import { confirm, die, errorMessage } from "../helpers.js";
 
 function ask(rl: ReturnType<typeof createInterface>, q: string, def?: string): Promise<string> {
   const hint = def ? ` [${def}]` : "";
@@ -153,5 +157,66 @@ export function registerDeployCommands(program: Command): void {
       }
       saveState(emptyState());
       console.log(`${chalk.green("✓")} Deploy state cleared`);
+    });
+
+  cmd
+    .command("destroy")
+    .description("Tear down Worker, D1 database, and Access app")
+    .option("-f, --force", "Skip confirmation")
+    .action(async (opts: { force?: boolean }) => {
+      const state = loadState();
+      if (!state.accountId) die("No deployment found. Run `hfs deploy status` to check.");
+
+      console.log(chalk.bold("\n  This will permanently delete:\n"));
+      if (state.projectName) console.log(`  Worker:     ${state.projectName}`);
+      if (state.databaseId) console.log(`  D1 database: ${state.databaseId.slice(0, 8)}...`);
+      if (state.accessAppId) console.log(`  Access app:  ${state.accessAppId.slice(0, 8)}...`);
+      console.log("");
+
+      if (!opts.force) {
+        const ok = await confirm(chalk.red("Delete all resources? This cannot be undone."));
+        if (!ok) {
+          console.log("Cancelled.");
+          return;
+        }
+      }
+
+      try {
+        copyWorkerSource();
+        installDeps();
+
+        if (state.projectName) {
+          try {
+            deleteWorker(state.projectName);
+            console.log(`  ${chalk.green("✓")} Worker deleted`);
+          } catch {
+            console.log(`  ${chalk.yellow("⚠")} Worker not found (may already be deleted)`);
+          }
+        }
+
+        if (state.databaseId) {
+          try {
+            deleteD1(state.databaseId);
+            console.log(`  ${chalk.green("✓")} D1 database deleted`);
+          } catch {
+            console.log(`  ${chalk.yellow("⚠")} D1 database not found`);
+          }
+        }
+
+        if (state.accessAppId) {
+          try {
+            const auth = resolveCfAuth();
+            await deleteAccessApp(state.accountId, state.accessAppId, auth);
+            console.log(`  ${chalk.green("✓")} Access app deleted`);
+          } catch {
+            console.log(`  ${chalk.yellow("⚠")} Access app not found`);
+          }
+        }
+
+        saveState(emptyState());
+        console.log(`\n  ${chalk.green("✓")} All resources destroyed. Deploy state cleared.\n`);
+      } catch (e) {
+        die(errorMessage(e));
+      }
     });
 }

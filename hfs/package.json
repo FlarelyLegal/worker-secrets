@@ -1,6 +1,6 @@
 {
   "name": "@FlarelyLegal/hfs-cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "description": "Encrypted secret vault CLI for Cloudflare Workers",
   "bin": {
@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc && node scripts/bundle-worker.js",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "vitest"
   },
   "keywords": [
     "cloudflare",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   }
 }

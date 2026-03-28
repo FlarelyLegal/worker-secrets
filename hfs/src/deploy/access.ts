@@ -68,3 +68,11 @@ export async function updateAccessApp(
     auto_redirect_to_identity: false,
   });
 }
+
+export async function deleteAccessApp(
+  accountId: string,
+  appId: string,
+  auth: CfAuth,
+): Promise<void> {
+  await cfApi("DELETE", `/accounts/${accountId}/access/apps/${appId}`, auth);
+}
