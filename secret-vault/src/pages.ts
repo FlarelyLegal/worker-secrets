@@ -59,7 +59,7 @@ export function landingPage(brand: string, origin: string): string {
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <p class="desc">A self-hosted API for storing and retrieving secrets on Cloudflare's edge. Manage API keys, tokens, certificates, and credentials through the CLI or directly via the REST API. Built for teams that need auditable, scoped access to secrets from CI pipelines, Workers, and internal tools.</p>
+      <p class="desc">Self-hosted secret vault that runs on your own Cloudflare account. Store API keys, tokens, certificates, and credentials with a CLI or REST API. Protected by Cloudflare Access, supporting any identity provider, passkeys, YubiKeys, OTP, and hardware security keys. Like Vaultwarden, but on the edge.</p>
       <div class="links">
         <a class="link" href="/doc">
           <div><div class="link-label">API Reference</div><div class="link-path">${origin}/doc</div></div>
