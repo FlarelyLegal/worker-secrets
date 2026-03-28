@@ -11,12 +11,17 @@ export function registerTokenCommands(program: Command): void {
     .requiredOption("-n, --name <name>", "Friendly name (e.g. code-review-worker)")
     .option("-d, --description <desc>", "Description")
     .option("-s, --scopes <scopes>", "Comma-separated scopes: read,write,delete or * (default: *)")
+    .option("-r, --role <role>", "Assign a role (overrides scopes when set)")
     .action(
-      async (clientId: string, opts: { name: string; description?: string; scopes?: string }) => {
+      async (
+        clientId: string,
+        opts: { name: string; description?: string; scopes?: string; role?: string },
+      ) => {
         try {
           await client().registerToken(clientId, opts.name, {
             description: opts.description,
             scopes: opts.scopes,
+            role: opts.role,
           });
           console.log(
             `${chalk.green("✓")} Registered ${chalk.bold(opts.name)} (${clientId.slice(0, 12)}...)`,
@@ -69,7 +74,7 @@ export function registerTokenCommands(program: Command): void {
 
         console.log(
           chalk.dim(
-            `${"NAME".padEnd(maxName + 2) + "SCOPES".padEnd(16) + "LAST USED".padEnd(22)}CLIENT ID`,
+            `${"NAME".padEnd(maxName + 2)}${"SCOPES".padEnd(16)}${"ROLE".padEnd(12)}${"LAST USED".padEnd(22)}CLIENT ID`,
           ),
         );
 
@@ -77,6 +82,7 @@ export function registerTokenCommands(program: Command): void {
           console.log(
             chalk.bold(t.name.padEnd(maxName + 2)) +
               t.scopes.padEnd(16) +
+              (t.role || chalk.dim("—")).toString().padEnd(12) +
               (t.last_used_at || chalk.dim("never")).toString().padEnd(22) +
               chalk.dim(`${t.client_id.slice(0, 16)}...`),
           );

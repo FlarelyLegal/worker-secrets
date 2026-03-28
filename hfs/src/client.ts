@@ -199,12 +199,13 @@ export class VaultClient {
   async registerToken(
     clientId: string,
     name: string,
-    opts?: { description?: string; scopes?: string },
+    opts?: { description?: string; scopes?: string; role?: string },
   ): Promise<{ ok: boolean; client_id: string }> {
     return this.request("PUT", `/tokens/${encodeURIComponent(clientId)}`, {
       name,
       description: opts?.description || "",
       scopes: opts?.scopes || "*",
+      role: opts?.role,
     });
   }
 
