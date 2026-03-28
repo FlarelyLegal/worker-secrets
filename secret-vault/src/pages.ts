@@ -76,7 +76,7 @@ export function landingPage(brand: string, origin: string): string {
         </a>
       </div>
       <div class="footer">
-        <span class="footer-text">${brand} \u00b7 Powered by Cloudflare Workers</span>
+        <span class="footer-text">by <a href="https://homeflare.dev" style="color:var(--muted);text-decoration:none;">The HomeFlare Project</a> \u00b7 Powered by Cloudflare Workers</span>
         <span class="status">Healthy</span>
       </div>
     </div>
