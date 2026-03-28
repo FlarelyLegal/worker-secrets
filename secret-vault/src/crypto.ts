@@ -51,17 +51,19 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
-function toBase64(buf: ArrayBuffer | Uint8Array): string {
+function toBase64url(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function fromBase64(b64: string): Uint8Array {
-  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+function fromBase64url(b64: string): Uint8Array {
+  // Accepts both base64url and standard base64 (backwards compatible)
+  const standard = b64.replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(standard), (c) => c.charCodeAt(0));
 }
 
 // --- Encrypt / Decrypt ---
@@ -74,13 +76,13 @@ export async function encrypt(
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plaintext);
   const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
-  return { ciphertext: toBase64(encrypted), iv: toBase64(iv) };
+  return { ciphertext: toBase64url(encrypted), iv: toBase64url(iv) };
 }
 
 export async function decrypt(ciphertext: string, ivB64: string, hexKey: string): Promise<string> {
   const key = await getKey(hexKey);
-  const iv = fromBase64(ivB64);
-  const data = fromBase64(ciphertext);
+  const iv = fromBase64url(ivB64);
+  const data = fromBase64url(ciphertext);
   const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
   return new TextDecoder().decode(decrypted);
 }
@@ -97,7 +99,7 @@ export async function computeHmac(
   const hmacKey = await getHmacKey(hexKey);
   const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
   const sig = await crypto.subtle.sign("HMAC", hmacKey, data);
-  return toBase64(sig);
+  return toBase64url(sig);
 }
 
 export async function verifyHmac(
@@ -109,6 +111,6 @@ export async function verifyHmac(
 ): Promise<boolean> {
   const hmacKey = await getHmacKey(hexKey);
   const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
-  const sig = fromBase64(hmac);
+  const sig = fromBase64url(hmac);
   return crypto.subtle.verify("HMAC", hmacKey, sig, data);
 }
