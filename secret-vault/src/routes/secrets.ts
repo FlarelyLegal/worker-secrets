@@ -4,6 +4,7 @@ import { decrypt, encrypt } from "../crypto.js";
 import {
   ErrorSchema,
   KeyParam,
+  PaginationQuery,
   R403,
   R500,
   SecretCreateBody,
@@ -23,13 +24,19 @@ const listRoute = createRoute({
   method: "get",
   path: "/",
   tags: ["Secrets"],
-  summary: "List all secret keys (no values)",
+  summary: "List secret keys (no values)",
+  request: { query: PaginationQuery },
   responses: {
     200: {
       content: {
-        "application/json": { schema: z.object({ secrets: z.array(SecretListItemSchema) }) },
+        "application/json": {
+          schema: z.object({
+            secrets: z.array(SecretListItemSchema),
+            total: z.number(),
+          }),
+        },
       },
-      description: "List of secrets",
+      description: "Paginated list of secrets",
     },
     403: R403,
   },
@@ -39,11 +46,18 @@ secrets.openapi(listRoute, async (c) => {
   const auth = c.get("auth");
   if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
 
-  const { results } = await c.env.DB.prepare(
-    "SELECT key, description, created_at, updated_at FROM secrets ORDER BY key",
+  const { limit, offset } = c.req.valid("query");
+  const { results: countResult } = await c.env.DB.prepare(
+    "SELECT COUNT(*) as total FROM secrets",
   ).all();
+  const total = (countResult[0] as { total: number }).total;
+  const { results } = await c.env.DB.prepare(
+    "SELECT key, description, created_at, updated_at FROM secrets ORDER BY key LIMIT ? OFFSET ?",
+  )
+    .bind(limit, offset)
+    .all();
   await audit(c.env, auth, "list", null, c.get("ip"), c.get("ua"));
-  return c.json({ secrets: results as z.infer<typeof SecretListItemSchema>[] }, 200);
+  return c.json({ secrets: results as z.infer<typeof SecretListItemSchema>[], total }, 200);
 });
 
 // --- Get ---

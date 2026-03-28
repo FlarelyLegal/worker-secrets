@@ -1,6 +1,6 @@
 {
   "name": "@FlarelyLegal/hfs-cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Home Flare Secrets — CLI for managing secrets in your Cloudflare Workers vault",
   "bin": {

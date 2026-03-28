@@ -8,7 +8,8 @@ const pub = new OpenAPIHono<HonoEnv>();
 pub.get("/", (c) => {
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
-  return c.html(landingPage(brand, origin));
+  const repoUrl = c.env.REPO_URL;
+  return c.html(landingPage(brand, origin, repoUrl));
 });
 
 const healthRoute = createRoute({
@@ -25,13 +26,24 @@ const healthRoute = createRoute({
 });
 
 // biome-ignore lint/suspicious/noExplicitAny: content negotiation returns HTML or JSON
-pub.openapi(healthRoute, (c): any => {
+pub.openapi(healthRoute, async (c): Promise<any> => {
+  // Verify D1 is reachable
+  let dbOk = true;
+  try {
+    await c.env.DB.prepare("SELECT 1").run();
+  } catch {
+    dbOk = false;
+  }
+
   const accept = c.req.header("Accept") || "";
   if (accept.includes("text/html")) {
     const brand = c.env.BRAND_NAME || "Secret Vault";
-    return c.html(healthPage(brand));
+    return c.html(healthPage(brand, dbOk));
   }
-  return c.json({ status: "ok" }, 200);
+  return c.json(
+    { status: dbOk ? "ok" : "degraded", database: dbOk ? "ok" : "unreachable" },
+    dbOk ? 200 : 503,
+  );
 });
 
 export default pub;

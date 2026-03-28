@@ -16,9 +16,12 @@ function getJWKS(teamDomain: string) {
 // --- Auth ---
 
 export async function authenticate(request: Request, env: Env): Promise<AuthUser | null> {
-  // Dev-only bypass: set DEV_AUTH_BYPASS=true in .dev.vars for local testing.
-  // .dev.vars is gitignored and never deployed — this cannot reach production.
-  if (env.DEV_AUTH_BYPASS === "true") {
+  // Dev-only bypass for local testing (wrangler dev).
+  // Only activates when BOTH conditions are true:
+  //   1. DEV_AUTH_BYPASS=true in .dev.vars
+  //   2. Request is from localhost (not routed through Cloudflare)
+  // Production requests always have CF-Connecting-IP set by Cloudflare's edge.
+  if (env.DEV_AUTH_BYPASS === "true" && !request.headers.get("CF-Connecting-IP")) {
     return {
       method: "interactive",
       identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
@@ -93,6 +96,8 @@ export function hasScope(auth: AuthUser, required: string): boolean {
 
 // --- Audit logging ---
 
+const AUDIT_RETENTION_DAYS = 90;
+
 export async function audit(
   env: Env,
   auth: AuthUser,
@@ -113,4 +118,11 @@ export async function audit(
       userAgent,
     )
     .run();
+
+  // Probabilistic cleanup: ~1% of requests prune entries older than retention period
+  if (Math.random() < 0.01) {
+    await env.DB.prepare(
+      `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${AUDIT_RETENTION_DAYS} days')`,
+    ).run();
+  }
 }

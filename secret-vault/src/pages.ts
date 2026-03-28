@@ -16,7 +16,8 @@ function favicon(initial: string): string {
   return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${initial}</text></svg>" />`;
 }
 
-export function landingPage(brand: string, origin: string): string {
+export function landingPage(brand: string, origin: string, repoUrl?: string): string {
+  const repo = repoUrl || "https://github.com/FlarelyLegal/worker-secrets";
   const initial = brand.charAt(0).toUpperCase();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -98,11 +99,11 @@ export function landingPage(brand: string, origin: string): string {
           <div><div class="link-label">Health Check</div><div class="link-path">${origin}/health</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
-        <a class="link" href="https://github.com/FlarelyLegal/worker-secrets" target="_blank" rel="noopener">
+        <a class="link" href="${repo}" target="_blank" rel="noopener">
           <div><div class="link-label">GitHub</div><div class="link-path">Source code, issues, and documentation</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
-        <a class="link" href="https://github.com/FlarelyLegal/worker-secrets/releases/latest" target="_blank" rel="noopener">
+        <a class="link" href="${repo}/releases/latest" target="_blank" rel="noopener">
           <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g @FlarelyLegal/hfs-cli</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
@@ -117,7 +118,9 @@ export function landingPage(brand: string, origin: string): string {
 </html>`;
 }
 
-export function healthPage(brand: string): string {
+export function healthPage(brand: string, dbOk = true): string {
+  const statusText = dbOk ? "All systems healthy" : "Database unreachable";
+  const statusColor = dbOk ? "var(--green)" : "#ef4444";
   const initial = brand.charAt(0).toUpperCase();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -141,7 +144,7 @@ export function healthPage(brand: string): string {
   <div class="card">
     <div class="icon"><svg fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
     <h1>${brand}</h1>
-    <div class="status">All systems healthy</div>
+    <div class="status" style="color:${statusColor}">${statusText}</div>
     <div class="meta">
       <span>${new Date().toISOString()}</span>
       <span><a href="/">Home</a> \u00b7 <a href="/doc">API Docs</a></span>

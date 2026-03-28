@@ -34,10 +34,13 @@ export function registerAuthCommands(program: Command): void {
           stdio: ["inherit", "pipe", "inherit"],
         }).trim();
 
-        // cloudflared may prefix with "Successfully fetched your token:"
+        // cloudflared output varies by version — extract the JWT robustly
         const jwt = output.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)?.[0];
         if (!jwt) {
-          die("No JWT found in cloudflared output");
+          die(
+            "No JWT found in cloudflared output. " +
+              "Try updating cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
+          );
         }
 
         storeJwt(jwt);

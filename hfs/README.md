@@ -94,6 +94,18 @@ hfs token register abc.access -n ci-pipeline -s read
 hfs audit -n 50
 ```
 
+## Backup and restore
+
+```bash
+# Export all secrets (decrypted JSON)
+hfs export > vault-backup.json
+
+# Restore to same or different vault
+hfs import vault-backup.json --overwrite
+```
+
+The export file contains decrypted values. Store it securely and delete after use. If you change the `ENCRYPTION_KEY`, existing secrets become unreadable. Export first, rotate the key, then re-import.
+
 ## Security
 
 - **No fallback**: expired JWT or partial env vars = hard error

@@ -22,6 +22,23 @@ app.onError((err, c) => {
   return c.json({ error: "Internal error" }, 500);
 });
 
+// --- Security headers ---
+
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("X-Frame-Options", "DENY");
+  if (c.res.headers.get("Content-Type")?.includes("text/html")) {
+    const isScalar = c.req.path === "/doc";
+    c.res.headers.set(
+      "Content-Security-Policy",
+      isScalar
+        ? "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data: https:; font-src https://cdn.jsdelivr.net"
+        : "default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'",
+    );
+  }
+});
+
 // --- Public (before auth middleware) ---
 
 app.route("/", pub);

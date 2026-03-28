@@ -36,7 +36,10 @@ export const KeyParam = z.object({
   key: z
     .string()
     .min(1)
-    .refine((k) => k !== "export", { message: '"export" is a reserved key name' })
+    .max(256, "key exceeds 256 char limit")
+    .refine((k) => k !== "export" && k !== "import", {
+      message: '"export" and "import" are reserved key names',
+    })
     .openapi({ param: { name: "key", in: "path" }, example: "api-key" }),
 });
 
@@ -45,6 +48,28 @@ export const ClientIdParam = z.object({
     .string()
     .min(1)
     .openapi({ param: { name: "clientId", in: "path" }, example: "abc123.access" }),
+});
+
+export const PaginationQuery = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(500)
+    .default(100)
+    .openapi({
+      param: { name: "limit", in: "query" },
+      example: 100,
+    }),
+  offset: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .openapi({
+      param: { name: "offset", in: "query" },
+      example: 0,
+    }),
 });
 
 export const AuditQuery = z.object({
@@ -87,8 +112,8 @@ export const SecretExportItemSchema = z
   .openapi("SecretExportItem");
 
 export const SecretCreateBody = z.object({
-  value: z.string().min(1, "value is required"),
-  description: z.string().optional().default(""),
+  value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
+  description: z.string().max(1000, "description exceeds 1000 char limit").optional().default(""),
 });
 
 export const SecretCreateResponse = z
@@ -107,9 +132,9 @@ export const SecretDeleteResponse = z
 
 export const SecretImportItem = z
   .object({
-    key: z.string().min(1, "key is required"),
-    value: z.string().min(1, "value is required"),
-    description: z.string().optional().default(""),
+    key: z.string().min(1, "key is required").max(256, "key exceeds 256 char limit"),
+    value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
+    description: z.string().max(1000).optional().default(""),
   })
   .passthrough();
 

@@ -6,6 +6,7 @@ export interface Env {
   POLICY_AUD: string; // Access application AUD tag
   PROJECT_NAME?: string; // worker/DB name prefix (default: "secret-vault")
   BRAND_NAME?: string; // display name in UI (default: "Secret Vault")
+  REPO_URL?: string; // GitHub repo URL for landing page links
   DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only — never set in production
 }
 

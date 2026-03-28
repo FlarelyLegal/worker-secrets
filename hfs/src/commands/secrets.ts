@@ -129,10 +129,11 @@ export function registerSecretCommands(program: Command): void {
         const c = client();
         let secrets: Awaited<ReturnType<typeof c.exportAll>>;
         try {
-          // Bulk export (single request, interactive auth only)
           secrets = await c.exportAll();
         } catch {
-          // Fall back to N+1 for service tokens
+          console.error(
+            chalk.dim("Bulk export unavailable (interactive only), fetching individually..."),
+          );
           const list = await c.list();
           secrets = [];
           for (const s of list) {
@@ -159,11 +160,12 @@ export function registerSecretCommands(program: Command): void {
 
         const c = client();
         try {
-          // Bulk import (single request, interactive auth only)
           const result = await c.importAll(valid, opts.overwrite ?? false);
           console.log(chalk.dim(`${result.imported} imported, ${result.skipped} skipped`));
         } catch {
-          // Fall back to N+1 for service tokens
+          console.error(
+            chalk.dim("Bulk import unavailable (interactive only), importing individually..."),
+          );
           const existing = await c.list();
           const existingKeys = new Set(existing.map((s) => s.key));
           let imported = 0;

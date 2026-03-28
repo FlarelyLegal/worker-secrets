@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-03-28
+
+### Features
+
+- V0.3.0 — security hardening, pagination, CI, and open-source readiness
+
 ## [0.2.0] - 2026-03-28
 
 ### Bug Fixes
@@ -32,4 +38,5 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous
 
 - Update actions to latest versions, use Node 24
+- Regenerate changelog with all v0.2.0 commits
 

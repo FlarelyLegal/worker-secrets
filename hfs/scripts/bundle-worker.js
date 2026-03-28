@@ -1,10 +1,18 @@
-// Copies secret-vault source into dist/worker/ for bundled deployment
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+// Syncs version + copies secret-vault source into dist/worker/ for bundled deployment
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const src = join(root, "..", "secret-vault");
+const repoRoot = join(root, "..");
+const src = join(repoRoot, "secret-vault");
+
+// Auto-sync version from VERSION file
+const versionFile = join(repoRoot, "VERSION");
+if (existsSync(versionFile)) {
+  const version = readFileSync(versionFile, "utf-8").trim();
+  writeFileSync(join(src, "src", "version.ts"), `export const VERSION = "${version}";\n`);
+}
 const dest = join(root, "dist", "worker");
 
 rmSync(dest, { recursive: true, force: true });
