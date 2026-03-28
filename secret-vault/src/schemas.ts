@@ -56,19 +56,37 @@ export const AuditQuery = z.object({
     .min(1)
     .max(500)
     .default(50)
-    .openapi({
-      param: { name: "limit", in: "query" },
-      example: 50,
-    }),
+    .openapi({ param: { name: "limit", in: "query" }, example: 50 }),
   offset: z.coerce
     .number()
     .int()
     .min(0)
     .default(0)
-    .openapi({
-      param: { name: "offset", in: "query" },
-      example: 0,
-    }),
+    .openapi({ param: { name: "offset", in: "query" }, example: 0 }),
+  identity: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "identity", in: "query" }, example: "you@example.com" }),
+  action: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "action", in: "query" }, example: "get" }),
+  key: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "key", in: "query" }, example: "api-key" }),
+  method: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "method", in: "query" }, example: "interactive" }),
+  from: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "from", in: "query" }, example: "2026-03-01" }),
+  to: z
+    .string()
+    .optional()
+    .openapi({ param: { name: "to", in: "query" }, example: "2026-03-31" }),
 });
 
 // --- Scopes (shared by tokens and RBAC) ---

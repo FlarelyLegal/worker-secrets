@@ -56,11 +56,39 @@ admin.openapi(auditRoute, async (c) => {
   const auth = c.get("auth");
   if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
 
-  const { limit, offset } = c.req.valid("query");
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-  )
-    .bind(limit, offset)
+  const { limit, offset, identity, action, key, method, from, to } = c.req.valid("query");
+  const conditions: string[] = [];
+  const binds: unknown[] = [];
+
+  if (identity) {
+    conditions.push("identity = ?");
+    binds.push(identity);
+  }
+  if (action) {
+    conditions.push("action = ?");
+    binds.push(action);
+  }
+  if (key) {
+    conditions.push("secret_key = ?");
+    binds.push(key);
+  }
+  if (method) {
+    conditions.push("method = ?");
+    binds.push(method);
+  }
+  if (from) {
+    conditions.push("timestamp >= ?");
+    binds.push(from);
+  }
+  if (to) {
+    conditions.push("timestamp <= ?");
+    binds.push(to);
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const sql = `SELECT * FROM audit_log${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
+  const { results } = await c.env.DB.prepare(sql)
+    .bind(...binds, limit, offset)
     .all();
 
   return c.json({ entries: results as z.infer<typeof AuditEntrySchema>[] }, 200);

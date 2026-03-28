@@ -215,10 +215,25 @@ export class VaultClient {
 
   // --- Audit ---
 
-  async audit(opts?: { limit?: number; offset?: number }): Promise<AuditEntry[]> {
+  async audit(opts?: {
+    limit?: number;
+    offset?: number;
+    identity?: string;
+    action?: string;
+    key?: string;
+    method?: string;
+    from?: string;
+    to?: string;
+  }): Promise<AuditEntry[]> {
     const params = new URLSearchParams();
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.identity) params.set("identity", opts.identity);
+    if (opts?.action) params.set("action", opts.action);
+    if (opts?.key) params.set("key", opts.key);
+    if (opts?.method) params.set("method", opts.method);
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
     const q = params.toString() ? `?${params}` : "";
     const data = await this.request<{ entries: AuditEntry[] }>("GET", `/audit${q}`);
     return data.entries;
