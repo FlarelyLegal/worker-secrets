@@ -16,7 +16,7 @@ export function registerAuthCommands(program: Command): void {
       }
 
       try {
-        execFileSync("cloudflared", ["--version"], { stdio: "ignore" });
+        execFileSync("cloudflared", ["--version"], { stdio: "ignore", timeout: 10000 });
       } catch {
         die(
           "cloudflared not found. Install it: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/",
@@ -32,6 +32,7 @@ export function registerAuthCommands(program: Command): void {
         const output = execFileSync("cloudflared", ["access", "login", loginUrl], {
           encoding: "utf-8",
           stdio: ["inherit", "pipe", "inherit"],
+          timeout: 120000,
         }).trim();
 
         // cloudflared output varies by version — extract the JWT robustly
@@ -55,7 +56,11 @@ export function registerAuthCommands(program: Command): void {
           }
         }
       } catch (e) {
-        die(`cloudflared login failed: ${errorMessage(e)}`);
+        const msg = errorMessage(e);
+        if (msg.includes("ETIMEDOUT") || msg.includes("timed out")) {
+          die("Authentication timed out. Try again.");
+        }
+        die(`cloudflared login failed: ${msg}`);
       }
     });
 
@@ -77,9 +82,12 @@ export function registerAuthCommands(program: Command): void {
       const base = url.replace(/\/+$/, "");
       try {
         const res = await fetch(`${base}/health`);
-        const data = (await res.json()) as { status?: string };
+        const data = (await res.json()) as { status?: string; database?: string };
         if (data.status === "ok") {
           console.log(`${chalk.green("✓")} Vault is healthy ${chalk.dim(`(${base})`)}`);
+        } else if (data.status === "degraded") {
+          console.error(chalk.yellow(`⚠ Vault degraded: database ${data.database || "issue"}`));
+          process.exit(1);
         } else {
           console.error(chalk.red(`✗ Unexpected response: ${JSON.stringify(data)}`));
           process.exit(1);

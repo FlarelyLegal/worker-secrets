@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1] - 2026-03-28
+
+### Bug Fixes
+
+- V0.3.1 — CLI robustness, pagination, timeouts, and UX polish
+
+### Miscellaneous
+
+- Add Dependabot for npm and GitHub Actions updates
+
 ## [0.3.0] - 2026-03-28
 
 ### Features
