@@ -16,11 +16,12 @@ Source: `secret-vault/src/routes/`
 | Method | Path | Scope | Description |
 |--------|------|-------|-------------|
 | `GET` | `/whoami` | any | Auth method, identity, name, scopes |
-| `GET` | `/secrets?limit=&offset=` | read | Paginated list (returns `{ secrets, total }`) |
+| `GET` | `/secrets?limit=&offset=&search=` | read | Paginated list (returns `{ secrets, total }`); `search` filters keys by pattern |
 | `GET` | `/secrets/export` | interactive + read | Bulk export all secrets decrypted |
 | `POST` | `/secrets/import` | interactive + write | Bulk import from JSON (atomic via db.batch) |
 | `GET` | `/secrets/{key}` | read | Get decrypted secret (includes `created_by`, `updated_by`) |
-| `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys) |
+| `GET` | `/secrets/{key}/versions` | read | List previous versions of a secret (returns version metadata) |
+| `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys); computes HMAC-SHA256 integrity tag |
 | `DELETE` | `/secrets/{key}` | delete | Delete a secret |
 | `GET` | `/audit?limit=&offset=` | interactive only | Paginated audit log |
 | `GET` | `/tokens` | interactive only | List registered service tokens |

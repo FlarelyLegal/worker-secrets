@@ -20,6 +20,7 @@ description: Optimize the secret-vault Worker and hfs CLI for performance, laten
 - [x] Audit log retention — background cleanup via `waitUntil()`, 90-day retention
 - [x] Bulk import atomic — `db.batch()` for all-or-nothing imports
 - [x] CLI bulk export — tries `/secrets/export` first, falls back to N+1
+- [x] HMAC key cached at module level — HKDF derivation runs once per isolate, not per request
 
 ## REMAINING ISSUES
 

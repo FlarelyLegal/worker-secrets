@@ -15,6 +15,7 @@ interface Env {
   BRAND_NAME: string;       // brand name for UI/landing page
   REPO_URL: string;         // repository URL for links
   DEV_AUTH_BYPASS: string;  // dev-only: bypass auth when set (requires no CF-Connecting-IP)
+  CORS_ORIGINS?: string;   // optional comma-separated allowed origins for CORS
 }
 ```
 
@@ -46,6 +47,13 @@ decrypt(ciphertext: string, ivB64: string, hexKey: string): Promise<string>
 ```
 
 Both use AES-256-GCM. `iv` is a random 12-byte nonce, base64-encoded for storage.
+
+```typescript
+computeHmac(key: string, ciphertext: string, iv: string, hexKey: string): Promise<string>
+verifyHmac(key: string, ciphertext: string, iv: string, hmac: string, hexKey: string): Promise<boolean>
+```
+
+HMAC-SHA256 integrity binding. The HMAC key is derived from `ENCRYPTION_KEY` via HKDF (`crypto.subtle.deriveKey`), binding key name + ciphertext + IV. Computed on every write, verified on every read.
 
 ## Auth helper
 

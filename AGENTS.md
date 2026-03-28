@@ -35,6 +35,8 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 - **NEVER** log decrypted values, encryption keys, or tokens (`console.log` goes to `wrangler tail`)
 - **NEVER** expose `ENCRYPTION_KEY` outside `encrypt()`/`decrypt()` helpers
 - **ALWAYS** wrap `encrypt()`/`decrypt()` in try-catch → return `{ error }` JSON, not stack traces
+- **ALWAYS** compute and store HMAC on write, verify on read — integrity binds key + ciphertext + IV
+- HKDF-derived HMAC key for integrity binding — derived from `ENCRYPTION_KEY` via `crypto.subtle.deriveKey()`
 - CryptoKey and JWKS set are cached at module level — do not recreate per request
 
 ### Auth (CRITICAL)
@@ -98,6 +100,8 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Auth mode fallback | Silent security downgrade | Hard error on partial config |
 | Third-party crypto | Unnecessary dependency | `crypto.subtle` (Workers built-in) |
 | `new URL()` / `importKey()` in handler | Per-request overhead | Cache at module level |
+| Storing ciphertext without HMAC | No tamper detection | Compute HMAC on write, verify on read |
+| Using `ENCRYPTION_KEY` directly as HMAC key | Key separation violation | Derive HMAC key via HKDF |
 
 ## SKILLS
 
@@ -143,4 +147,4 @@ npm run dev                     # Watch mode
 
 - No rate limiting (relying on Cloudflare edge protection)
 - No encryption key rotation (changing the key breaks all secrets)
-- No test infrastructure yet
+- Tests exist (28 total: 23 Worker + 5 CLI) and run in CI (`ci.yml`) and release (`release.yml`) workflows

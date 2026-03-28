@@ -38,7 +38,7 @@ interface AuditEntry {
 ```typescript
 class VaultClient {
   // Secrets
-  list(): Promise<SecretEntry[]>
+  list(opts?: { limit?: number; offset?: number; search?: string }): Promise<SecretEntry[]>
   get(key: string): Promise<SecretEntry>
   set(key: string, value: string, description?: string): Promise<{ ok: boolean; key: string }>
   delete(key: string): Promise<{ ok: boolean; deleted: string }>
@@ -49,7 +49,7 @@ class VaultClient {
   revokeToken(clientId: string): Promise<{ ok: boolean; revoked: string }>
 
   // Audit
-  audit(limit?: number): Promise<AuditEntry[]>
+  audit(opts?: { limit?: number; offset?: number }): Promise<AuditEntry[]>
 
   // Info
   whoami(): Promise<{ method: string; identity: string; name: string; scopes: string[] }>
@@ -61,3 +61,7 @@ class VaultClient {
 
 - `request<T>(method, path, body?)` — handles auth headers, JSON parse, error throwing
 - Auth headers set automatically based on `AuthMode` (jwt cookie or service token headers)
+
+## Copy/rename (CLI-only)
+
+`hfs cp` copies a secret to a new key. With `--move`, it deletes the source after copying. This is implemented at the CLI level using `get()` + `set()` + `delete()` — there is no `cp` method on `VaultClient`.

@@ -22,6 +22,12 @@ This is an encrypted secret store — security mistakes leak credentials.
 - `ENCRYPTION_KEY` is a Wrangler secret — **NEVER** in code or wrangler.jsonc
 - Changing the key makes all existing secrets unreadable (no rotation support)
 
+### HMAC integrity
+- **ALWAYS** compute HMAC-SHA256 on write, verify on read
+- HMAC key derived via HKDF from `ENCRYPTION_KEY` — **NEVER** use the encryption key directly as HMAC key
+- HMAC binds key name + ciphertext + IV, preventing ciphertext swap attacks
+- Tamper detection: if HMAC verification fails, return error — do not decrypt
+
 ### Scope enforcement
 - **ALWAYS** call `hasScope(auth, scope)` before every data operation
 - Scopes: `read`, `write`, `delete`, `*`
@@ -54,6 +60,7 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 - [ ] Crypto ops wrapped in try-catch
 - [ ] No new routes above auth middleware in `index.ts` unless intentionally public
 - [ ] Error responses don't leak internals
+- [ ] Verify HMAC computed on write and verified on read for new endpoints touching secrets
 
 ## KNOWN GAPS
 

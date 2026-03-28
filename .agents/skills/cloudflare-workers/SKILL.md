@@ -41,6 +41,7 @@ See [D1 patterns](references/d1-patterns.md) for query patterns used in this pro
 - AES-256-GCM, 12-byte random IV per operation
 - **ALWAYS** cache CryptoKey at module level — `importKey()` is async and expensive
 - Base64 encode ciphertext and IV for D1 TEXT columns
+- HKDF key derivation for HMAC: use `crypto.subtle.deriveKey()` with `HKDF` algorithm, SHA-256, and a fixed info/salt to derive a separate HMAC signing key from `ENCRYPTION_KEY` — cache the derived key at module level
 
 ### Secrets and Config
 

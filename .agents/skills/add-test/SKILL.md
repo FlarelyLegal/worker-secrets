@@ -5,7 +5,7 @@ description: Write tests for the secret-vault Worker and hfs CLI. Use when addin
 
 # Add tests
 
-No test infrastructure exists yet. This covers setup and patterns.
+28 tests exist across Worker (23) and CLI (5). Tests run in CI (`ci.yml`) and release (`release.yml`) workflows. This covers patterns and guidance for adding more.
 
 ## CONVENTIONS
 

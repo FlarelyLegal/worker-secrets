@@ -15,6 +15,7 @@
 | `{"error":"Invalid scope: X"}` | 400 | Unrecognized scope string | Valid: `read`, `write`, `delete`, `*` |
 | `{"error":"Encryption failed"}` | 500 | `ENCRYPTION_KEY` invalid or crypto error | Verify key is 64-char hex |
 | `{"error":"Decryption failed"}` | 500 | Secret encrypted with a different key or corrupted | Verify `ENCRYPTION_KEY` matches |
+| `{"error":"Integrity check failed"}` | 500 | HMAC verification failed — secret may have been tampered with or ciphertext swapped | Investigate tampering; verify `ENCRYPTION_KEY` is correct and data has not been modified outside the API |
 | `{"error":"ENCRYPTION_KEY must be exactly 64 hex characters"}` | 500 | Invalid key format | Regenerate with `npm run generate-keys` |
 | `{"error":"value exceeds 1MB limit"}` | 400 | Secret value too large | Reduce value size |
 | `{"error":"key exceeds 256 char limit"}` | 400 | Key name too long | Use shorter key |
