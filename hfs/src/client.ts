@@ -25,6 +25,7 @@ export interface AuditEntry {
   action: string;
   secret_key: string | null;
   ip: string | null;
+  user_agent: string | null;
 }
 
 export interface VaultError {
@@ -58,40 +59,64 @@ export class VaultClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.base}${path}`, {
-      method,
-      headers: this.headers,
-      redirect: "manual",
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
-    // Cloudflare Access redirects to login page when session is expired/invalid
-    if (res.status >= 300 && res.status < 400) {
-      throw new Error("Session expired or unauthorized. Run `hfs login` to re-authenticate.");
-    }
-
-    let data: unknown;
     try {
-      data = await res.json();
-    } catch {
-      throw new Error(
-        `Non-JSON response (HTTP ${res.status}). Is the vault URL correct and the Worker deployed?`,
-      );
-    }
+      const res = await fetch(`${this.base}${path}`, {
+        method,
+        headers: this.headers,
+        redirect: "manual",
+        signal: controller.signal,
+        body: body ? JSON.stringify(body) : undefined,
+      });
 
-    if (!res.ok) {
-      const err = data as VaultError;
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
+      // Cloudflare Access redirects to login page when session is expired/invalid
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get("Location") || "";
+        if (location.includes("cloudflareaccess.com") || location.includes("/cdn-cgi/access/")) {
+          throw new Error("Session expired or unauthorized. Run `hfs login` to re-authenticate.");
+        }
+        // For non-Access redirects, throw a generic error
+        throw new Error(`Unexpected redirect (HTTP ${res.status}) to ${location}`);
+      }
 
-    return data as T;
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          `Non-JSON response (HTTP ${res.status}). Is the vault URL correct and the Worker deployed?`,
+        );
+      }
+
+      if (!res.ok) {
+        const err = data as VaultError;
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      return data as T;
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new Error("Request timed out after 30s. Check your connection and vault URL.");
+      }
+      throw e;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   // --- Secrets ---
 
-  async list(): Promise<SecretEntry[]> {
-    const data = await this.request<{ secrets: SecretEntry[] }>("GET", "/secrets");
-    return data.secrets;
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ secrets: SecretEntry[]; total: number }> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const q = params.toString() ? `?${params}` : "";
+    return this.request("GET", `/secrets${q}`);
   }
 
   async get(key: string): Promise<SecretEntry> {
@@ -160,9 +185,5 @@ export class VaultClient {
 
   async whoami(): Promise<{ method: string; identity: string; name: string; scopes: string[] }> {
     return this.request("GET", "/whoami");
-  }
-
-  async health(): Promise<{ status: string }> {
-    return this.request("GET", "/health");
   }
 }

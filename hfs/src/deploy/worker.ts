@@ -66,6 +66,6 @@ export function dryRunDeploy(): void {
   execFileSync("npx", ["wrangler", "deploy", "--dry-run", "--outdir", ".dry-run-out"], {
     cwd: WORKER_DIR,
     stdio: ["pipe", "pipe", "pipe"],
-    timeout: 30000,
+    timeout: 60000,
   });
 }

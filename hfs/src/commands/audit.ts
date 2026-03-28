@@ -22,8 +22,10 @@ export function registerAuditCommands(program: Command): void {
           return;
         }
 
+        const maxAction = Math.max(...entries.map((e) => e.action.length), 6);
+
         for (const e of entries) {
-          const action = e.action.padEnd(8);
+          const action = e.action.padEnd(maxAction + 2);
           const key = e.secret_key || "";
           const who = e.method === "interactive" ? chalk.cyan("you") : chalk.yellow(e.method);
           console.log(`${chalk.dim(e.timestamp)}  ${who.padEnd(25)}${chalk.bold(action)}  ${key}`);
