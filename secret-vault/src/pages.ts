@@ -59,7 +59,6 @@ export function landingPage(brand: string, origin: string): string {
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <h1>${brand}</h1>
       <p class="desc">Encrypted secret management powered by Cloudflare Workers and D1. All secrets are encrypted at rest with AES-256-GCM. Authentication is handled through Cloudflare Access with two paths for humans and machines.</p>
       <div class="links">
         <a class="link" href="/doc">
