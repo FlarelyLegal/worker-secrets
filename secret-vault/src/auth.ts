@@ -138,6 +138,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   }
 
   // Fallback: ALLOWED_EMAILS env var (migration path for existing deployments)
+  // Grants reader role only — add user to users table for elevated access
   if (env.ALLOWED_EMAILS) {
     const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
     if (allowed.includes(email.toLowerCase())) {
@@ -145,8 +146,8 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
         method: "interactive",
         identity: email,
         name: email.split("@")[0],
-        role: "admin",
-        scopes: ["*"],
+        role: "reader",
+        scopes: ["read"],
       };
     }
   }

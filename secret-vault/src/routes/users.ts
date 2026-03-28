@@ -6,6 +6,13 @@ import type { HonoEnv } from "../types.js";
 
 const users = new OpenAPIHono<HonoEnv>();
 
+async function adminCount(db: D1Database): Promise<number> {
+  const row = await db
+    .prepare("SELECT COUNT(*) as total FROM users WHERE role = 'admin' AND enabled = 1")
+    .first<{ total: number }>();
+  return row?.total ?? 0;
+}
+
 // Admin-only middleware
 users.use("*", async (c, next) => {
   const auth = c.get("auth");
@@ -139,6 +146,18 @@ users.openapi(updateRoute, async (c) => {
     if (!roleExists) return c.json({ error: `Role '${body.role}' does not exist` }, 400);
   }
 
+  // Prevent removing the last admin
+  const current = await c.env.DB.prepare("SELECT role, enabled FROM users WHERE email = ?")
+    .bind(email.toLowerCase())
+    .first<{ role: string; enabled: number }>();
+  if (current?.role === "admin" && current.enabled) {
+    const wouldLoseAdmin =
+      (body.role !== undefined && body.role !== "admin") || body.enabled === false;
+    if (wouldLoseAdmin && (await adminCount(c.env.DB)) <= 1) {
+      return c.json({ error: "Cannot remove the last admin" }, 400);
+    }
+  }
+
   const sets: string[] = [];
   const binds: unknown[] = [];
   if (body.name !== undefined) {
@@ -200,6 +219,14 @@ users.openapi(deleteRoute, async (c) => {
   // Prevent self-deletion
   if (email.toLowerCase() === c.get("auth").identity.toLowerCase()) {
     return c.json({ error: "Cannot delete yourself" }, 400);
+  }
+
+  // Prevent deleting the last admin
+  const target = await c.env.DB.prepare("SELECT role, enabled FROM users WHERE email = ?")
+    .bind(email.toLowerCase())
+    .first<{ role: string; enabled: number }>();
+  if (target?.role === "admin" && target.enabled && (await adminCount(c.env.DB)) <= 1) {
+    return c.json({ error: "Cannot delete the last admin" }, 400);
   }
 
   const result = await c.env.DB.prepare("DELETE FROM users WHERE email = ?")
