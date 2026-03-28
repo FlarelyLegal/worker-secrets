@@ -100,7 +100,7 @@ export function landingPage(brand: string, origin: string): string {
           <span class="link-arrow">\u2192</span>
         </a>
         <a class="link" href="https://github.com/FlarelyLegal/worker-secrets/releases/latest" target="_blank" rel="noopener">
-          <div><div class="link-label">Install CLI</div><div class="link-path">Download the latest release</div></div>
+          <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g @FlarelyLegal/hfs-cli</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
       </div>
