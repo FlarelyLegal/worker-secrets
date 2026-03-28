@@ -73,6 +73,5 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 
 ## KNOWN GAPS
 
-- No rate limiting — only Cloudflare edge DDoS protection
-- No key rotation — changing `ENCRYPTION_KEY` breaks all secrets
-- Email case in audit — stored as-is from JWT, could show mixed case
+- No rate limiting — relying on Cloudflare edge protection
+- No encryption key rotation — changing `ENCRYPTION_KEY` breaks all secrets (export first, rotate, re-import)
