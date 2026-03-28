@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
 import { computeHmac, decrypt, encrypt } from "../crypto.js";
+import { getFlagValue } from "../flags.js";
 import { R403, R500 } from "../schemas.js";
 import {
   SecretExportItemSchema,
@@ -34,6 +35,9 @@ bulk.openapi(exportRoute, async (c) => {
   const auth = c.get("auth");
   if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
   if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+
+  const exportDisabled = await getFlagValue(c.env.FLAGS, "disable_export", false);
+  if (exportDisabled) return c.json({ error: "Bulk export is disabled" }, 403);
 
   const { results } = await c.env.DB.prepare("SELECT * FROM secrets ORDER BY key").all();
   const rows = results as SecretRow[];

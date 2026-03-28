@@ -117,7 +117,9 @@ app.get("/doc/json", (c) => {
   );
 });
 
-app.get("/doc", (c) => {
+app.get("/doc", async (c) => {
+  const enabled = await getFlagValue(c.env.FLAGS, "public_pages_enabled", true);
+  if (!enabled) return c.notFound();
   const brand = c.env.BRAND_NAME || "Secret Vault";
   return c.html(`<!DOCTYPE html>
 <html>

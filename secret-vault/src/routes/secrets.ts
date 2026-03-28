@@ -97,11 +97,15 @@ secrets.openapi(getRoute, async (c) => {
 
   if (!row) return c.json({ error: "Secret not found" }, 404);
 
-  // Verify HMAC integrity (if present — legacy secrets may not have one)
+  // Verify HMAC integrity
   if (row.hmac) {
     const valid = await verifyHmac(key, row.value, row.iv, row.hmac, c.env.ENCRYPTION_KEY);
     if (!valid)
       return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
+  } else {
+    const hmacRequired = await getFlagValue(c.env.FLAGS, "hmac_required", false);
+    if (hmacRequired)
+      return c.json({ error: "Secret missing HMAC integrity tag — re-save to add one" }, 500);
   }
 
   let plaintext: string;
@@ -146,9 +150,32 @@ secrets.openapi(putRoute, async (c) => {
 
   const { key } = c.req.valid("param");
   const { value, description, tags } = c.req.valid("json");
+
+  // Flag-driven input requirements
+  if (!description) {
+    const reqDesc = await getFlagValue(c.env.FLAGS, "require_description", false);
+    if (reqDesc) return c.json({ error: "Description is required" }, 400);
+  }
+  if (!tags) {
+    const reqTags = await getFlagValue(c.env.FLAGS, "require_tags", false);
+    if (reqTags) return c.json({ error: "Tags are required" }, 400);
+  }
+
   const existing = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")
     .bind(key)
     .first<SecretRow>();
+
+  // Enforce max_secrets limit on new keys
+  if (!existing) {
+    const maxSecrets = await getFlagValue(c.env.FLAGS, "max_secrets", 0);
+    if (maxSecrets > 0) {
+      const count = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
+        total: number;
+      }>();
+      if (count && count.total >= maxSecrets)
+        return c.json({ error: `Vault limit reached (${maxSecrets} secrets)` }, 400);
+    }
+  }
   const versioningEnabled = await getFlagValue(c.env.FLAGS, "versioning_enabled", true);
   if (versioningEnabled && existing) {
     await c.env.DB.prepare(

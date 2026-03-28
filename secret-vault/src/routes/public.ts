@@ -1,11 +1,14 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { getFlagValue } from "../flags.js";
 import { healthPage, landingPage } from "../pages.js";
 import { HealthSchema } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
 
 const pub = new OpenAPIHono<HonoEnv>();
 
-pub.get("/", (c) => {
+pub.get("/", async (c) => {
+  const enabled = await getFlagValue(c.env.FLAGS, "public_pages_enabled", true);
+  if (!enabled) return c.notFound();
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
   const repoUrl = c.env.REPO_URL;
