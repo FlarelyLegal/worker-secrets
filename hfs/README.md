@@ -132,5 +132,6 @@ The export file contains decrypted values. Store it securely and delete after us
 
 - **No fallback**: expired JWT or partial env vars = hard error
 - **No credentials on disk**: config holds URL + short-lived JWT only
-- **All access audited**: every operation logged with identity + IP
+- **All access audited**: every operation logged with identity, IP, and user agent
 - **Unregistered tokens rejected**: Access token alone is not enough
+- **HMAC integrity**: every secret cryptographically bound to its key name, tamper-evident at rest

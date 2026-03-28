@@ -85,6 +85,10 @@ export function landingPage(
           <div class="feature-desc">Every operation recorded with identity, action, secret key, IP, and user agent. Indexed for fast queries by secret or action type.</div>
         </div>
         <div class="feature">
+          <div class="feature-title">HMAC integrity</div>
+          <div class="feature-desc">Every secret is bound to its key name via HMAC-SHA256 with a derived key (HKDF). Detects tampering or ciphertext swaps at rest.</div>
+        </div>
+        <div class="feature">
           <div class="feature-title">Token registration</div>
           <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
         </div>

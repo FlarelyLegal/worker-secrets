@@ -13,7 +13,7 @@ Encrypted secret management for Cloudflare Workers — a self-hosted vault with 
 [![skill: deploy](https://img.shields.io/badge/skill-deploy-5D5CDE)](.agents/skills/deploy/SKILL.md)
 [![skill: review-security](https://img.shields.io/badge/skill-review--security-5D5CDE)](.agents/skills/review-security/SKILL.md)
 
-AES-256-GCM encryption at rest in D1. Dual auth via Cloudflare Access — interactive (IdP + hardware key) or registered service tokens with named identities, scoped permissions, and full audit logging.
+AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual auth via Cloudflare Access with any IdP and hardware keys, or registered service tokens with named identities and scoped permissions. Every operation audit-logged.
 
 ## Packages
 

@@ -74,9 +74,10 @@ Service Bindings are not supported — auth requires a valid Access JWT.
 
 ## Security
 
-- **Encryption at rest**: AES-256-GCM, per-secret random IV
+- **Encryption at rest**: AES-256-GCM with per-secret random IV (PQC-safe symmetric)
+- **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key, detecting tampering or ciphertext swaps at rest
 - **Dual auth**: Access validates at edge, Worker validates again as defense-in-depth
 - **Hardware key enforcement**: Interactive policy requires `hwk` (FIDO2/passkey/YubiKey)
 - **Registered tokens only**: Valid Access token is rejected until registered with name + scopes
-- **Full audit log**: Every operation logged with identity, action, key, IP, timestamp
-- **Zod validation**: All inputs validated via OpenAPI schemas
+- **Full audit log**: Every operation logged with identity, action, key, IP, user agent
+- **Zod validation**: All inputs validated via OpenAPI schemas with size limits
