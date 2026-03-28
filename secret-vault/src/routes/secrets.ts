@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
-import { decrypt, encrypt } from "../crypto.js";
+import { computeHmac, decrypt, encrypt, verifyHmac } from "../crypto.js";
 import {
   ErrorSchema,
   KeyParam,
@@ -19,7 +19,6 @@ import type { HonoEnv } from "../types.js";
 const secrets = new OpenAPIHono<HonoEnv>();
 
 // --- List ---
-
 const listRoute = createRoute({
   method: "get",
   path: "/",
@@ -46,22 +45,32 @@ secrets.openapi(listRoute, async (c) => {
   const auth = c.get("auth");
   if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
 
-  const { limit, offset } = c.req.valid("query");
-  const { results: countResult } = await c.env.DB.prepare(
-    "SELECT COUNT(*) as total FROM secrets",
-  ).all();
+  const { limit, offset, search } = c.req.valid("query");
+  let countSql = "SELECT COUNT(*) as total FROM secrets";
+  let listSql =
+    "SELECT key, description, created_by, updated_by, created_at, updated_at FROM secrets";
+  const binds: unknown[] = [];
+
+  if (search) {
+    const where = " WHERE key LIKE ?";
+    countSql += where;
+    listSql += where;
+    binds.push(`%${search}%`);
+  }
+
+  listSql += " ORDER BY key LIMIT ? OFFSET ?";
+  const { results: countResult } = await c.env.DB.prepare(countSql)
+    .bind(...binds)
+    .all();
   const total = (countResult[0] as { total: number }).total;
-  const { results } = await c.env.DB.prepare(
-    "SELECT key, description, created_by, updated_by, created_at, updated_at FROM secrets ORDER BY key LIMIT ? OFFSET ?",
-  )
-    .bind(limit, offset)
+  const { results } = await c.env.DB.prepare(listSql)
+    .bind(...binds, limit, offset)
     .all();
   await audit(c.env, auth, "list", null, c.get("ip"), c.get("ua"));
   return c.json({ secrets: results as z.infer<typeof SecretListItemSchema>[], total }, 200);
 });
 
 // --- Get ---
-
 const getRoute = createRoute({
   method: "get",
   path: "/{key}",
@@ -90,6 +99,13 @@ secrets.openapi(getRoute, async (c) => {
 
   if (!row) return c.json({ error: "Secret not found" }, 404);
 
+  // Verify HMAC integrity (if present — legacy secrets may not have one)
+  if (row.hmac) {
+    const valid = await verifyHmac(key, row.value, row.iv, row.hmac, c.env.ENCRYPTION_KEY);
+    if (!valid)
+      return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
+  }
+
   let plaintext: string;
   try {
     plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY);
@@ -97,18 +113,57 @@ secrets.openapi(getRoute, async (c) => {
     return c.json({ error: "Decryption failed" }, 500);
   }
   await audit(c.env, auth, "get", key, c.get("ip"), c.get("ua"));
+  const { key: k, description, created_by, updated_by, created_at, updated_at } = row;
   return c.json(
-    {
-      key: row.key,
-      value: plaintext,
-      description: row.description,
-      created_by: row.created_by,
-      updated_by: row.updated_by,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    },
+    { key: k, value: plaintext, description, created_by, updated_by, created_at, updated_at },
     200,
   );
+});
+
+// --- Versions ---
+
+const VersionItemSchema = z.object({
+  id: z.number(),
+  changed_by: z.string(),
+  changed_at: z.string(),
+});
+
+const versionsRoute = createRoute({
+  method: "get",
+  path: "/{key}/versions",
+  tags: ["Secrets"],
+  summary: "List version history for a secret",
+  request: { params: KeyParam },
+  responses: {
+    200: {
+      content: {
+        "application/json": { schema: z.object({ versions: z.array(VersionItemSchema) }) },
+      },
+      description: "Version history (values not included for security)",
+    },
+    403: R403,
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+  },
+});
+
+secrets.openapi(versionsRoute, async (c) => {
+  const auth = c.get("auth");
+  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+
+  const { key } = c.req.valid("param");
+  const { results } = await c.env.DB.prepare(
+    "SELECT id, changed_by, changed_at FROM secret_versions WHERE secret_key = ? ORDER BY changed_at DESC",
+  )
+    .bind(key)
+    .all();
+  if (results.length === 0) {
+    const exists = await c.env.DB.prepare("SELECT key FROM secrets WHERE key = ?")
+      .bind(key)
+      .first();
+    if (!exists) return c.json({ error: "Secret not found" }, 404);
+  }
+  await audit(c.env, auth, "versions", key, c.get("ip"), c.get("ua"));
+  return c.json({ versions: results }, 200);
 });
 
 // --- Put ---
@@ -139,7 +194,16 @@ secrets.openapi(putRoute, async (c) => {
 
   const { key } = c.req.valid("param");
   const { value, description } = c.req.valid("json");
-
+  const existing = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")
+    .bind(key)
+    .first<SecretRow>();
+  if (existing) {
+    await c.env.DB.prepare(
+      "INSERT INTO secret_versions (secret_key, value, iv, hmac, description, changed_by) VALUES (?, ?, ?, ?, ?, ?)",
+    )
+      .bind(key, existing.value, existing.iv, existing.hmac, existing.description, auth.identity)
+      .run();
+  }
   let ciphertext: string;
   let iv: string;
   try {
@@ -147,19 +211,18 @@ secrets.openapi(putRoute, async (c) => {
   } catch {
     return c.json({ error: "Encryption failed" }, 500);
   }
-
+  const hmac = await computeHmac(key, ciphertext, iv, c.env.ENCRYPTION_KEY);
   const identity = auth.identity;
   await c.env.DB.prepare(
-    `INSERT INTO secrets (key, value, iv, description, created_by, updated_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `INSERT INTO secrets (key, value, iv, hmac, description, created_by, updated_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
      ON CONFLICT(key) DO UPDATE SET
-       value = excluded.value, iv = excluded.iv,
+       value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
        description = excluded.description, updated_by = excluded.updated_by,
        updated_at = datetime('now')`,
   )
-    .bind(key, ciphertext, iv, description, identity, identity)
+    .bind(key, ciphertext, iv, hmac, description, identity, identity)
     .run();
-
   await audit(c.env, auth, "set", key, c.get("ip"), c.get("ua"));
   return c.json({ ok: true, key }, 201);
 });
@@ -188,7 +251,6 @@ secrets.openapi(deleteRoute, async (c) => {
 
   const { key } = c.req.valid("param");
   const result = await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
-
   if (result.meta.changes === 0) return c.json({ error: "Secret not found" }, 404);
   await audit(c.env, auth, "delete", key, c.get("ip"), c.get("ua"));
   return c.json({ ok: true, deleted: key }, 200);

@@ -7,10 +7,14 @@ export function registerAuditCommands(program: Command): void {
     .command("audit")
     .description("View audit log (requires interactive auth)")
     .option("-n, --limit <n>", "Number of entries", "20")
+    .option("--offset <n>", "Skip first N entries", "0")
     .option("-j, --json", "Output as JSON")
-    .action(async (opts: { limit: string; json?: boolean }) => {
+    .action(async (opts: { limit: string; offset: string; json?: boolean }) => {
       try {
-        const entries = await client().audit(parseInt(opts.limit, 10));
+        const entries = await client().audit({
+          limit: parseInt(opts.limit, 10),
+          offset: parseInt(opts.offset, 10),
+        });
 
         if (opts.json) {
           console.log(JSON.stringify(entries, null, 2));

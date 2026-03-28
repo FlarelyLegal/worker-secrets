@@ -40,6 +40,21 @@ hfs token register abc.access \
 hfs audit                          # who accessed what
 ```
 
+## Development
+
+```bash
+# Lint
+npm run lint
+
+# Type-check
+cd secret-vault && npx tsc --noEmit
+cd hfs && npx tsc --noEmit
+
+# Test
+cd secret-vault && npm test
+cd hfs && npm test
+```
+
 ## OpenAPI
 
 API spec auto-generated at `/doc` from Zod schemas. Every endpoint is validated and documented.

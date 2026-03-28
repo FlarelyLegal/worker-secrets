@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
-import { decrypt, encrypt } from "../crypto.js";
+import { computeHmac, decrypt, encrypt } from "../crypto.js";
 import {
   R403,
   R500,
@@ -92,7 +92,13 @@ bulk.openapi(importRoute, async (c) => {
   const { secrets: items, overwrite } = c.req.valid("json");
 
   // First pass: encrypt and check overwrites
-  const toInsert: { key: string; ciphertext: string; iv: string; description: string }[] = [];
+  const toInsert: {
+    key: string;
+    ciphertext: string;
+    iv: string;
+    hmac: string;
+    description: string;
+  }[] = [];
   let skipped = 0;
 
   for (const item of items) {
@@ -112,20 +118,29 @@ bulk.openapi(importRoute, async (c) => {
     } catch {
       return c.json({ error: `Encryption failed for key: ${item.key}` }, 500);
     }
-    toInsert.push({ key: item.key, ciphertext, iv, description: item.description });
+    const hmac = await computeHmac(item.key, ciphertext, iv, c.env.ENCRYPTION_KEY);
+    toInsert.push({ key: item.key, ciphertext, iv, hmac, description: item.description });
   }
 
   // Atomic batch insert
   if (toInsert.length > 0) {
     const stmts = toInsert.map((item) =>
       c.env.DB.prepare(
-        `INSERT INTO secrets (key, value, iv, description, created_by, updated_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `INSERT INTO secrets (key, value, iv, hmac, description, created_by, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(key) DO UPDATE SET
-           value = excluded.value, iv = excluded.iv,
+           value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
            description = excluded.description, updated_by = excluded.updated_by,
            updated_at = datetime('now')`,
-      ).bind(item.key, item.ciphertext, item.iv, item.description, auth.identity, auth.identity),
+      ).bind(
+        item.key,
+        item.ciphertext,
+        item.iv,
+        item.hmac,
+        item.description,
+        auth.identity,
+        auth.identity,
+      ),
     );
     await c.env.DB.batch(stmts);
   }

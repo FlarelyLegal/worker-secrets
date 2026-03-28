@@ -2,11 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.6.0] - 2026-03-28
+
+### Features
+
+- V0.6.0 — HMAC integrity, secret versioning, search, copy, deploy destroy
 
 ### Miscellaneous
 
 - Filter merge commits from changelog
+- Skip docs commits from changelog
 
 ## [0.5.0] - 2026-03-28
 

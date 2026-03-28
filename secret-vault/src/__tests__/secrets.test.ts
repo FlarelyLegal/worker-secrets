@@ -17,9 +17,10 @@ function req(path: string, init?: RequestInit) {
 
 beforeAll(async () => {
   await env.DB.exec(`
-    CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL, iv TEXT NOT NULL, description TEXT DEFAULT '', created_by TEXT DEFAULT '', updated_by TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL, iv TEXT NOT NULL, hmac TEXT NOT NULL DEFAULT '', description TEXT DEFAULT '', created_by TEXT DEFAULT '', updated_by TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS service_tokens (client_id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT '', scopes TEXT DEFAULT '*', created_at TEXT DEFAULT (datetime('now')), last_used_at TEXT);
     CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT DEFAULT (datetime('now')), method TEXT NOT NULL, identity TEXT NOT NULL, action TEXT NOT NULL, secret_key TEXT, ip TEXT, user_agent TEXT);
+    CREATE TABLE IF NOT EXISTS secret_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, secret_key TEXT NOT NULL, value TEXT NOT NULL, iv TEXT NOT NULL, hmac TEXT NOT NULL DEFAULT '', description TEXT DEFAULT '', changed_by TEXT DEFAULT '', changed_at TEXT DEFAULT (datetime('now')), FOREIGN KEY (secret_key) REFERENCES secrets(key) ON DELETE CASCADE);
   `);
 });
 

@@ -1,10 +1,11 @@
 -- Migration: 0001_init.sql
--- All tables for the secret vault: secrets, service tokens, audit log.
+-- All tables for the secret vault.
 
 CREATE TABLE IF NOT EXISTS secrets (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64 encoded
   iv TEXT NOT NULL,               -- initialization vector, base64 encoded
+  hmac TEXT NOT NULL DEFAULT '',  -- HMAC-SHA256 integrity binding (key + ciphertext + iv)
   description TEXT DEFAULT '',
   created_by TEXT DEFAULT '',     -- identity of creator
   updated_by TEXT DEFAULT '',     -- identity of last updater
@@ -38,3 +39,17 @@ CREATE INDEX idx_audit_log_timestamp ON audit_log(timestamp);
 CREATE INDEX idx_audit_log_identity ON audit_log(identity);
 CREATE INDEX idx_audit_log_secret_key ON audit_log(secret_key, timestamp);
 CREATE INDEX idx_audit_log_action ON audit_log(action, timestamp);
+
+CREATE TABLE IF NOT EXISTS secret_versions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  secret_key TEXT NOT NULL,
+  value TEXT NOT NULL,
+  iv TEXT NOT NULL,
+  hmac TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  changed_by TEXT DEFAULT '',
+  changed_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (secret_key) REFERENCES secrets(key) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_secret_versions_key ON secret_versions(secret_key, changed_at);

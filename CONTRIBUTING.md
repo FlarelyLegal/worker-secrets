@@ -45,6 +45,10 @@ npm run lint                      # Biome lint + format
 cd secret-vault && npx tsc --noEmit
 cd ../hfs && npx tsc --noEmit
 
+# Tests
+cd secret-vault && npm test
+cd ../hfs && npm test
+
 # Build CLI
 cd ../hfs && npm run build
 ```

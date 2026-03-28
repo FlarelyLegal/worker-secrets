@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import chalk from "chalk";
 import type { Command } from "commander";
+import type { SecretEntry } from "../client.js";
 import { client, confirm, die, errorMessage, readStdin } from "../helpers.js";
 
 export function registerSecretCommands(program: Command): void {
@@ -68,11 +69,7 @@ export function registerSecretCommands(program: Command): void {
     .action(async (key: string, opts: { force?: boolean }) => {
       try {
         if (!opts.force) {
-          const confirmed = await confirm(`Delete ${chalk.bold(key)}? This cannot be undone.`);
-          if (!confirmed) {
-            console.log("Cancelled.");
-            return;
-          }
+          if (!(await confirm(`Delete ${chalk.bold(key)}? This cannot be undone.`))) return;
         }
         await client().delete(key);
         console.log(`${chalk.green("✓")} Deleted ${chalk.bold(key)}`);
@@ -86,15 +83,39 @@ export function registerSecretCommands(program: Command): void {
     .alias("list")
     .description("List all secret keys")
     .option("-j, --json", "Output as JSON")
-    .action(async (opts: { json?: boolean }) => {
+    .option("--all", "Fetch all secrets (no pagination limit)")
+    .option("--offset <n>", "Skip first N results", "0")
+    .option("-s, --search <pattern>", "Filter keys by pattern")
+    .action(async (opts: { json?: boolean; all?: boolean; offset?: string; search?: string }) => {
       try {
-        const { secrets, total } = await client().list();
+        const c = client();
+        let secrets: SecretEntry[];
+        let total: number;
+        if (opts.all) {
+          let allSecrets: SecretEntry[] = [];
+          let offset = 0;
+          const pageSize = 500;
+          while (true) {
+            const page = await c.list({ limit: pageSize, offset, search: opts.search });
+            allSecrets = allSecrets.concat(page.secrets);
+            if (allSecrets.length >= page.total) break;
+            offset += pageSize;
+          }
+          secrets = allSecrets;
+          total = allSecrets.length;
+        } else {
+          const result = await c.list({
+            offset: parseInt(opts.offset || "0", 10),
+            search: opts.search,
+          });
+          secrets = result.secrets;
+          total = result.total;
+        }
 
         if (opts.json) {
           console.log(JSON.stringify({ secrets, total }, null, 2));
           return;
         }
-
         if (total === 0) {
           console.log(chalk.dim("No secrets stored."));
           return;
@@ -159,7 +180,6 @@ export function registerSecretCommands(program: Command): void {
 
         const valid = data.filter((e: { key?: string; value?: string }) => e.key && e.value);
         if (valid.length === 0) die("No valid entries found (each needs key + value)");
-
         const c = client();
         try {
           const result = await c.importAll(valid, opts.overwrite ?? false);
@@ -172,7 +192,6 @@ export function registerSecretCommands(program: Command): void {
           const existingKeys = new Set(existing.map((s) => s.key));
           let imported = 0;
           let skipped = 0;
-
           for (const entry of valid) {
             if (existingKeys.has(entry.key) && !opts.overwrite) {
               console.log(`${chalk.yellow("⚠")} Skipping ${chalk.bold(entry.key)} (exists)`);
@@ -205,6 +224,25 @@ export function registerSecretCommands(program: Command): void {
           const shellKey = key.replace(/[^a-zA-Z0-9_]/g, "_");
           process.stdout.write(`${prefix}${shellKey}='${escaped}'\n`);
         }
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  program
+    .command("cp <source> <destination>")
+    .description("Copy a secret to a new key")
+    .option("-m, --move", "Move instead of copy (deletes source)")
+    .action(async (source: string, destination: string, opts: { move?: boolean }) => {
+      try {
+        const c = client();
+        const secret = await c.get(source);
+        await c.set(destination, secret.value || "", secret.description);
+        if (opts.move) await c.delete(source);
+        const verb = opts.move ? "Moved" : "Copied";
+        console.log(
+          `${chalk.green("\u2713")} ${verb} ${chalk.bold(source)} \u2192 ${chalk.bold(destination)}`,
+        );
       } catch (e) {
         die(errorMessage(e));
       }

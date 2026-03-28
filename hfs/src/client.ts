@@ -111,10 +111,12 @@ export class VaultClient {
   async list(opts?: {
     limit?: number;
     offset?: number;
+    search?: string;
   }): Promise<{ secrets: SecretEntry[]; total: number }> {
     const params = new URLSearchParams();
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.search) params.set("search", opts.search);
     const q = params.toString() ? `?${params}` : "";
     return this.request("GET", `/secrets${q}`);
   }
@@ -175,8 +177,11 @@ export class VaultClient {
 
   // --- Audit ---
 
-  async audit(limit?: number): Promise<AuditEntry[]> {
-    const q = limit ? `?limit=${limit}` : "";
+  async audit(opts?: { limit?: number; offset?: number }): Promise<AuditEntry[]> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const q = params.toString() ? `?${params}` : "";
     const data = await this.request<{ entries: AuditEntry[] }>("GET", `/audit${q}`);
     return data.entries;
   }

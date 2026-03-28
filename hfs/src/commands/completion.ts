@@ -25,7 +25,7 @@ export function registerCompletionCommands(program: Command): void {
       COMPREPLY=($(compgen -W "set show clear" -- "$cur"))
       ;;
     deploy)
-      COMPREPLY=($(compgen -W "status reset" -- "$cur"))
+      COMPREPLY=($(compgen -W "status reset destroy logs" -- "$cur"))
       ;;
     completion)
       COMPREPLY=($(compgen -W "bash zsh" -- "$cur"))
@@ -64,7 +64,7 @@ _hfs() {
   )
   token_cmds=('register:Register a service token' 'revoke:Unregister a token' 'ls:List registered tokens')
   config_cmds=('set:Set vault URL' 'show:Show current config' 'clear:Clear all config')
-  deploy_cmds=('status:Show deploy state' 'reset:Clear deploy state')
+  deploy_cmds=('status:Show deploy state' 'reset:Clear deploy state' 'destroy:Tear down all resources' 'logs:Tail live Worker logs')
   completion_cmds=('bash:Output bash completions' 'zsh:Output zsh completions')
 
   case "$words[2]" in

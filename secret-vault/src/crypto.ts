@@ -1,5 +1,8 @@
+// --- Key caching ---
+
 let _cachedKey: CryptoKey | null = null;
 let _cachedKeyHex = "";
+let _cachedHmacKey: CryptoKey | null = null;
 
 async function getKey(hexKey: string): Promise<CryptoKey> {
   if (_cachedKey && _cachedKeyHex === hexKey) return _cachedKey;
@@ -12,8 +15,33 @@ async function getKey(hexKey: string): Promise<CryptoKey> {
     "decrypt",
   ]);
   _cachedKeyHex = hexKey;
+  _cachedHmacKey = null; // invalidate HMAC key when encryption key changes
   return _cachedKey;
 }
+
+async function getHmacKey(hexKey: string): Promise<CryptoKey> {
+  if (_cachedHmacKey && _cachedKeyHex === hexKey) return _cachedHmacKey;
+  // Derive a separate HMAC key from the encryption key using HKDF
+  const raw = hexToBytes(hexKey);
+  const baseKey = await crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, "HKDF", false, [
+    "deriveKey",
+  ]);
+  _cachedHmacKey = await crypto.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: new Uint8Array(0),
+      info: new TextEncoder().encode("hmac-integrity"),
+    },
+    baseKey,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+  return _cachedHmacKey;
+}
+
+// --- Encoding helpers ---
 
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
@@ -36,6 +64,8 @@ function fromBase64(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }
 
+// --- Encrypt / Decrypt ---
+
 export async function encrypt(
   plaintext: string,
   hexKey: string,
@@ -53,4 +83,32 @@ export async function decrypt(ciphertext: string, ivB64: string, hexKey: string)
   const data = fromBase64(ciphertext);
   const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
   return new TextDecoder().decode(decrypted);
+}
+
+// --- HMAC integrity ---
+// Binds ciphertext to its key name, preventing swap attacks on D1.
+
+export async function computeHmac(
+  secretKey: string,
+  ciphertext: string,
+  iv: string,
+  hexKey: string,
+): Promise<string> {
+  const hmacKey = await getHmacKey(hexKey);
+  const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
+  const sig = await crypto.subtle.sign("HMAC", hmacKey, data);
+  return toBase64(sig);
+}
+
+export async function verifyHmac(
+  secretKey: string,
+  ciphertext: string,
+  iv: string,
+  hmac: string,
+  hexKey: string,
+): Promise<boolean> {
+  const hmacKey = await getHmacKey(hexKey);
+  const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
+  const sig = fromBase64(hmac);
+  return crypto.subtle.verify("HMAC", hmacKey, sig, data);
 }

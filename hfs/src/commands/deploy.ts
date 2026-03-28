@@ -160,6 +160,27 @@ export function registerDeployCommands(program: Command): void {
     });
 
   cmd
+    .command("logs")
+    .description("Tail live Worker logs")
+    .action(async () => {
+      const state = loadState();
+      if (!state.projectName) die("No deployment found. Run `hfs deploy` first.");
+
+      try {
+        copyWorkerSource();
+        installDeps();
+        const { execFileSync } = await import("node:child_process");
+        const { WORKER_DIR } = await import("../deploy/index.js");
+        execFileSync("npx", ["wrangler", "tail", state.projectName], {
+          cwd: WORKER_DIR,
+          stdio: "inherit",
+        });
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  cmd
     .command("destroy")
     .description("Tear down Worker, D1 database, and Access app")
     .option("-f, --force", "Skip confirmation")

@@ -25,6 +25,7 @@ export type SecretRow = {
   key: string;
   value: string;
   iv: string;
+  hmac: string;
   description: string;
   created_by: string;
   updated_by: string;
@@ -71,6 +72,13 @@ export const PaginationQuery = z.object({
     .openapi({
       param: { name: "offset", in: "query" },
       example: 0,
+    }),
+  search: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "search", in: "query" },
+      example: "api",
     }),
 });
 
@@ -130,17 +138,10 @@ export const SecretCreateBody = z.object({
 });
 
 export const SecretCreateResponse = z
-  .object({
-    ok: z.boolean(),
-    key: z.string(),
-  })
+  .object({ ok: z.boolean(), key: z.string() })
   .openapi("SecretCreateResponse");
-
 export const SecretDeleteResponse = z
-  .object({
-    ok: z.boolean(),
-    deleted: z.string(),
-  })
+  .object({ ok: z.boolean(), deleted: z.string() })
   .openapi("SecretDeleteResponse");
 
 export const SecretImportItem = z.object({
@@ -165,11 +166,7 @@ export const SecretImportBody = z.object({
 });
 
 export const SecretImportResponse = z
-  .object({
-    ok: z.boolean(),
-    imported: z.number(),
-    skipped: z.number(),
-  })
+  .object({ ok: z.boolean(), imported: z.number(), skipped: z.number() })
   .openapi("SecretImportResponse");
 
 // --- Tokens ---
@@ -205,19 +202,10 @@ export const TokenCreateBody = z.object({
 });
 
 export const TokenCreateResponse = z
-  .object({
-    ok: z.boolean(),
-    client_id: z.string(),
-    name: z.string(),
-    scopes: z.string(),
-  })
+  .object({ ok: z.boolean(), client_id: z.string(), name: z.string(), scopes: z.string() })
   .openapi("TokenCreateResponse");
-
 export const TokenDeleteResponse = z
-  .object({
-    ok: z.boolean(),
-    revoked: z.string(),
-  })
+  .object({ ok: z.boolean(), revoked: z.string() })
   .openapi("TokenDeleteResponse");
 
 // --- Auth / Admin ---
