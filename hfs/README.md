@@ -60,6 +60,16 @@ hfs token revoke <id>      Revoke a token
 hfs token ls               List tokens with last-used times
 ```
 
+### Feature flags
+```
+hfs flag ls                List all flags
+hfs flag get <key>         Get a flag value
+hfs flag set <key> <value> Set a flag (auto-detects type)
+hfs flag rm <key>          Delete a flag
+```
+
+Auto-type detection: `"true"`/`"false"` become boolean, numeric strings become number, valid JSON objects become json, everything else is string. Flags are plaintext KV, not encrypted like secrets.
+
 ### Admin
 ```
 hfs audit [-n 100] [-j]    View audit log

@@ -27,6 +27,10 @@ Source: `secret-vault/src/routes/`
 | `GET` | `/tokens` | interactive only | List registered service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive only | Register a service token |
 | `DELETE` | `/tokens/{clientId}` | interactive only | Revoke a service token |
+| `GET` | `/flags` | read | List all feature flags (KV-backed, plaintext) |
+| `GET` | `/flags/{key}` | read | Get a flag value with metadata |
+| `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type: boolean, number, json, string) |
+| `DELETE` | `/flags/{key}` | delete | Delete a flag |
 
 ## Request/response patterns
 

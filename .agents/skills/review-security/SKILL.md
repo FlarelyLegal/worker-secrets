@@ -33,6 +33,12 @@ This is an encrypted secret store — security mistakes leak credentials.
 - Scopes: `read`, `write`, `delete`, `*`
 - Token management + audit: restricted to `interactive` auth only
 
+### Feature flags
+- Flags are **plaintext** in KV — they are configuration values, not secrets
+- **NEVER** store sensitive data (credentials, keys, tokens) as flags — use encrypted secrets instead
+- Flag operations use the same auth model and scope enforcement as secrets
+- All flag operations are audit-logged
+
 ### Input validation
 - **ALWAYS** validate `ENCRYPTION_KEY` format (64 hex chars) — validated on first use
 - Body size limits enforced via Zod: value 1MB, key 256 chars, description 1000 chars

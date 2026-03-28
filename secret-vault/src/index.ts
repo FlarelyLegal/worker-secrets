@@ -2,6 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { authenticate } from "./auth.js";
 import admin from "./routes/admin.js";
 import bulk from "./routes/bulk.js";
+import flags from "./routes/flags.js";
 import pub from "./routes/public.js";
 import secrets from "./routes/secrets.js";
 import tokens from "./routes/tokens.js";
@@ -90,6 +91,7 @@ const API_TAGS = [
       "Register and manage service tokens. Each token gets a name, scoped permissions, " +
       "and usage tracking. Interactive auth only.",
   },
+  { name: "Flags", description: "Feature flags backed by KV (plaintext, not encrypted)" },
   { name: "Admin", description: "Authentication status and audit log access." },
   { name: "Public", description: "Unauthenticated endpoints." },
 ];
@@ -170,6 +172,7 @@ app.use("*", async (c, next) => {
 
 app.route("/", admin);
 app.route("/tokens", tokens);
+app.route("/flags", flags);
 app.route("/secrets", bulk);
 app.route("/secrets", secrets);
 

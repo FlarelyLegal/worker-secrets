@@ -35,6 +35,7 @@ hfs set api-key sk-ant-...         # store a secret
 hfs get api-key -q                 # retrieve (pipe-friendly)
 hfs ls                             # list keys
 eval $(hfs env -e API_KEY)         # load into shell
+hfs flag set maintenance true      # set a feature flag
 hfs token register abc.access \
   --name ci-pipeline --scopes read # register a service token
 hfs audit                          # who accessed what

@@ -24,6 +24,7 @@ export interface DeployState {
 
   // Phase 2: Assets
   databaseId: string;
+  kvNamespaceId: string;
 
   // Phase 3: Worker
   encryptionKeySet: boolean;
@@ -45,6 +46,7 @@ export function emptyState(): DeployState {
     accessAppId: "",
     policyAud: "",
     databaseId: "",
+    kvNamespaceId: "",
     encryptionKeySet: false,
     deployedAt: "",
   };

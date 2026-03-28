@@ -1,6 +1,7 @@
 declare namespace Cloudflare {
   interface Env {
     DB: D1Database;
+    FLAGS: KVNamespace;
     ENCRYPTION_KEY: string;
     ALLOWED_EMAILS: string;
     TEAM_DOMAIN: string;

@@ -57,6 +57,10 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `GET` | `/tokens` | interactive | List service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive | Register token |
 | `DELETE` | `/tokens/{clientId}` | interactive | Revoke token |
+| `GET` | `/flags` | read | List all feature flags |
+| `GET` | `/flags/{key}` | read | Get a flag value |
+| `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type) |
+| `DELETE` | `/flags/{key}` | delete | Delete a flag |
 
 ## Using from other Workers
 
@@ -71,6 +75,10 @@ const { value } = await res.json();
 ```
 
 Service Bindings are not supported — auth requires a valid Access JWT.
+
+## Feature flags
+
+Flags are stored in a `FLAGS` KV namespace as plaintext key-value pairs (not encrypted in D1 like secrets). Each flag stores its value, type, description, and provenance (`updated_by`, `updated_at`). Types are auto-detected: `"true"`/`"false"` become boolean, numeric strings become number, valid JSON objects become json, everything else is string. All flag operations are audit-logged.
 
 ## Security
 

@@ -28,6 +28,15 @@ export interface AuditEntry {
   user_agent: string | null;
 }
 
+export interface FlagEntry {
+  key: string;
+  value: string | number | boolean | Record<string, unknown>;
+  type: "string" | "number" | "boolean" | "json";
+  description: string;
+  updated_by: string;
+  updated_at: string;
+}
+
 export interface VaultError {
   error: string;
 }
@@ -184,6 +193,28 @@ export class VaultClient {
     const q = params.toString() ? `?${params}` : "";
     const data = await this.request<{ entries: AuditEntry[] }>("GET", `/audit${q}`);
     return data.entries;
+  }
+
+  // --- Flags ---
+
+  async listFlags(): Promise<FlagEntry[]> {
+    const data = await this.request<{ flags: FlagEntry[] }>("GET", "/flags");
+    return data.flags;
+  }
+
+  async getFlag(key: string): Promise<FlagEntry> {
+    return this.request("GET", `/flags/${encodeURIComponent(key)}`);
+  }
+
+  async setFlag(key: string, value: unknown, description?: string): Promise<FlagEntry> {
+    return this.request("PUT", `/flags/${encodeURIComponent(key)}`, {
+      value,
+      description: description || "",
+    });
+  }
+
+  async deleteFlag(key: string): Promise<{ ok: boolean; deleted: string }> {
+    return this.request("DELETE", `/flags/${encodeURIComponent(key)}`);
   }
 
   // --- Info ---

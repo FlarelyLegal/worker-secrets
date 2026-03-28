@@ -138,6 +138,7 @@ export function registerDeployCommands(program: Command): void {
       console.log(`  access app:  ${f(s.accessAppId)}`);
       console.log(`  policy AUD:  ${f(s.policyAud)}`);
       console.log(`  database:    ${f(s.databaseId)}`);
+      console.log(`  kv:          ${f(s.kvNamespaceId)}`);
       console.log(`  encryption:  ${f(s.encryptionKeySet)}`);
       console.log(`  deployed:    ${f(s.deployedAt)}`);
       console.log("");
@@ -191,6 +192,7 @@ export function registerDeployCommands(program: Command): void {
       console.log(chalk.bold("\n  This will permanently delete:\n"));
       if (state.projectName) console.log(`  Worker:     ${state.projectName}`);
       if (state.databaseId) console.log(`  D1 database: ${state.databaseId.slice(0, 8)}...`);
+      if (state.kvNamespaceId) console.log(`  KV namespace: ${state.kvNamespaceId.slice(0, 8)}...`);
       if (state.accessAppId) console.log(`  Access app:  ${state.accessAppId.slice(0, 8)}...`);
       console.log("");
 
@@ -218,9 +220,27 @@ export function registerDeployCommands(program: Command): void {
         if (state.databaseId) {
           try {
             deleteD1(state.databaseId);
-            console.log(`  ${chalk.green("✓")} D1 database deleted`);
+            console.log(`  ${chalk.green("\u2713")} D1 database deleted`);
           } catch {
-            console.log(`  ${chalk.yellow("⚠")} D1 database not found`);
+            console.log(`  ${chalk.yellow("\u26A0")} D1 database not found`);
+          }
+        }
+
+        if (state.kvNamespaceId) {
+          try {
+            const { execFileSync } = await import("node:child_process");
+            const { WORKER_DIR } = await import("../deploy/index.js");
+            execFileSync(
+              "npx",
+              ["wrangler", "kv", "namespace", "delete", "--namespace-id", state.kvNamespaceId],
+              {
+                cwd: WORKER_DIR,
+                stdio: ["ignore", "pipe", "pipe"],
+              },
+            );
+            console.log(`  ${chalk.green("\u2713")} KV namespace deleted`);
+          } catch {
+            console.log(`  ${chalk.yellow("\u26A0")} KV namespace not found`);
           }
         }
 

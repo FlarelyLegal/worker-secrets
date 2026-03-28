@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2026-03-28
+
+### Features
+
+- Switch to base64url encoding for ciphertext, IV, and HMAC storage
+- V0.7.0 — feature flags, base64url, secret versioning, search, copy
+
 ## [0.6.0] - 2026-03-28
 
 ### Features

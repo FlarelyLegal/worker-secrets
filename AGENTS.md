@@ -13,6 +13,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, audit, JWKS cache |
 | Worker crypto | `secret-vault/src/crypto.ts` | AES-256-GCM encrypt/decrypt, hex validation, key cache |
 | Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `tokens.ts`, `bulk.ts`, `admin.ts`, `public.ts` |
+| Worker flags | `secret-vault/src/routes/flags.ts` | Feature flags CRUD (KV-backed) |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
 | Worker pages | `secret-vault/src/pages.ts` | Landing page and health page HTML templates |
 | Worker version | `secret-vault/src/version.ts` | Auto-synced from VERSION file during build |
@@ -68,7 +69,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 
 ### Dependencies
 
-- Worker: `hono`, `jose`, `@hono/zod-openapi` (includes `zod`). **Think hard before adding another.**
+- Worker: `hono`, `jose`, `@hono/zod-openapi` (includes `zod`). Uses D1 (secrets) and KV (flags). **Think hard before adding another.**
 - CLI: `commander`, `conf`, `chalk`. **Think hard before adding another.**
 
 ### Versioning
@@ -141,6 +142,12 @@ npm run generate-keys           # Generate ENCRYPTION_KEY
 cd hfs
 npm run build                   # Compile TypeScript
 npm run dev                     # Watch mode
+
+# Feature flags
+hfs flag ls                     # List all flags
+hfs flag get <key>              # Get a flag value
+hfs flag set <key> <value>      # Set a flag (auto-detects type)
+hfs flag rm <key>               # Delete a flag
 ```
 
 ## KNOWN GAPS

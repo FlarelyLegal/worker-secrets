@@ -20,7 +20,7 @@ description: Deploy the secret-vault Cloudflare Worker and run pending D1 migrat
 hfs deploy
 ```
 
-`hfs deploy` generates the real `wrangler.jsonc`, applies migrations, sets secrets, and deploys the Worker in one flow.
+`hfs deploy` generates the real `wrangler.jsonc`, applies migrations, creates the FLAGS KV namespace, sets secrets, and deploys the Worker in one flow.
 
 ## DEPLOY MANUALLY (ALTERNATIVE)
 
@@ -59,6 +59,7 @@ npm publish
 
 - `wrangler secret put ENCRYPTION_KEY` (64-char hex, generate with `npm run generate-keys`)
 - `database_id` filled in `wrangler.jsonc` (from `npm run db:create`)
+- FLAGS KV namespace created (deploy pipeline creates it automatically alongside D1)
 - `"vars"` in `wrangler.jsonc`: `ALLOWED_EMAILS`, `TEAM_DOMAIN`, `POLICY_AUD`
 - Cloudflare Access application created with correct domain and policies
 - Custom domain or route configured to match Access application domain

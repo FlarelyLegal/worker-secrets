@@ -7,6 +7,7 @@ Source: `secret-vault/src/types.ts`, `secret-vault/src/crypto.ts`, `secret-vault
 ```typescript
 interface Env {
   DB: D1Database;
+  FLAGS: KVNamespace;       // feature flags (plaintext key-value, not encrypted)
   ENCRYPTION_KEY: string;   // 64-char hex (32 bytes)
   ALLOWED_EMAILS: string;   // comma-separated emails for interactive sessions
   TEAM_DOMAIN: string;      // https://<team>.cloudflareaccess.com

@@ -60,6 +60,34 @@ export function createD1(dbName: string): string {
   return match[1];
 }
 
+// --- KV ---
+
+export function checkKVExists(nsName: string): string | null {
+  try {
+    const output = execFileSync("npx", ["wrangler", "kv", "namespace", "list"], {
+      cwd: WORKER_DIR,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const namespaces = JSON.parse(output) as { title: string; id: string }[];
+    return namespaces.find((ns) => ns.title === nsName)?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function createKV(nsName: string): string {
+  execFileSync("npx", ["wrangler", "kv", "namespace", "create", nsName], {
+    cwd: WORKER_DIR,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  // Fetch the ID from the list (more reliable than parsing create output)
+  const id = checkKVExists(nsName);
+  if (!id) throw new Error(`KV namespace "${nsName}" created but could not find its ID`);
+  return id;
+}
+
 // --- Wrangler config ---
 
 export function writeWranglerConfig(state: DeployState): void {
@@ -90,6 +118,9 @@ export function writeWranglerConfig(state: DeployState): void {
       BRAND_NAME: state.brandName,
     },
   };
+  if (state.kvNamespaceId) {
+    cfg.kv_namespaces = [{ binding: "FLAGS", id: state.kvNamespaceId }];
+  }
   cfg.workers_dev = state.workersDev;
   cfg.preview_urls = false;
   if (state.observability) {

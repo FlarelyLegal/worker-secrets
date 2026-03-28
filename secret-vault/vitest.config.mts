@@ -6,6 +6,7 @@ export default defineConfig({
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },
       miniflare: {
+        kvNamespaces: ["FLAGS"],
         bindings: {
           ENCRYPTION_KEY: "aa".repeat(32),
           ALLOWED_EMAILS: "test@example.com",

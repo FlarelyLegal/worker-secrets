@@ -1,9 +1,11 @@
 export { createAccessApp, deleteAccessApp, findAccessApp, updateAccessApp } from "./access.js";
 export {
   checkD1Exists,
+  checkKVExists,
   checkWrangler,
   copyWorkerSource,
   createD1,
+  createKV,
   deleteD1,
   installDeps,
   writeWranglerConfig,

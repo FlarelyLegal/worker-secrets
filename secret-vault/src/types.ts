@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  FLAGS: KVNamespace;
   ENCRYPTION_KEY: string; // 64-char hex string (32 bytes)
   ALLOWED_EMAILS: string; // comma-separated emails for interactive passkey/IdP sessions
   TEAM_DOMAIN: string; // https://<team>.cloudflareaccess.com

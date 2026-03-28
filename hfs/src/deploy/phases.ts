@@ -3,9 +3,11 @@ import { errorMessage } from "../helpers.js";
 import {
   applyMigrations,
   checkD1Exists,
+  checkKVExists,
   checkSecretExists,
   createAccessApp,
   createD1,
+  createKV,
   deployWorker,
   dryRunDeploy,
   findAccessApp,
@@ -120,6 +122,30 @@ export async function phaseAssets(state: DeployState, dry: boolean): Promise<voi
     }
   } catch (e) {
     fail("D1 database setup", e);
+  }
+
+  // KV namespace for feature flags
+  const kvName = `${state.projectName}-flags`;
+  try {
+    const kvId = checkKVExists(kvName);
+    if (kvId) {
+      state.kvNamespaceId = kvId;
+      saveState(state);
+      ok(`KV namespace exists ${chalk.dim(`(${kvName}: ${kvId.slice(0, 8)}...)`)}`, dry);
+    } else if (dry) {
+      console.log(
+        `  ${chalk.yellow("\u26A0")} KV namespace ${kvName} not found \u2014 will be created`,
+      );
+    } else {
+      state.kvNamespaceId = createKV(kvName);
+      saveState(state);
+      ok(
+        `KV namespace created ${chalk.dim(`(${kvName}: ${state.kvNamespaceId.slice(0, 8)}...)`)}`,
+        dry,
+      );
+    }
+  } catch (e) {
+    fail("KV namespace setup", e);
   }
 }
 

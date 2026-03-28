@@ -37,6 +37,11 @@ description: Diagnose and fix issues with the secret-vault Worker, hfs CLI, D1 d
 - "cloudflared not found" → install cloudflared
 - "Incomplete service token config" → set BOTH `HFS_CLIENT_ID` and `HFS_CLIENT_SECRET`
 
+### Feature flags
+- "FLAGS binding not found" → KV namespace not created or not bound in `wrangler.jsonc`
+- Flag value wrong type → check auto-detection: `"true"`/`"false"` become boolean, numeric strings become number, valid JSON becomes json, else string. Quote values in the CLI to avoid shell interpretation.
+- `hfs flag set` returns 403 → service token missing `write` scope
+
 ### Crypto
 - "Decryption failed" → `ENCRYPTION_KEY` changed since secrets were stored
 - "Encryption failed" → `ENCRYPTION_KEY` invalid format

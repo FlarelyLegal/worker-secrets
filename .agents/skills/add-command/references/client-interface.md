@@ -22,6 +22,15 @@ interface ServiceTokenEntry {
   last_used_at: string | null;
 }
 
+interface FlagEntry {
+  key: string;
+  value: string | number | boolean | object;
+  type: "string" | "number" | "boolean" | "json";
+  description: string;
+  updated_by: string;
+  updated_at: string;
+}
+
 interface AuditEntry {
   id: number;
   timestamp: string;
@@ -50,6 +59,12 @@ class VaultClient {
 
   // Audit
   audit(opts?: { limit?: number; offset?: number }): Promise<AuditEntry[]>
+
+  // Feature flags
+  listFlags(): Promise<FlagEntry[]>
+  getFlag(key: string): Promise<FlagEntry>
+  setFlag(key: string, value: string, description?: string): Promise<{ ok: boolean; key: string }>
+  deleteFlag(key: string): Promise<{ ok: boolean; deleted: string }>
 
   // Info
   whoami(): Promise<{ method: string; identity: string; name: string; scopes: string[] }>

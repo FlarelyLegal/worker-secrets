@@ -7,6 +7,7 @@ import { registerAuthCommands } from "./commands/auth.js";
 import { registerCompletionCommands } from "./commands/completion.js";
 import { registerConfigCommands } from "./commands/config.js";
 import { registerDeployCommands } from "./commands/deploy.js";
+import { registerFlagCommands } from "./commands/flags.js";
 import { registerSecretCommands } from "./commands/secrets.js";
 import { registerTokenCommands } from "./commands/tokens.js";
 
@@ -17,6 +18,7 @@ const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/
 registerAuthCommands(program);
 registerSecretCommands(program);
 registerTokenCommands(program);
+registerFlagCommands(program);
 registerAuditCommands(program);
 registerConfigCommands(program);
 registerDeployCommands(program);
