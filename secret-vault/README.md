@@ -50,6 +50,7 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `GET` | `/whoami` | any | Auth status |
 | `GET` | `/secrets` | read | List keys (no values) |
 | `GET` | `/secrets/{key}` | read | Get decrypted secret |
+| `GET` | `/secrets/{key}/versions` | read | Version history |
 | `GET` | `/secrets/export` | interactive | Export all decrypted |
 | `PUT` | `/secrets/{key}` | write | Create or update |
 | `DELETE` | `/secrets/{key}` | delete | Delete |

@@ -1,11 +1,13 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { authenticate } from "./auth.js";
+import { getFlagValue } from "./flags.js";
 import admin from "./routes/admin.js";
 import bulk from "./routes/bulk.js";
 import flags from "./routes/flags.js";
 import pub from "./routes/public.js";
 import secrets from "./routes/secrets.js";
 import tokens from "./routes/tokens.js";
+import versions from "./routes/versions.js";
 import type { HonoEnv } from "./types.js";
 import { VERSION } from "./version.js";
 
@@ -134,6 +136,12 @@ app.get("/doc", (c) => {
 // --- Auth middleware ---
 
 app.use("*", async (c, next) => {
+  // Flag 1: maintenance mode — checked before authentication
+  const maintenance = await getFlagValue(c.env.FLAGS, "maintenance", false);
+  if (maintenance) {
+    return c.json({ error: "Service is in maintenance mode" }, 503);
+  }
+
   const user = await authenticate(c.req.raw, c.env);
   if (!user) {
     // Log failed auth attempt (best-effort, don't block the 401 response)
@@ -160,12 +168,28 @@ app.use("*", async (c, next) => {
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Background audit cleanup (~1% of requests)
-  if (Math.random() < 0.01) {
+  // Background audit cleanup (probability controlled by flag)
+  const cleanupProbability = await getFlagValue(c.env.FLAGS, "audit_cleanup_probability", 0.01);
+  if (Math.random() < cleanupProbability) {
+    const retentionDays = await getFlagValue(c.env.FLAGS, "audit_retention_days", 90);
     c.executionCtx.waitUntil(
-      c.env.DB.prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', '-90 days')").run(),
+      c.env.DB.prepare(
+        `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${retentionDays} days')`,
+      ).run(),
     );
   }
+});
+
+// --- Read-only mode (after auth so unauthenticated users still get 401) ---
+
+app.use("*", async (c, next) => {
+  if (["PUT", "POST", "DELETE"].includes(c.req.method)) {
+    const readOnly = await getFlagValue(c.env.FLAGS, "read_only", false);
+    if (readOnly) {
+      return c.json({ error: "Vault is in read-only mode" }, 503);
+    }
+  }
+  return next();
 });
 
 // --- Mount routes ---
@@ -174,6 +198,7 @@ app.route("/", admin);
 app.route("/tokens", tokens);
 app.route("/flags", flags);
 app.route("/secrets", bulk);
+app.route("/secrets", versions);
 app.route("/secrets", secrets);
 
 export default app;
