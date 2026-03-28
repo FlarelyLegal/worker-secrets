@@ -53,6 +53,23 @@ hfs config show            Show config + auth status
 hfs config clear           Clear all config
 ```
 
+### Users (admin only)
+```
+hfs user ls                List all users
+hfs user add <email> -r <role> [-n <name>]  Add or update a user
+hfs user rm <email>        Remove a user
+hfs user disable <email>   Disable without deleting
+hfs user enable <email>    Re-enable a disabled user
+hfs user role <email> <role>  Change a user's role
+```
+
+### Roles (admin only)
+```
+hfs role ls                List all roles with scopes
+hfs role set <name> <scopes> [-d <desc>]  Create or update a role
+hfs role rm <name>         Delete a role (must have no users)
+```
+
 ### Service tokens (interactive only)
 ```
 hfs token register <id> -n <name> [-s <scopes>] [-d <desc>]
@@ -140,8 +157,9 @@ The export file contains decrypted values. Store it securely and delete after us
 
 ## Security
 
+- **RBAC**: role-based access control — admin, operator, reader (custom roles supported)
 - **No fallback**: expired JWT or partial env vars = hard error
 - **No credentials on disk**: config holds URL + short-lived JWT only
-- **All access audited**: every operation logged with identity, IP, and user agent
+- **All access audited**: every operation logged with identity, IP, user agent, and request ID
 - **Unregistered tokens rejected**: Access token alone is not enough
 - **HMAC integrity**: every secret cryptographically bound to its key name, tamper-evident at rest

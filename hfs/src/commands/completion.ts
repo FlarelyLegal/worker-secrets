@@ -16,10 +16,16 @@ export function registerCompletionCommands(program: Command): void {
 
   case "$prev" in
     hfs)
-      COMPREPLY=($(compgen -W "health login logout get set rm ls export import env token flag audit whoami config deploy completion" -- "$cur"))
+      COMPREPLY=($(compgen -W "health login logout get set rm ls export import env cp token user role flag audit whoami config deploy completion" -- "$cur"))
       ;;
     token)
       COMPREPLY=($(compgen -W "register revoke ls" -- "$cur"))
+      ;;
+    user)
+      COMPREPLY=($(compgen -W "ls add rm disable enable role" -- "$cur"))
+      ;;
+    role)
+      COMPREPLY=($(compgen -W "ls set rm" -- "$cur"))
       ;;
     flag)
       COMPREPLY=($(compgen -W "ls get set rm" -- "$cur"))
@@ -59,6 +65,8 @@ _hfs() {
     'import:Import secrets from JSON file'
     'env:Output secrets as KEY=value for shell'
     'token:Manage service token identities'
+    'user:Manage users (admin only)'
+    'role:Manage roles (admin only)'
     'flag:Manage feature flags'
     'audit:View audit log'
     'whoami:Check authentication status'
@@ -67,6 +75,8 @@ _hfs() {
     'completion:Generate shell completions'
   )
   token_cmds=('register:Register a service token' 'revoke:Unregister a token' 'ls:List registered tokens')
+  user_cmds=('ls:List all users' 'add:Add or update a user' 'rm:Remove a user' 'disable:Disable a user' 'enable:Enable a user' 'role:Change user role')
+  role_cmds=('ls:List all roles' 'set:Create or update a role' 'rm:Delete a role')
   flag_cmds=('ls:List flags' 'get:Get flag value' 'set:Set a flag' 'rm:Delete a flag')
   config_cmds=('set:Set vault URL' 'show:Show current config' 'clear:Clear all config')
   deploy_cmds=('status:Show deploy state' 'reset:Clear deploy state' 'destroy:Tear down all resources' 'logs:Tail live Worker logs')
@@ -74,6 +84,8 @@ _hfs() {
 
   case "$words[2]" in
     token) _describe 'token commands' token_cmds ;;
+    user) _describe 'user commands' user_cmds ;;
+    role) _describe 'role commands' role_cmds ;;
     flag) _describe 'flag commands' flag_cmds ;;
     config) _describe 'config commands' config_cmds ;;
     deploy) _describe 'deploy commands' deploy_cmds ;;

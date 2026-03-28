@@ -8,8 +8,10 @@ import { registerCompletionCommands } from "./commands/completion.js";
 import { registerConfigCommands } from "./commands/config.js";
 import { registerDeployCommands } from "./commands/deploy.js";
 import { registerFlagCommands } from "./commands/flags.js";
+import { registerRoleCommands } from "./commands/roles.js";
 import { registerSecretCommands } from "./commands/secrets.js";
 import { registerTokenCommands } from "./commands/tokens.js";
+import { registerUserCommands } from "./commands/users.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const VERSION: string = pkg.version;
@@ -18,6 +20,8 @@ const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/
 registerAuthCommands(program);
 registerSecretCommands(program);
 registerTokenCommands(program);
+registerUserCommands(program);
+registerRoleCommands(program);
 registerFlagCommands(program);
 registerAuditCommands(program);
 registerConfigCommands(program);

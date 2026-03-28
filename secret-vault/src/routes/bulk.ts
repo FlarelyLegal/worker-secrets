@@ -1,14 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
 import { computeHmac, decrypt, encrypt } from "../crypto.js";
+import { R403, R500 } from "../schemas.js";
 import {
-  R403,
-  R500,
   SecretExportItemSchema,
   SecretImportBody,
   SecretImportResponse,
   type SecretRow,
-} from "../schemas.js";
+} from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
 
 const bulk = new OpenAPIHono<HonoEnv>();
@@ -60,7 +59,7 @@ bulk.openapi(exportRoute, async (c) => {
       }
     }),
   );
-  await audit(c.env, auth, "export", null, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "export", null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ secrets: decrypted }, 200);
 });
 
@@ -147,7 +146,7 @@ bulk.openapi(importRoute, async (c) => {
 
   const imported = toInsert.length;
 
-  await audit(c.env, auth, "import", null, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "import", null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, imported, skipped }, 200);
 });
 

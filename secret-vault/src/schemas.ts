@@ -9,7 +9,6 @@ export const ErrorSchema = z
   })
   .openapi("Error");
 
-// Shared response shapes for route definitions
 export const R403: RouteConfig["responses"][string] = {
   content: { "application/json": { schema: ErrorSchema } },
   description: "Insufficient scope or owner only",
@@ -19,39 +18,7 @@ export const R500: RouteConfig["responses"][string] = {
   description: "Internal error",
 };
 
-// --- D1 row types ---
-
-export type SecretRow = {
-  key: string;
-  value: string;
-  iv: string;
-  hmac: string;
-  description: string;
-  created_by: string;
-  updated_by: string;
-  created_at: string;
-  updated_at: string;
-};
-
-// --- Params ---
-
-export const KeyParam = z.object({
-  key: z
-    .string()
-    .min(1)
-    .max(256, "key exceeds 256 char limit")
-    .refine((k) => k !== "export" && k !== "import", {
-      message: '"export" and "import" are reserved key names',
-    })
-    .openapi({ param: { name: "key", in: "path" }, example: "api-key" }),
-});
-
-export const ClientIdParam = z.object({
-  clientId: z
-    .string()
-    .min(1)
-    .openapi({ param: { name: "clientId", in: "path" }, example: "abc123.access" }),
-});
+// --- Shared params ---
 
 export const PaginationQuery = z.object({
   limit: z.coerce
@@ -104,111 +71,11 @@ export const AuditQuery = z.object({
     }),
 });
 
-// --- Secrets ---
-
-export const SecretListItemSchema = z
-  .object({
-    key: z.string().openapi({ example: "api-key" }),
-    description: z.string().openapi({ example: "Anthropic API key" }),
-    created_by: z.string().openapi({ example: "you@example.com" }),
-    updated_by: z.string().openapi({ example: "you@example.com" }),
-    created_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
-    updated_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
-  })
-  .openapi("SecretListItem");
-
-export const SecretEntrySchema = SecretListItemSchema.extend({
-  value: z.string().openapi({ example: "sk-ant-..." }),
-}).openapi("SecretEntry");
-
-export const SecretExportItemSchema = z
-  .object({
-    key: z.string(),
-    value: z.string().nullable(),
-    error: z.string().optional(),
-    description: z.string(),
-    created_at: z.string(),
-    updated_at: z.string(),
-  })
-  .openapi("SecretExportItem");
-
-export const SecretCreateBody = z.object({
-  value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
-  description: z.string().max(1000, "description exceeds 1000 char limit").optional().default(""),
-});
-
-export const SecretCreateResponse = z
-  .object({ ok: z.boolean(), key: z.string() })
-  .openapi("SecretCreateResponse");
-export const SecretDeleteResponse = z
-  .object({ ok: z.boolean(), deleted: z.string() })
-  .openapi("SecretDeleteResponse");
-
-export const SecretImportItem = z.object({
-  key: z
-    .string()
-    .min(1, "key is required")
-    .max(256, "key exceeds 256 char limit")
-    .refine((k) => k !== "export" && k !== "import", {
-      message: '"export" and "import" are reserved key names',
-    }),
-  value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
-  description: z.string().max(1000).optional().default(""),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  created_by: z.string().optional(),
-  updated_by: z.string().optional(),
-});
-
-export const SecretImportBody = z.object({
-  secrets: z.array(SecretImportItem).min(1, "at least one secret is required"),
-  overwrite: z.boolean().optional().default(false),
-});
-
-export const SecretImportResponse = z
-  .object({ ok: z.boolean(), imported: z.number(), skipped: z.number() })
-  .openapi("SecretImportResponse");
-
-// --- Tokens ---
-
-export const ServiceTokenSchema = z
-  .object({
-    client_id: z.string().openapi({ example: "abc123.access" }),
-    name: z.string().openapi({ example: "github-actions" }),
-    description: z.string(),
-    scopes: z.string().openapi({ example: "read,write" }),
-    created_at: z.string(),
-    last_used_at: z.string().nullable(),
-  })
-  .openapi("ServiceToken");
+// --- Scopes (shared by tokens and RBAC) ---
 
 export const VALID_SCOPES = ["*", "read", "write", "delete"] as const;
 
-export const TokenCreateBody = z.object({
-  name: z.string().min(1, "name is required").max(256, "name exceeds 256 char limit"),
-  description: z.string().max(1000).optional().default(""),
-  scopes: z
-    .string()
-    .optional()
-    .default("*")
-    .refine(
-      (s) =>
-        s
-          .split(",")
-          .map((v) => v.trim())
-          .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
-      { message: "Valid scopes: *, read, write, delete (comma-separated)" },
-    ),
-});
-
-export const TokenCreateResponse = z
-  .object({ ok: z.boolean(), client_id: z.string(), name: z.string(), scopes: z.string() })
-  .openapi("TokenCreateResponse");
-export const TokenDeleteResponse = z
-  .object({ ok: z.boolean(), revoked: z.string() })
-  .openapi("TokenDeleteResponse");
-
-// --- Auth / Admin ---
+// --- Admin ---
 
 export const HealthSchema = z
   .object({
@@ -221,7 +88,8 @@ export const WhoamiSchema = z
   .object({
     method: z.string().openapi({ example: "interactive" }),
     identity: z.string().openapi({ example: "you@example.com" }),
-    name: z.string().openapi({ example: "owner" }),
+    name: z.string().openapi({ example: "Tim Schneider" }),
+    role: z.string().openapi({ example: "admin" }),
     scopes: z.array(z.string()).openapi({ example: ["*"] }),
   })
   .openapi("Whoami");
@@ -236,5 +104,6 @@ export const AuditEntrySchema = z
     secret_key: z.string().nullable(),
     ip: z.string().nullable(),
     user_agent: z.string().nullable(),
+    request_id: z.string().nullable(),
   })
   .openapi("AuditEntry");

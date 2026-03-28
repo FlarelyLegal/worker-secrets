@@ -70,7 +70,7 @@ flags.openapi(listRoute, async (c) => {
       }
     }
   }
-  await audit(c.env, auth, "list_flags", null, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "list_flags", null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ flags: result }, 200);
 });
 
@@ -111,7 +111,7 @@ flags.openapi(getRoute, async (c) => {
     flag = { key, value: raw, type: "string", description: "", updated_by: "", updated_at: "" };
   }
 
-  await audit(c.env, auth, "get_flag", key, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "get_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json(flag, 200);
 });
 
@@ -150,7 +150,7 @@ flags.openapi(setRoute, async (c) => {
   const data = { value, type, description, updated_by: auth.identity, updated_at: now };
   await c.env.FLAGS.put(key, JSON.stringify(data));
 
-  await audit(c.env, auth, "set_flag", key, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "set_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ key, ...data }, 200);
 });
 
@@ -187,7 +187,7 @@ flags.openapi(deleteRoute, async (c) => {
   const { key } = c.req.valid("param");
   await c.env.FLAGS.delete(key);
 
-  await audit(c.env, auth, "delete_flag", key, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "delete_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, deleted: key }, 200);
 });
 

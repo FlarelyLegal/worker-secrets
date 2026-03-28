@@ -13,8 +13,33 @@ export interface ServiceTokenEntry {
   name: string;
   description: string;
   scopes: string;
+  role: string | null;
+  created_by: string;
   created_at: string;
+  updated_at: string;
   last_used_at: string | null;
+}
+
+export interface UserEntry {
+  email: string;
+  name: string;
+  role: string;
+  enabled: number;
+  last_login_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+}
+
+export interface RoleEntry {
+  name: string;
+  scopes: string;
+  description: string;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
 }
 
 export interface AuditEntry {
@@ -217,9 +242,68 @@ export class VaultClient {
     return this.request("DELETE", `/flags/${encodeURIComponent(key)}`);
   }
 
+  // --- Users ---
+
+  async listUsers(): Promise<UserEntry[]> {
+    const data = await this.request<{ users: UserEntry[] }>("GET", "/users");
+    return data.users;
+  }
+
+  async addUser(
+    email: string,
+    role: string,
+    name?: string,
+  ): Promise<{ ok: boolean; email: string }> {
+    return this.request("PUT", `/users/${encodeURIComponent(email)}`, {
+      email,
+      name: name || "",
+      role,
+    });
+  }
+
+  async updateUser(
+    email: string,
+    updates: { name?: string; role?: string; enabled?: boolean },
+  ): Promise<{ ok: boolean; email: string }> {
+    return this.request("PATCH", `/users/${encodeURIComponent(email)}`, updates);
+  }
+
+  async deleteUser(email: string): Promise<{ ok: boolean; deleted: string }> {
+    return this.request("DELETE", `/users/${encodeURIComponent(email)}`);
+  }
+
+  // --- Roles ---
+
+  async listRoles(): Promise<RoleEntry[]> {
+    const data = await this.request<{ roles: RoleEntry[] }>("GET", "/roles");
+    return data.roles;
+  }
+
+  async setRole(
+    name: string,
+    scopes: string,
+    description?: string,
+  ): Promise<{ ok: boolean; name: string }> {
+    return this.request("PUT", `/roles/${encodeURIComponent(name)}`, {
+      name,
+      scopes,
+      description: description || "",
+    });
+  }
+
+  async deleteRole(name: string): Promise<{ ok: boolean; deleted: string }> {
+    return this.request("DELETE", `/roles/${encodeURIComponent(name)}`);
+  }
+
   // --- Info ---
 
-  async whoami(): Promise<{ method: string; identity: string; name: string; scopes: string[] }> {
+  async whoami(): Promise<{
+    method: string;
+    identity: string;
+    name: string;
+    role: string;
+    scopes: string[];
+  }> {
     return this.request("GET", "/whoami");
   }
 }

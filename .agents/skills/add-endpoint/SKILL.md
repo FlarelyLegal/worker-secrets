@@ -21,7 +21,9 @@ Routes live in `secret-vault/src/routes/` as Hono sub-routers, mounted in `src/i
 
 - Sub-routers: `const things = new OpenAPIHono<HonoEnv>()` mounted via `app.route("/things", things)`
 - Interactive-only routes: add middleware `if (auth.method !== "interactive") return 403`
-- Auth context available after middleware: `c.get("auth")`, `c.get("ip")`, `c.get("ua")`, `c.env.DB`
+- Admin-only routes: add middleware `if (auth.method !== "interactive" || !isAdmin(auth)) return 403`
+- Auth context available after middleware: `c.get("auth")`, `c.get("ip")`, `c.get("ua")`, `c.get("requestId")`, `c.env.DB`
+- Schemas split by domain: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts`
 
 ### Pattern
 
@@ -29,7 +31,7 @@ Use the `createRoute()` + `app.openapi()` pattern. See the [zod-openapi skill](.
 
 ## CHECKLIST
 
-- [ ] Define request/response schemas in `schemas.ts` (see `zod-openapi` skill)
+- [ ] Define request/response schemas in the appropriate `schemas-*.ts` file (see `zod-openapi` skill)
 - [ ] Define route with `createRoute()` including all response codes
 - [ ] Register with `app.openapi(route, handler)` — not `app.get()`
 - [ ] Use `c.req.valid("json")` / `c.req.valid("param")` — not `c.req.json()`

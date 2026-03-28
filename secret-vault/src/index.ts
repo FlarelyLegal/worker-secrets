@@ -5,8 +5,10 @@ import admin from "./routes/admin.js";
 import bulk from "./routes/bulk.js";
 import flags from "./routes/flags.js";
 import pub from "./routes/public.js";
+import roles from "./routes/roles.js";
 import secrets from "./routes/secrets.js";
 import tokens from "./routes/tokens.js";
+import users from "./routes/users.js";
 import versions from "./routes/versions.js";
 import type { HonoEnv } from "./types.js";
 import { VERSION } from "./version.js";
@@ -28,10 +30,11 @@ app.onError((err, c) => {
 // --- Security headers ---
 
 app.use("*", async (c, next) => {
+  const requestId = crypto.randomUUID();
+  c.set("requestId", requestId);
   await next();
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-  const requestId = crypto.randomUUID();
   c.res.headers.set("X-Request-ID", requestId);
   if (c.res.headers.get("Content-Type")?.includes("text/html")) {
     c.res.headers.set("X-Frame-Options", "DENY");
@@ -93,6 +96,8 @@ const API_TAGS = [
       "Register and manage service tokens. Each token gets a name, scoped permissions, " +
       "and usage tracking. Interactive auth only.",
   },
+  { name: "Users", description: "User management with RBAC role assignment (admin only)" },
+  { name: "Roles", description: "Role definitions with scoped permissions (admin only)" },
   { name: "Flags", description: "Feature flags backed by KV (plaintext, not encrypted)" },
   { name: "Admin", description: "Authentication status and audit log access." },
   { name: "Public", description: "Unauthenticated endpoints." },
@@ -147,7 +152,7 @@ app.use("*", async (c, next) => {
     // Log failed auth attempt (best-effort, don't block the 401 response)
     try {
       await c.env.DB.prepare(
-        "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
         .bind(
           "rejected",
@@ -156,6 +161,7 @@ app.use("*", async (c, next) => {
           null,
           c.req.header("CF-Connecting-IP") ?? null,
           c.req.header("User-Agent") ?? null,
+          c.get("requestId"),
         )
         .run();
     } catch {
@@ -195,6 +201,8 @@ app.use("*", async (c, next) => {
 // --- Mount routes ---
 
 app.route("/", admin);
+app.route("/users", users);
+app.route("/roles", roles);
 app.route("/tokens", tokens);
 app.route("/flags", flags);
 app.route("/secrets", bulk);

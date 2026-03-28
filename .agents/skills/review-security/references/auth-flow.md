@@ -34,14 +34,19 @@ If `CF-Access-Client-Id` header is present:
 1. Look up `client_id` in `service_tokens` table
 2. If not registered → reject (401), even if the Access token itself is valid
 3. Update `last_used_at` timestamp
-4. Return scopes from the registration record
+4. If token has a `role` set → resolve scopes from `roles` table (overrides raw scopes)
+5. Otherwise → use raw `scopes` from the registration record
+6. Return `AuthUser` with `method: "service_token"`, resolved scopes
 
 ### Step 2b: Interactive path
 
 If no `CF-Access-Client-Id` header:
 1. Extract `email` from JWT payload
-2. Compare against `ALLOWED_EMAILS` (case-insensitive)
-3. If match → grant `["*"]` scopes as "owner"
+2. Look up email in `users` table (case-insensitive)
+3. If found and `enabled = 1` → resolve scopes from user's role via `roles` table, update `last_login_at`
+4. If found and `enabled = 0` → reject (user disabled)
+5. If not found and `users` table is empty → **auto-seed** as admin (self-bootstrapping)
+6. If not found → fall back to `ALLOWED_EMAILS` env var (migration path for existing deployments)
 
 ### Rejection
 
@@ -50,13 +55,28 @@ Any of these returns `null` → middleware responds 401:
 - Invalid/expired JWT signature
 - Wrong issuer or audience
 - Service token not registered in D1
-- Email doesn't match `ALLOWED_EMAILS`
+- User not in `users` table (and not in `ALLOWED_EMAILS` fallback)
+- User disabled (`enabled = 0`)
 
-Failed auth attempts are logged to audit_log with `method: "rejected"` and `action: "auth_failed"`.
+Failed auth attempts are logged to audit_log with `method: "rejected"`, `action: "auth_failed"`, and `request_id`.
 
 ### DEV_AUTH_BYPASS
 
-When `DEV_AUTH_BYPASS` is set in the environment and the request has no `CF-Connecting-IP` header (i.e., local development, not production edge), authentication is bypassed with a synthetic owner identity. This must never be set in production.
+When `DEV_AUTH_BYPASS` is set in the environment and the request has no `CF-Connecting-IP` header (i.e., local development, not production edge), authentication is bypassed with a synthetic admin identity. This must never be set in production.
+
+## RBAC scope resolution
+
+Scopes are resolved from the user's role, not hardcoded:
+
+```typescript
+async function resolveScopes(db: D1Database, role: string): Promise<string[]> {
+  const row = await db.prepare("SELECT scopes FROM roles WHERE name = ?").bind(role).first();
+  if (!row) return ["read"]; // safe fallback
+  return row.scopes === "*" ? ["*"] : row.scopes.split(",").map(s => s.trim());
+}
+```
+
+Default roles: `admin` (`*`), `operator` (`read,write`), `reader` (`read`).
 
 ## Scope enforcement
 
@@ -68,13 +88,19 @@ function hasScope(auth: AuthUser, required: string): boolean {
 }
 ```
 
-- Interactive users always have `["*"]`
-- Service tokens have whatever was set at registration
-- Token management and audit endpoints check `auth.method !== "interactive"` directly
+## Admin enforcement
+
+User and role management endpoints require both interactive auth AND admin role:
+
+```typescript
+function isAdmin(auth: AuthUser): boolean {
+  return auth.role === "admin";
+}
+```
 
 ## CLI auth (`hfs/src/config.ts`)
 
 Two modes, no fallback:
 - **Service token**: `HFS_CLIENT_ID` + `HFS_CLIENT_SECRET` env vars → sends as `CF-Access-Client-Id` / `CF-Access-Client-Secret` headers
-- **Interactive**: JWT from `hfs login` (via cloudflared) → sends as `CF_Authorization` cookie
+- **Interactive**: JWT from `hfs login` (via cloudflared) → sends as both `CF_Authorization` cookie and `Cf-Access-Jwt-Assertion` header
 - Partial env vars (one set, one missing) → hard error, not silent skip

@@ -7,7 +7,7 @@ description: Add a new CLI command to the hfs tool. Use when adding user-facing 
 
 ## FILES
 
-- `hfs/src/commands/` — Command modules (`auth.ts`, `secrets.ts`, `tokens.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`)
+- `hfs/src/commands/` — Command modules (`auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`)
 - `hfs/src/deploy/` — Deploy phases (`state.ts`, `phases.ts`, `access.ts`, `assets.ts`, `worker.ts`, `cf-api.ts`)
 - `hfs/src/client.ts` — `VaultClient` HTTP methods against the vault API
 - `hfs/src/config.ts` — Auth resolution, JWT storage, config management
@@ -65,7 +65,7 @@ program
 
 - `VaultClient.health()` exists but has no CLI command — add one if needed
 - Subcommand groups: `const sub = program.command("parent"); sub.command("child")`
-- Existing groups: `config` (set, show, clear), `token` (register, revoke, ls), `flag` (ls, get, set, rm)
+- Existing groups: `config` (set, show, clear), `token` (register, revoke, ls), `user` (ls, add, rm, disable, enable, role), `role` (ls, set, rm), `flag` (ls, get, set, rm)
 
 ## CHECKLIST
 

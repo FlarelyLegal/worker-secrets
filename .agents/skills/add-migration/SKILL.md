@@ -20,7 +20,7 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 
 ## EXISTING SCHEMA
 
-- `0001_init.sql` — `secrets` (with HMAC integrity), `service_tokens`, `audit_log`, `secret_versions`
+- `0001_init.sql` — `secrets` (HMAC, tags), `secret_versions`, `roles` (seeded), `users` (RBAC, enabled flag), `service_tokens` (role FK), `audit_log` (request_id)
 
 See [current schema](references/current-schema.md) for full DDL.
 

@@ -19,7 +19,13 @@ const whoamiRoute = createRoute({
 admin.openapi(whoamiRoute, (c) => {
   const auth = c.get("auth");
   return c.json(
-    { method: auth.method, identity: auth.identity, name: auth.name, scopes: auth.scopes },
+    {
+      method: auth.method,
+      identity: auth.identity,
+      name: auth.name,
+      role: auth.role,
+      scopes: auth.scopes,
+    },
     200,
   );
 });

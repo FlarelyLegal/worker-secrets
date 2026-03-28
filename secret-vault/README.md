@@ -58,6 +58,14 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `GET` | `/tokens` | interactive | List service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive | Register token |
 | `DELETE` | `/tokens/{clientId}` | interactive | Revoke token |
+| `GET` | `/users` | admin | List all users |
+| `PUT` | `/users/{email}` | admin | Add or update a user |
+| `PATCH` | `/users/{email}` | admin | Partial update (role, name, enabled) |
+| `DELETE` | `/users/{email}` | admin | Remove a user |
+| `GET` | `/roles` | admin | List all roles |
+| `PUT` | `/roles/{name}` | admin | Create or update a role |
+| `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description) |
+| `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |
 | `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type) |
@@ -86,6 +94,7 @@ Flags are stored in a `FLAGS` KV namespace as plaintext key-value pairs (not enc
 - **Encryption at rest**: AES-256-GCM with per-secret random IV (PQC-safe symmetric)
 - **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key, detecting tampering or ciphertext swaps at rest
 - **Dual auth**: Access validates at edge, Worker validates again as defense-in-depth
+- **RBAC**: Users and service tokens assigned to roles (admin, operator, reader) with scoped permissions
 - **Hardware key enforcement**: Interactive policy requires `hwk` (FIDO2/passkey/YubiKey)
 - **Registered tokens only**: Valid Access token is rejected until registered with name + scopes
 - **Full audit log**: Every operation logged with identity, action, key, IP, user agent

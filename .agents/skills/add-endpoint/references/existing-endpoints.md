@@ -31,6 +31,14 @@ Source: `secret-vault/src/routes/`
 | `GET` | `/flags/{key}` | read | Get a flag value with metadata |
 | `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type: boolean, number, json, string) |
 | `DELETE` | `/flags/{key}` | delete | Delete a flag |
+| `GET` | `/users` | admin | List all users with role, enabled status, last login |
+| `PUT` | `/users/{email}` | admin | Add or update a user with role assignment |
+| `PATCH` | `/users/{email}` | admin | Partial update (name, role, enabled) |
+| `DELETE` | `/users/{email}` | admin | Remove a user (cannot delete self) |
+| `GET` | `/roles` | admin | List all roles with scopes |
+| `PUT` | `/roles/{name}` | admin | Create or update a role |
+| `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description) |
+| `DELETE` | `/roles/{name}` | admin | Delete a role (rejects if users/tokens assigned) |
 
 ## Request/response patterns
 
@@ -47,9 +55,20 @@ Limits: value max 1MB, key max 256 chars, description max 1000 chars.
 
 ### PUT body (tokens)
 ```json
-{ "name": "token-name", "description": "optional", "scopes": "read,write" }
+{ "name": "token-name", "description": "optional", "scopes": "read,write", "role": "operator" }
 ```
-Valid scopes: `*`, `read`, `write`, `delete` (comma-separated). Name max 256, description max 1000.
+Valid scopes: `*`, `read`, `write`, `delete` (comma-separated). Name max 256, description max 1000. Optional `role` overrides scopes when set.
+
+### PUT body (users)
+```json
+{ "email": "user@example.com", "name": "Display Name", "role": "operator" }
+```
+
+### PUT body (roles)
+```json
+{ "name": "role-name", "scopes": "read,write", "description": "optional" }
+```
+Role names: lowercase alphanumeric, hyphens, underscores. Scopes max 64 chars.
 
 ### List response (paginated)
 ```json

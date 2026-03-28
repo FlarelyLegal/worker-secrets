@@ -2,7 +2,7 @@ export interface Env {
   DB: D1Database;
   FLAGS: KVNamespace;
   ENCRYPTION_KEY: string; // 64-char hex string (32 bytes)
-  ALLOWED_EMAILS: string; // comma-separated emails for interactive passkey/IdP sessions
+  ALLOWED_EMAILS?: string; // fallback if users table is empty (comma-separated)
   TEAM_DOMAIN: string; // https://<team>.cloudflareaccess.com
   POLICY_AUD: string; // Access application AUD tag
   PROJECT_NAME?: string; // worker/DB name prefix (default: "secret-vault")
@@ -16,6 +16,7 @@ export type AuthUser = {
   method: "interactive" | "service_token";
   identity: string;
   name: string;
+  role: string;
   scopes: string[];
 };
 
@@ -25,5 +26,6 @@ export type HonoEnv = {
     auth: AuthUser;
     ip: string | null;
     ua: string | null;
+    requestId: string;
   };
 };

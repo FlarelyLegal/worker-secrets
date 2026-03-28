@@ -106,6 +106,7 @@ export function registerAuthCommands(program: Command): void {
         console.log(chalk.dim("method:   ") + chalk.bold(info.method));
         console.log(chalk.dim("name:     ") + info.name);
         console.log(chalk.dim("identity: ") + info.identity);
+        console.log(chalk.dim("role:     ") + chalk.bold(info.role));
         console.log(chalk.dim("scopes:   ") + info.scopes.join(", "));
       } catch (e) {
         die(errorMessage(e));

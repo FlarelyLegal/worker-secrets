@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
-import { ErrorSchema, KeyParam, R403 } from "../schemas.js";
+import { ErrorSchema, R403 } from "../schemas.js";
+import { KeyParam } from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
 
 const versions = new OpenAPIHono<HonoEnv>();
@@ -45,7 +46,7 @@ versions.openapi(versionsRoute, async (c) => {
       .first();
     if (!exists) return c.json({ error: "Secret not found" }, 404);
   }
-  await audit(c.env, auth, "versions", key, c.get("ip"), c.get("ua"));
+  await audit(c.env, auth, "versions", key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ versions: results }, 200);
 });
 

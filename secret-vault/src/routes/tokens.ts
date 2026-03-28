@@ -1,13 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit } from "../auth.js";
+import { ErrorSchema } from "../schemas.js";
 import {
   ClientIdParam,
-  ErrorSchema,
   ServiceTokenSchema,
   TokenCreateBody,
   TokenCreateResponse,
   TokenDeleteResponse,
-} from "../schemas.js";
+} from "../schemas-tokens.js";
 import type { HonoEnv } from "../types.js";
 
 const tokens = new OpenAPIHono<HonoEnv>();
@@ -39,9 +39,17 @@ const listRoute = createRoute({
 
 tokens.openapi(listRoute, async (c) => {
   const { results } = await c.env.DB.prepare(
-    "SELECT client_id, name, description, scopes, created_at, last_used_at FROM service_tokens ORDER BY name",
+    "SELECT client_id, name, description, scopes, role, created_by, created_at, updated_at, last_used_at FROM service_tokens ORDER BY name",
   ).all();
-  await audit(c.env, c.get("auth"), "list_tokens", null, c.get("ip"), c.get("ua"));
+  await audit(
+    c.env,
+    c.get("auth"),
+    "list_tokens",
+    null,
+    c.get("ip"),
+    c.get("ua"),
+    c.get("requestId"),
+  );
   return c.json({ tokens: results as z.infer<typeof ServiceTokenSchema>[] }, 200);
 });
 
@@ -70,18 +78,36 @@ const registerRoute = createRoute({
 
 tokens.openapi(registerRoute, async (c) => {
   const { clientId } = c.req.valid("param");
-  const { name, description, scopes } = c.req.valid("json");
+  const { name, description, scopes, role } = c.req.valid("json");
 
+  // Verify role exists if provided
+  if (role) {
+    const roleExists = await c.env.DB.prepare("SELECT name FROM roles WHERE name = ?")
+      .bind(role)
+      .first();
+    if (!roleExists) return c.json({ error: `Role '${role}' does not exist` }, 400);
+  }
+
+  const identity = c.get("auth").identity;
   await c.env.DB.prepare(
-    `INSERT INTO service_tokens (client_id, name, description, scopes, created_at)
-     VALUES (?, ?, ?, ?, datetime('now'))
+    `INSERT INTO service_tokens (client_id, name, description, scopes, role, created_by, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(client_id) DO UPDATE SET
-       name = excluded.name, description = excluded.description, scopes = excluded.scopes`,
+       name = excluded.name, description = excluded.description,
+       scopes = excluded.scopes, role = excluded.role, updated_at = datetime('now')`,
   )
-    .bind(clientId, name, description, scopes)
+    .bind(clientId, name, description, scopes, role || null, identity)
     .run();
 
-  await audit(c.env, c.get("auth"), "register_token", clientId, c.get("ip"), c.get("ua"));
+  await audit(
+    c.env,
+    c.get("auth"),
+    "register_token",
+    clientId,
+    c.get("ip"),
+    c.get("ua"),
+    c.get("requestId"),
+  );
   return c.json({ ok: true, client_id: clientId, name, scopes }, 201);
 });
 
@@ -112,7 +138,15 @@ tokens.openapi(revokeRoute, async (c) => {
     .run();
 
   if (result.meta.changes === 0) return c.json({ error: "Token not found" }, 404);
-  await audit(c.env, c.get("auth"), "revoke_token", clientId, c.get("ip"), c.get("ua"));
+  await audit(
+    c.env,
+    c.get("auth"),
+    "revoke_token",
+    clientId,
+    c.get("ip"),
+    c.get("ua"),
+    c.get("requestId"),
+  );
   return c.json({ ok: true, revoked: clientId }, 200);
 });
 

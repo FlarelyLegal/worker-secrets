@@ -13,19 +13,32 @@ function getJWKS(teamDomain: string) {
   return _cachedJWKS;
 }
 
+// --- Scope resolution ---
+
+type RoleRow = { name: string; scopes: string };
+
+async function resolveScopes(db: D1Database, role: string): Promise<string[]> {
+  const row = await db
+    .prepare("SELECT scopes FROM roles WHERE name = ?")
+    .bind(role)
+    .first<RoleRow>();
+  if (!row) return ["read"];
+  return row.scopes === "*" ? ["*"] : row.scopes.split(",").map((s) => s.trim());
+}
+
 // --- Auth ---
+
+type UserRow = { email: string; name: string; role: string; enabled: number };
+type TokenRow = { client_id: string; name: string; scopes: string; role: string | null };
 
 export async function authenticate(request: Request, env: Env): Promise<AuthUser | null> {
   // Dev-only bypass for local testing (wrangler dev).
-  // Only activates when BOTH conditions are true:
-  //   1. DEV_AUTH_BYPASS=true in .dev.vars
-  //   2. Request is from localhost (not routed through Cloudflare)
-  // Production requests always have CF-Connecting-IP set by Cloudflare's edge.
   if (env.DEV_AUTH_BYPASS === "true" && !request.headers.get("CF-Connecting-IP")) {
     return {
       method: "interactive",
       identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
-      name: "owner",
+      name: "dev",
+      role: "admin",
       scopes: ["*"],
     };
   }
@@ -49,10 +62,10 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   const clientId = request.headers.get("CF-Access-Client-Id");
   if (clientId) {
     const registered = await env.DB.prepare(
-      "SELECT client_id, name, scopes FROM service_tokens WHERE client_id = ?",
+      "SELECT client_id, name, scopes, role FROM service_tokens WHERE client_id = ?",
     )
       .bind(clientId)
-      .first<{ client_id: string; name: string; scopes: string }>();
+      .first<TokenRow>();
 
     if (!registered) return null;
 
@@ -62,27 +75,80 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(clientId)
       .run();
 
-    const scopes =
-      registered.scopes === "*" ? ["*"] : registered.scopes.split(",").map((s) => s.trim());
+    // Role overrides raw scopes when set
+    const scopes = registered.role
+      ? await resolveScopes(env.DB, registered.role)
+      : registered.scopes === "*"
+        ? ["*"]
+        : registered.scopes.split(",").map((s) => s.trim());
 
     return {
       method: "service_token",
       identity: registered.client_id,
       name: registered.name,
+      role: registered.role || "custom",
       scopes,
     };
   }
 
   // Path 2: Interactive session
   const email = payload.email as string | undefined;
-  const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
-  if (email && allowed.includes(email.toLowerCase())) {
+  if (!email) return null;
+
+  // Check users table first
+  const user = await env.DB.prepare("SELECT email, name, role, enabled FROM users WHERE email = ?")
+    .bind(email.toLowerCase())
+    .first<UserRow>();
+
+  if (user) {
+    if (!user.enabled) return null;
+
+    // Update last login (best-effort)
+    await env.DB.prepare("UPDATE users SET last_login_at = datetime('now') WHERE email = ?")
+      .bind(email.toLowerCase())
+      .run();
+
+    const scopes = await resolveScopes(env.DB, user.role);
     return {
       method: "interactive",
       identity: email,
-      name: "owner",
+      name: user.name || email.split("@")[0],
+      role: user.role,
+      scopes,
+    };
+  }
+
+  // Auto-seed: if users table is empty, first interactive user becomes admin
+  const count = await env.DB.prepare("SELECT COUNT(*) as total FROM users").first<{
+    total: number;
+  }>();
+  if (count && count.total === 0) {
+    await env.DB.prepare(
+      "INSERT INTO users (email, name, role, created_by) VALUES (?, ?, 'admin', 'auto-seed')",
+    )
+      .bind(email.toLowerCase(), email.split("@")[0])
+      .run();
+    return {
+      method: "interactive",
+      identity: email,
+      name: email.split("@")[0],
+      role: "admin",
       scopes: ["*"],
     };
+  }
+
+  // Fallback: ALLOWED_EMAILS env var (migration path for existing deployments)
+  if (env.ALLOWED_EMAILS) {
+    const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
+    if (allowed.includes(email.toLowerCase())) {
+      return {
+        method: "interactive",
+        identity: email,
+        name: email.split("@")[0],
+        role: "admin",
+        scopes: ["*"],
+      };
+    }
   }
 
   return null;
@@ -94,6 +160,12 @@ export function hasScope(auth: AuthUser, required: string): boolean {
   return auth.scopes.includes("*") || auth.scopes.includes(required);
 }
 
+// --- Admin check ---
+
+export function isAdmin(auth: AuthUser): boolean {
+  return auth.role === "admin";
+}
+
 // --- Audit logging ---
 
 export async function audit(
@@ -103,9 +175,10 @@ export async function audit(
   secretKey: string | null,
   ip: string | null,
   userAgent: string | null = null,
+  requestId: string | null = null,
 ): Promise<void> {
   await env.DB.prepare(
-    "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
   )
     .bind(
       auth.method === "interactive" ? "interactive" : auth.name,
@@ -114,6 +187,7 @@ export async function audit(
       secretKey,
       ip,
       userAgent,
+      requestId,
     )
     .run();
 }

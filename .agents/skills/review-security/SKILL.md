@@ -12,7 +12,9 @@ This is an encrypted secret store — security mistakes leak credentials.
 ### Auth
 - **ALWAYS** validate JWT signature against Cloudflare JWKS + check issuer + AUD
 - **ALWAYS** reject unregistered service tokens even if Access JWT is valid
-- **ALWAYS** match `ALLOWED_EMAILS` case-insensitively
+- **ALWAYS** check `users` table first, fall back to `ALLOWED_EMAILS` only if table is empty
+- **ALWAYS** verify `enabled` flag — disabled users are rejected even with valid JWT
+- **ALWAYS** use `isAdmin(auth)` for user/role management endpoints
 - **NEVER** fall back between auth modes — partial config = hard error
 - **NEVER** store service token credentials on disk
 
@@ -30,8 +32,9 @@ This is an encrypted secret store — security mistakes leak credentials.
 
 ### Scope enforcement
 - **ALWAYS** call `hasScope(auth, scope)` before every data operation
-- Scopes: `read`, `write`, `delete`, `*`
+- Scopes resolved from role via `roles` table: `read`, `write`, `delete`, `*`
 - Token management + audit: restricted to `interactive` auth only
+- User/role management: restricted to `interactive` auth + `admin` role
 
 ### Feature flags
 - Flags are **plaintext** in KV — they are configuration values, not secrets
@@ -58,8 +61,8 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 ## REVIEW CHECKLIST
 
 - [ ] No secret values logged, returned in list endpoints, or included in errors
-- [ ] New endpoints have scope guards via `hasScope()`
-- [ ] All data access calls `audit()`
+- [ ] New endpoints have scope guards via `hasScope()` or `isAdmin()`
+- [ ] All data access calls `audit()` with `requestId`
 - [ ] No raw `ENCRYPTION_KEY` exposure outside `encrypt`/`decrypt`
 - [ ] Auth middleware cannot be bypassed (route ordering in Hono)
 - [ ] D1 queries use `.bind()`, never string interpolation
