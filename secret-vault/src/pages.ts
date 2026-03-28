@@ -44,15 +44,11 @@ export function landingPage(brand: string, origin: string): string {
     .status { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: var(--green); }
     .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
-    .features { display: flex; flex-direction: column; gap: 1.25rem; }
-    .feature { display: flex; gap: 0.75rem; }
-    .feature-icon { width: 32px; height: 32px; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.875rem; }
-    .feature-icon.orange { background: rgba(249,115,22,0.1); color: var(--accent); }
-    .feature-icon.green { background: rgba(34,197,94,0.1); color: var(--green); }
-    .feature-icon.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
-    .feature-icon.purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
-    .feature-title { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.125rem; }
+    .right { padding-top: 3.75rem; }
+    h2 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    .features { display: flex; flex-direction: column; gap: 0.5rem; }
+    .feature { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+    .feature-title { font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.25rem; }
     .feature-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
   </style>
 </head>
@@ -85,23 +81,23 @@ export function landingPage(brand: string, origin: string): string {
       </div>
     </div>
     <div class="right">
-      <h2>Security architecture</h2>
+      <h2>Security</h2>
       <div class="features">
         <div class="feature">
-          <div class="feature-icon orange">\ud83d\udd10</div>
-          <div><div class="feature-title">AES-256-GCM encryption</div><div class="feature-desc">Every secret encrypted with a unique random IV. Keys never touch the database. Encryption key stored as a Cloudflare Worker secret.</div></div>
+          <div class="feature-title">Encryption at rest</div>
+          <div class="feature-desc">AES-256-GCM with a unique random IV per secret. Encryption key stored as a Worker secret, never in the database.</div>
         </div>
         <div class="feature">
-          <div class="feature-icon green">\ud83d\udee1\ufe0f</div>
-          <div><div class="feature-title">Dual auth via Cloudflare Access</div><div class="feature-desc">Interactive sessions with your IdP and hardware keys (passkeys, YubiKeys) for humans. Registered service tokens with scoped permissions for machines.</div></div>
+          <div class="feature-title">Dual authentication</div>
+          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities and scoped permissions for CI and other Workers.</div>
         </div>
         <div class="feature">
-          <div class="feature-icon blue">\ud83d\udcdd</div>
-          <div><div class="feature-title">Full audit logging</div><div class="feature-desc">Every operation logged with identity, action, secret key, IP address, and user agent. Composite indexes for fast querying by secret or action.</div></div>
+          <div class="feature-title">Audit logging</div>
+          <div class="feature-desc">Every operation recorded with identity, action, secret key, IP, and user agent. Indexed for fast queries by secret or action type.</div>
         </div>
         <div class="feature">
-          <div class="feature-icon purple">\ud83d\udd11</div>
-          <div><div class="feature-title">Scoped service tokens</div><div class="feature-desc">Each token gets a name, description, and granular permissions (read, write, delete). Unregistered tokens are rejected even with valid Access credentials.</div></div>
+          <div class="feature-title">Token registration</div>
+          <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
         </div>
       </div>
     </div>
