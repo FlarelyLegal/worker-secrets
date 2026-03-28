@@ -118,7 +118,7 @@ export function landingPage(
           <span class="link-arrow">\u2192</span>
         </a>
         <a class="link" href="${repo}/releases/latest" target="_blank" rel="noopener">
-          <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g ${pkg}</div></div>
+          <div><div class="link-label">Install CLI</div><div class="link-path" style="font-family:var(--mono)">npm i -g ${pkg} --registry=https://npm.pkg.github.com</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
       </div>
