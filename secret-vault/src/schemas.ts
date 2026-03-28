@@ -99,6 +99,7 @@ export const HealthSchema = z
   .object({
     status: z.string().openapi({ example: "ok" }),
     database: z.string().openapi({ example: "ok" }),
+    kv: z.string().openapi({ example: "ok" }),
   })
   .openapi("Health");
 

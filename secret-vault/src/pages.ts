@@ -132,9 +132,10 @@ export function landingPage(
 </html>`;
 }
 
-export function healthPage(brand: string, dbOk = true): string {
-  const statusText = dbOk ? "All systems healthy" : "Database unreachable";
-  const statusColor = dbOk ? "var(--green)" : "#ef4444";
+export function healthPage(brand: string, dbOk = true, kvOk = true): string {
+  const allOk = dbOk && kvOk;
+  const statusText = allOk ? "All systems healthy" : "Service degraded";
+  const statusColor = allOk ? "var(--green)" : "#ef4444";
   const initial = brand.charAt(0).toUpperCase();
   return `<!DOCTYPE html>
 <html lang="en">
@@ -159,6 +160,10 @@ export function healthPage(brand: string, dbOk = true): string {
     <div class="icon"><svg fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
     <h1>${brand}</h1>
     <div class="status" style="color:${statusColor}">${statusText}</div>
+    <div class="meta" style="margin-bottom:0.75rem">
+      <span style="display:inline-flex;align-items:center;gap:0.375rem;margin:0.25rem 0"><span style="width:6px;height:6px;border-radius:50%;background:${dbOk ? "var(--green)" : "#ef4444"}"></span>Database: ${dbOk ? "ok" : "unreachable"}</span><br/>
+      <span style="display:inline-flex;align-items:center;gap:0.375rem;margin:0.25rem 0"><span style="width:6px;height:6px;border-radius:50%;background:${kvOk ? "var(--green)" : "#ef4444"}"></span>KV: ${kvOk ? "ok" : "unreachable"}</span>
+    </div>
     <div class="meta">
       <span>${new Date().toISOString()}</span>
       <span><a href="/">Home</a> \u00b7 <a href="/doc">API Docs</a></span>

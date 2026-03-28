@@ -82,11 +82,13 @@ export function registerAuthCommands(program: Command): void {
       const base = url.replace(/\/+$/, "");
       try {
         const res = await fetch(`${base}/health`);
-        const data = (await res.json()) as { status?: string; database?: string };
+        const data = (await res.json()) as { status?: string; database?: string; kv?: string };
         if (data.status === "ok") {
           console.log(`${chalk.green("✓")} Vault is healthy ${chalk.dim(`(${base})`)}`);
+          console.log(chalk.dim(`  database: ${data.database}  kv: ${data.kv}`));
         } else if (data.status === "degraded") {
-          console.error(chalk.yellow(`⚠ Vault degraded: database ${data.database || "issue"}`));
+          console.error(chalk.yellow(`⚠ Vault degraded`));
+          console.error(chalk.dim(`  database: ${data.database}  kv: ${data.kv}`));
           process.exit(1);
         } else {
           console.error(chalk.red(`✗ Unexpected response: ${JSON.stringify(data)}`));

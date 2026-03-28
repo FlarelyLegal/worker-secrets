@@ -36,14 +36,27 @@ pub.openapi(healthRoute, async (c): Promise<any> => {
     dbOk = false;
   }
 
+  // Verify KV is reachable
+  let kvOk = true;
+  try {
+    await c.env.FLAGS.list({ limit: 1 });
+  } catch {
+    kvOk = false;
+  }
+
+  const healthy = dbOk && kvOk;
   const accept = c.req.header("Accept") || "";
   if (accept.includes("text/html")) {
     const brand = c.env.BRAND_NAME || "Secret Vault";
-    return c.html(healthPage(brand, dbOk));
+    return c.html(healthPage(brand, dbOk, kvOk));
   }
   return c.json(
-    { status: dbOk ? "ok" : "degraded", database: dbOk ? "ok" : "unreachable" },
-    dbOk ? 200 : 503,
+    {
+      status: healthy ? "ok" : "degraded",
+      database: dbOk ? "ok" : "unreachable",
+      kv: kvOk ? "ok" : "unreachable",
+    },
+    healthy ? 200 : 503,
   );
 });
 
