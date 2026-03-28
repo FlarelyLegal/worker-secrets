@@ -13,7 +13,20 @@ Encrypted secret management for Cloudflare Workers — a self-hosted vault with 
 [![skill: deploy](https://img.shields.io/badge/skill-deploy-5D5CDE)](.agents/skills/deploy/SKILL.md)
 [![skill: review-security](https://img.shields.io/badge/skill-review--security-5D5CDE)](.agents/skills/review-security/SKILL.md)
 
-AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual auth via Cloudflare Access with any IdP and hardware keys, or registered service tokens with named identities and scoped permissions. Every operation audit-logged.
+AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual auth via Cloudflare Access with any IdP and hardware keys, or registered service tokens with named identities and scoped permissions. Role-based access control with admin, operator, and reader roles. Every operation audit-logged with request tracing.
+
+## Security
+
+- **AES-256-GCM** encryption with unique random IV per secret
+- **HMAC-SHA256** integrity binding — every secret cryptographically bound to its key name, tamper-evident at rest
+- **RBAC** — users and service tokens assigned to roles with scoped permissions (admin, operator, reader, custom)
+- **Dual auth** — Cloudflare Access validates at edge, Worker validates again as defense-in-depth
+- **Hardware key enforcement** — interactive sessions require FIDO2/passkey/YubiKey
+- **Registered tokens only** — valid Access tokens are rejected until registered with name and scopes
+- **User management** — add, disable, or reassign roles without redeploying
+- **Auto-seed** — first login on a fresh deploy becomes admin automatically
+- **Full audit trail** — every operation logged with identity, IP, user agent, and request ID
+- **Zod validation** — all inputs validated via OpenAPI schemas with size limits
 
 ## Packages
 

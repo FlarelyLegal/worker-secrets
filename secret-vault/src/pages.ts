@@ -77,20 +77,24 @@ export function landingPage(
           <div class="feature-desc">AES-256-GCM with a unique random IV per secret. Encryption key stored as a Worker secret, never in the database.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Dual authentication</div>
-          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities and scoped permissions for CI and other Workers.</div>
-        </div>
-        <div class="feature">
-          <div class="feature-title">Audit logging</div>
-          <div class="feature-desc">Every operation recorded with identity, action, secret key, IP, and user agent. Indexed for fast queries by secret or action type.</div>
-        </div>
-        <div class="feature">
           <div class="feature-title">HMAC integrity</div>
-          <div class="feature-desc">Every secret is bound to its key name via HMAC-SHA256 with a derived key (HKDF). Detects tampering or ciphertext swaps at rest.</div>
+          <div class="feature-desc">Every secret bound to its key name via HMAC-SHA256 with a derived key (HKDF). Detects tampering or ciphertext swaps at rest.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Dual authentication</div>
+          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities for CI and other Workers.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Role-based access control</div>
+          <div class="feature-desc">Users and tokens assigned to roles (admin, operator, reader) with scoped permissions. Custom roles supported. Disable users instantly without deleting.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Audit trail with request tracing</div>
+          <div class="feature-desc">Every operation logged with identity, action, IP, user agent, and a unique request ID correlated with the X-Request-ID response header.</div>
         </div>
         <div class="feature">
           <div class="feature-title">Token registration</div>
-          <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
+          <div class="feature-desc">Service tokens must be registered with a name, role, and permissions before access is granted. Unregistered tokens are rejected even with a valid Access JWT.</div>
         </div>
       </div>
     </div>
