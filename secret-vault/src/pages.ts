@@ -73,6 +73,14 @@ export function landingPage(brand: string, origin: string): string {
           <div><div class="link-label">Health Check</div><div class="link-path">${origin}/health</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
+        <a class="link" href="https://github.com/FlarelyLegal/worker-secrets" target="_blank" rel="noopener">
+          <div><div class="link-label">GitHub</div><div class="link-path">Source code, issues, and documentation</div></div>
+          <span class="link-arrow">\u2192</span>
+        </a>
+        <a class="link" href="https://github.com/FlarelyLegal/worker-secrets/releases/latest" target="_blank" rel="noopener">
+          <div><div class="link-label">Install CLI</div><div class="link-path">Download the latest release</div></div>
+          <span class="link-arrow">\u2192</span>
+        </a>
       </div>
     </div>
     <div class="right">
