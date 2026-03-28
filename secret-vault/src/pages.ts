@@ -82,7 +82,7 @@ export function landingPage(
         </div>
         <div class="feature">
           <div class="feature-title">Dual authentication</div>
-          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities for CI and other Workers.</div>
+          <div class="feature-desc">Interactive sessions via your IdP, with optional hardware key enforcement (passkeys, YubiKeys) via Access policy. Service tokens with named identities for CI and other Workers.</div>
         </div>
         <div class="feature">
           <div class="feature-title">Role-based access control</div>

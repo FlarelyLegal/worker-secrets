@@ -51,7 +51,9 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `GET` | `/secrets` | read | List keys (no values) |
 | `GET` | `/secrets/{key}` | read | Get decrypted secret |
 | `GET` | `/secrets/{key}/versions` | read | Version history |
+| `POST` | `/secrets/{key}/versions/{id}/restore` | write | Restore a previous version |
 | `GET` | `/secrets/export` | interactive | Export all decrypted |
+| `POST` | `/secrets/import` | interactive | Bulk import from JSON |
 | `PUT` | `/secrets/{key}` | write | Create or update |
 | `DELETE` | `/secrets/{key}` | delete | Delete |
 | `GET` | `/audit` | interactive | Audit log |
@@ -95,7 +97,7 @@ Flags are stored in a `FLAGS` KV namespace as plaintext key-value pairs (not enc
 - **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key, detecting tampering or ciphertext swaps at rest
 - **Dual auth**: Access validates at edge, Worker validates again as defense-in-depth
 - **RBAC**: Users and service tokens assigned to roles (admin, operator, reader) with scoped permissions
-- **Hardware key enforcement**: Interactive policy requires `hwk` (FIDO2/passkey/YubiKey)
+- **Hardware key support**: Access policy can require `hwk` (FIDO2/passkey/YubiKey) for interactive sessions
 - **Registered tokens only**: Valid Access token is rejected until registered with name + scopes
 - **Full audit log**: Every operation logged with identity, action, key, IP, user agent
 - **Zod validation**: All inputs validated via OpenAPI schemas with size limits

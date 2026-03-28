@@ -32,13 +32,17 @@ Two modes, no fallback. They never mix.
 ```
 hfs get <key>              Get a decrypted secret
 hfs get <key> -q           Print only the value (pipe-friendly)
+hfs get <key> -j           Output as JSON
 hfs set <key> <value>      Store a secret
 hfs set <key> --from-file  Read value from a file
+hfs set <key> -t <tags>    Set with comma-separated tags
 hfs rm <key>               Delete a secret (confirms first)
 hfs ls                     List all secret keys
+hfs versions <key>         List version history
+hfs restore <key> <id>     Restore a previous version
 hfs env <key> [key...]     Output as KEY=value (dashes → underscores)
 hfs env -e <key> [key...]  Same with export prefix
-hfs export                 Export all as JSON
+hfs export                 Export all as JSON (includes tags)
 hfs import <file>          Import from JSON
 ```
 
@@ -46,7 +50,8 @@ hfs import <file>          Import from JSON
 ```
 hfs login                  Authenticate via cloudflared
 hfs logout                 Clear stored session
-hfs whoami                 Show auth method and scopes
+hfs whoami                 Show auth method, role, and scopes
+hfs whoami -j              Output as JSON
 hfs health                 Check vault connectivity (no auth)
 hfs config set --url <url> Set vault URL
 hfs config show            Show config + auth status
@@ -72,7 +77,7 @@ hfs role rm <name>         Delete a role (must have no users)
 
 ### Service tokens (interactive only)
 ```
-hfs token register <id> -n <name> [-s <scopes>] [-d <desc>]
+hfs token register <id> -n <name> [-s <scopes>] [-r <role>] [-d <desc>]
 hfs token revoke <id>      Revoke a token
 hfs token ls               List tokens with last-used times
 ```
@@ -80,7 +85,7 @@ hfs token ls               List tokens with last-used times
 ### Feature flags
 ```
 hfs flag ls                List all flags
-hfs flag get <key>         Get a flag value
+hfs flag get <key>         Get a flag value (-q for value only, -j for JSON)
 hfs flag set <key> <value> Set a flag (auto-detects type)
 hfs flag rm <key>          Delete a flag
 ```
@@ -90,6 +95,10 @@ Auto-type detection: `"true"`/`"false"` become boolean, numeric strings become n
 ### Admin
 ```
 hfs audit [-n 100] [-j]    View audit log
+hfs audit --action get     Filter by action
+hfs audit --identity <email> Filter by identity
+hfs audit --key <key>      Filter by secret key
+hfs audit --from/--to <date> Filter by date range
 hfs deploy                 Deploy the Worker to Cloudflare
 hfs completion bash|zsh    Generate shell completions
 ```

@@ -81,6 +81,10 @@ class VaultClient {
   exportAll(): Promise<SecretEntry[]>
   importAll(secrets: { key: string; value: string; description?: string }[], overwrite?: boolean): Promise<{ ok: boolean; imported: number; skipped: number }>
 
+  // Versions
+  listVersions(key: string): Promise<{ id: number; changed_by: string; changed_at: string }[]>
+  restoreVersion(key: string, id: number): Promise<{ ok: boolean; key: string; restored_from: number }>
+
   // Service tokens
   listTokens(): Promise<ServiceTokenEntry[]>
   registerToken(clientId: string, name: string, opts?: { description?: string; scopes?: string; role?: string }): Promise<{ ok: boolean; client_id: string }>

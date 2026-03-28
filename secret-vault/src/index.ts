@@ -80,7 +80,7 @@ app.route("/", pub);
 const API_DESCRIPTION =
   "Self-hosted secret management on Cloudflare Workers. " +
   "Secrets are encrypted at rest with AES-256-GCM in a D1 database. " +
-  "Two auth paths via Cloudflare Access: interactive sessions (IdP + hardware key) " +
+  "Two auth paths via Cloudflare Access: interactive sessions (IdP, optionally with hardware keys) " +
   "for humans, and registered service tokens with named identities and scoped " +
   "permissions (read/write/delete) for CI pipelines and other Workers. " +
   "Every operation is audit-logged with identity, action, and IP.";
