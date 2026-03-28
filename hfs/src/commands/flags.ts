@@ -64,9 +64,14 @@ export function registerFlagCommands(program: Command): void {
     .command("get <key>")
     .description("Get a feature flag")
     .option("-q, --quiet", "Print only the value")
-    .action(async (key: string, opts: { quiet?: boolean }) => {
+    .option("-j, --json", "Output as JSON")
+    .action(async (key: string, opts: { quiet?: boolean; json?: boolean }) => {
       try {
         const flag = await client().getFlag(key);
+        if (opts.json) {
+          console.log(JSON.stringify(flag, null, 2));
+          return;
+        }
         if (opts.quiet) {
           const out =
             typeof flag.value === "object" ? JSON.stringify(flag.value) : String(flag.value);

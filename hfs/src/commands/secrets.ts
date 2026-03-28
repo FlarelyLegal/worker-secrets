@@ -9,9 +9,14 @@ export function registerSecretCommands(program: Command): void {
     .command("get <key>")
     .description("Get a decrypted secret")
     .option("-q, --quiet", "Print only the value (for piping)")
-    .action(async (key: string, opts: { quiet?: boolean }) => {
+    .option("-j, --json", "Output as JSON")
+    .action(async (key: string, opts: { quiet?: boolean; json?: boolean }) => {
       try {
         const secret = await client().get(key);
+        if (opts.json) {
+          console.log(JSON.stringify(secret, null, 2));
+          return;
+        }
         if (opts.quiet) {
           process.stdout.write(secret.value || "");
         } else {

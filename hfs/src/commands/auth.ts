@@ -100,9 +100,14 @@ export function registerAuthCommands(program: Command): void {
   program
     .command("whoami")
     .description("Check authentication status")
-    .action(async () => {
+    .option("-j, --json", "Output as JSON")
+    .action(async (opts: { json?: boolean }) => {
       try {
         const info = await client().whoami();
+        if (opts.json) {
+          console.log(JSON.stringify(info, null, 2));
+          return;
+        }
         console.log(chalk.dim("method:   ") + chalk.bold(info.method));
         console.log(chalk.dim("name:     ") + info.name);
         console.log(chalk.dim("identity: ") + info.identity);
