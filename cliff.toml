@@ -38,6 +38,7 @@ commit_parsers = [
     { message = "^ci", group = "CI" },
     { message = "^build", group = "Build" },
     { message = "^revert", group = "Reverted" },
+    { message = "^Merge", skip = true },
     { message = "^.*", group = "Changed" },
 ]
 protect_breaking_commits = false

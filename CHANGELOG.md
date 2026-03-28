@@ -15,15 +15,6 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4.0] - 2026-03-28
 
-### Changed
-
-- Merge branch 'main' into dependabot/github_actions/actions/setup-node-6.3.0
-- Merge branch 'main' into dependabot/github_actions/actions/checkout-6.0.2
-- Merge branch 'main' into dependabot/github_actions/actions/setup-node-6.3.0
-- Merge branch 'main' into dependabot/github_actions/softprops/action-gh-release-2.6.1
-- Merge branch 'main' into dependabot/github_actions/softprops/action-gh-release-2.6.1
-- Merge branch 'main' into dependabot/github_actions/actions/setup-node-6.3.0
-
 ### Features
 
 - Worker hardening — atomic imports, auth logging, provenance, request IDs
