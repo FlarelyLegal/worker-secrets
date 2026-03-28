@@ -4,6 +4,7 @@ export interface SecretEntry {
   key: string;
   value?: string;
   description: string;
+  tags: string;
   created_at: string;
   updated_at: string;
 }
@@ -163,10 +164,12 @@ export class VaultClient {
     key: string,
     value: string,
     description?: string,
+    tags?: string,
   ): Promise<{ ok: boolean; key: string }> {
     return this.request("PUT", `/secrets/${encodeURIComponent(key)}`, {
       value,
       description: description || "",
+      tags: tags || "",
     });
   }
 

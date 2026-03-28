@@ -34,6 +34,7 @@ export const SecretListItemSchema = z
   .object({
     key: z.string().openapi({ example: "api-key" }),
     description: z.string().openapi({ example: "Anthropic API key" }),
+    tags: z.string().openapi({ example: "production,ci" }),
     created_by: z.string().openapi({ example: "you@example.com" }),
     updated_by: z.string().openapi({ example: "you@example.com" }),
     created_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
@@ -51,6 +52,7 @@ export const SecretExportItemSchema = z
     value: z.string().nullable(),
     error: z.string().optional(),
     description: z.string(),
+    tags: z.string(),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -79,6 +81,7 @@ export const SecretImportItem = z.object({
     }),
   value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
   description: z.string().max(1000).optional().default(""),
+  tags: z.string().max(500).optional().default(""),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   created_by: z.string().optional(),

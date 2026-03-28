@@ -44,6 +44,7 @@ bulk.openapi(exportRoute, async (c) => {
           key: row.key,
           value: await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY),
           description: row.description,
+          tags: row.tags,
           created_at: row.created_at,
           updated_at: row.updated_at,
         };
@@ -53,6 +54,7 @@ bulk.openapi(exportRoute, async (c) => {
           value: null,
           error: "Decryption failed",
           description: row.description,
+          tags: row.tags,
           created_at: row.created_at,
           updated_at: row.updated_at,
         };
@@ -97,6 +99,7 @@ bulk.openapi(importRoute, async (c) => {
     iv: string;
     hmac: string;
     description: string;
+    tags: string;
   }[] = [];
   let skipped = 0;
 
@@ -118,25 +121,33 @@ bulk.openapi(importRoute, async (c) => {
       return c.json({ error: `Encryption failed for key: ${item.key}` }, 500);
     }
     const hmac = await computeHmac(item.key, ciphertext, iv, c.env.ENCRYPTION_KEY);
-    toInsert.push({ key: item.key, ciphertext, iv, hmac, description: item.description });
+    toInsert.push({
+      key: item.key,
+      ciphertext,
+      iv,
+      hmac,
+      description: item.description,
+      tags: item.tags ?? "",
+    });
   }
 
   // Atomic batch insert
   if (toInsert.length > 0) {
     const stmts = toInsert.map((item) =>
       c.env.DB.prepare(
-        `INSERT INTO secrets (key, value, iv, hmac, description, created_by, updated_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `INSERT INTO secrets (key, value, iv, hmac, description, tags, created_by, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(key) DO UPDATE SET
            value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
-           description = excluded.description, updated_by = excluded.updated_by,
-           updated_at = datetime('now')`,
+           description = excluded.description, tags = excluded.tags,
+           updated_by = excluded.updated_by, updated_at = datetime('now')`,
       ).bind(
         item.key,
         item.ciphertext,
         item.iv,
         item.hmac,
         item.description,
+        item.tags,
         auth.identity,
         auth.identity,
       ),

@@ -46,7 +46,7 @@ secrets.openapi(listRoute, async (c) => {
   const { limit, offset, search } = c.req.valid("query");
   let countSql = "SELECT COUNT(*) as total FROM secrets";
   let listSql =
-    "SELECT key, description, created_by, updated_by, created_at, updated_at FROM secrets";
+    "SELECT key, description, tags, created_by, updated_by, created_at, updated_at FROM secrets";
   const binds: unknown[] = [];
 
   if (search) {
@@ -111,9 +111,9 @@ secrets.openapi(getRoute, async (c) => {
     return c.json({ error: "Decryption failed" }, 500);
   }
   await audit(c.env, auth, "get", key, c.get("ip"), c.get("ua"), c.get("requestId"));
-  const { key: k, description, created_by, updated_by, created_at, updated_at } = row;
+  const { key: k, description, tags, created_by, updated_by, created_at, updated_at } = row;
   return c.json(
-    { key: k, value: plaintext, description, created_by, updated_by, created_at, updated_at },
+    { key: k, value: plaintext, description, tags, created_by, updated_by, created_at, updated_at },
     200,
   );
 });

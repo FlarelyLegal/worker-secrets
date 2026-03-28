@@ -20,6 +20,9 @@ export function registerSecretCommands(program: Command): void {
           if (secret.description) {
             console.log(chalk.dim("desc:       ") + secret.description);
           }
+          if (secret.tags) {
+            console.log(chalk.dim("tags:       ") + secret.tags);
+          }
           console.log(chalk.dim("created:    ") + secret.created_at);
           console.log(chalk.dim("updated:    ") + secret.updated_at);
         }
@@ -32,13 +35,14 @@ export function registerSecretCommands(program: Command): void {
     .command("set <key> [value]")
     .description("Store a secret (use --from-stdin or --from-file for sensitive values)")
     .option("-d, --description <desc>", "Description for the secret")
+    .option("-t, --tags <tags>", "Comma-separated tags (e.g. production,ci)")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
     .action(
       async (
         key: string,
         value: string | undefined,
-        opts: { description?: string; fromStdin?: boolean; fromFile?: string },
+        opts: { description?: string; tags?: string; fromStdin?: boolean; fromFile?: string },
       ) => {
         try {
           let secretValue: string;
@@ -53,7 +57,7 @@ export function registerSecretCommands(program: Command): void {
             die("No value provided. Pass as argument, --from-stdin, or --from-file <path>");
           }
 
-          await client().set(key, secretValue, opts.description);
+          await client().set(key, secretValue, opts.description, opts.tags);
           console.log(`${chalk.green("✓")} Stored ${chalk.bold(key)}`);
         } catch (e) {
           die(errorMessage(e));
