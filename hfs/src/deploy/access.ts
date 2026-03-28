@@ -9,8 +9,9 @@ interface AccessApp {
 }
 
 function buildProtectedDomains(domains: string[]): string[] {
-  // Access does prefix matching — /secrets covers /secrets/:key, /secrets/export, etc.
-  // /audit and /whoami are protected by the Worker's auth middleware.
+  // Access protects /secrets and /tokens at the edge.
+  // /whoami and /audit are protected by the Worker's auth middleware —
+  // the CLI sends the JWT directly as Cf-Access-Jwt-Assertion header.
   return domains.flatMap((d) => [`${d}/secrets`, `${d}/tokens`]);
 }
 

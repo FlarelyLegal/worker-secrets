@@ -45,8 +45,9 @@ export class VaultClient {
       h["CF-Access-Client-Id"] = this.auth.clientId;
       h["CF-Access-Client-Secret"] = this.auth.clientSecret;
     } else {
-      // JWT from cloudflared — send as CF_Authorization cookie
+      // Send JWT both as cookie (for Access) and header (for Worker directly)
       h.Cookie = `CF_Authorization=${this.auth.jwt}`;
+      h["Cf-Access-Jwt-Assertion"] = this.auth.jwt;
     }
 
     return h;
