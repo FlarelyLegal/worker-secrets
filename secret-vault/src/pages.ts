@@ -60,6 +60,28 @@ export function landingPage(brand: string, origin: string): string {
         <span class="brand-name">${brand}</span>
       </div>
       <p class="desc">Self-hosted secret vault that runs on your own Cloudflare account. Store API keys, tokens, certificates, and credentials with a CLI or REST API. Protected by Cloudflare Access, supporting any identity provider, passkeys, YubiKeys, OTP, and hardware security keys. Like Vaultwarden, but on the edge.</p>
+      <h2>Security</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-title">Encryption at rest</div>
+          <div class="feature-desc">AES-256-GCM with a unique random IV per secret. Encryption key stored as a Worker secret, never in the database.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Dual authentication</div>
+          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities and scoped permissions for CI and other Workers.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Audit logging</div>
+          <div class="feature-desc">Every operation recorded with identity, action, secret key, IP, and user agent. Indexed for fast queries by secret or action type.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-title">Token registration</div>
+          <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <h2>Links</h2>
       <div class="links">
         <a class="link" href="/doc">
           <div><div class="link-label">API Reference</div><div class="link-path">${origin}/doc</div></div>
@@ -81,27 +103,6 @@ export function landingPage(brand: string, origin: string): string {
           <div><div class="link-label">Install CLI</div><div class="link-path">Download the latest release</div></div>
           <span class="link-arrow">\u2192</span>
         </a>
-      </div>
-    </div>
-    <div class="right">
-      <h2>Security</h2>
-      <div class="features">
-        <div class="feature">
-          <div class="feature-title">Encryption at rest</div>
-          <div class="feature-desc">AES-256-GCM with a unique random IV per secret. Encryption key stored as a Worker secret, never in the database.</div>
-        </div>
-        <div class="feature">
-          <div class="feature-title">Dual authentication</div>
-          <div class="feature-desc">Interactive sessions via your IdP with hardware keys (passkeys, YubiKeys). Service tokens with named identities and scoped permissions for CI and other Workers.</div>
-        </div>
-        <div class="feature">
-          <div class="feature-title">Audit logging</div>
-          <div class="feature-desc">Every operation recorded with identity, action, secret key, IP, and user agent. Indexed for fast queries by secret or action type.</div>
-        </div>
-        <div class="feature">
-          <div class="feature-title">Token registration</div>
-          <div class="feature-desc">Service tokens must be registered with a name and granular permissions before access is granted. Unregistered tokens are rejected.</div>
-        </div>
       </div>
     </div>
     <div class="footer">
