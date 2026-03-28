@@ -58,6 +58,6 @@ jobs:
           args: --offline -o CHANGELOG.md
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2.3.2
+        uses: softprops/action-gh-release@v2.6.1
         with:
           body_path: CHANGELOG.md
