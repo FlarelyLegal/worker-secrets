@@ -39,7 +39,11 @@ AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual au
 
 **1. Deploy the Worker** — see [secret-vault/README.md](secret-vault/README.md)
 
-**2. Install the CLI** — see [hfs/README.md](hfs/README.md)
+**2. Install the CLI**
+
+```bash
+npm install -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
+```
 
 **3. Use it**
 
