@@ -44,16 +44,10 @@ export function registerAuthCommands(program: Command): void {
           );
         }
 
-        storeJwt(jwt);
-
-        const parts = jwt.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
-          const exp = payload.exp ? new Date(payload.exp * 1000) : null;
-          console.log(`${chalk.green("✓")} Authenticated successfully`);
-          if (exp) {
-            console.log(chalk.dim(`  Session expires: ${exp.toLocaleString()}`));
-          }
+        const { exp } = storeJwt(jwt);
+        console.log(`${chalk.green("✓")} Authenticated successfully`);
+        if (exp) {
+          console.log(chalk.dim(`  Session expires: ${new Date(exp * 1000).toLocaleString()}`));
         }
       } catch (e) {
         const msg = errorMessage(e);

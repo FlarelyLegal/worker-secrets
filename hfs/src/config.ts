@@ -69,7 +69,8 @@ export function resolveAuth(): AuthMode {
   return { type: "jwt", url, jwt };
 }
 
-export function storeJwt(jwt: string): void {
+/** Store JWT and return parsed expiry (if present). */
+export function storeJwt(jwt: string): { exp?: number } {
   const parts = jwt.split(".");
   if (parts.length !== 3) {
     throw new Error("Invalid JWT format");
@@ -86,6 +87,7 @@ export function storeJwt(jwt: string): void {
   if (exp) {
     config.set("jwtExpiry", exp);
   }
+  return { exp };
 }
 
 export function clearJwt(): void {

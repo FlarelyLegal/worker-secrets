@@ -89,7 +89,7 @@ admin.openapi(auditRoute, async (c) => {
   }
 
   const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
-  const sql = `SELECT * FROM audit_log${where} ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
+  const sql = `SELECT * FROM audit_log${where} ORDER BY id DESC LIMIT ? OFFSET ?`;
   const { results } = await c.env.DB.prepare(sql)
     .bind(...binds, limit, offset)
     .all();
