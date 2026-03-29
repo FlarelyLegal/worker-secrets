@@ -28,6 +28,56 @@ Store API keys, tokens, certificates, and credentials with a CLI or REST API. Ev
 | **Audit** | Every operation logged with identity, IP, user agent, request ID. SHA-256 hash-chained for tamper detection. |
 | **Lifecycle** | Version history with restore, expiry tracking, 13 feature flags for runtime control. |
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Client
+        CLI[hfs CLI]
+        API[REST API client]
+        Browser[Browser]
+    end
+
+    subgraph Cloudflare Edge
+        Access[Cloudflare Access<br/>IdP + optional HW key]
+        Edge[DDoS / TLS / WAF]
+    end
+
+    subgraph Worker["Cloudflare Worker"]
+        Auth[JWT validation<br/>+ token registration<br/>+ RBAC]
+        Flags[Feature flags<br/>from KV cache]
+        Crypto[Envelope encrypt<br/>DEK per secret<br/>AES-256-GCM]
+        HMAC[HMAC-SHA256<br/>integrity binding]
+        Audit[Hash-chained<br/>audit log]
+    end
+
+    subgraph Storage
+        D1[(D1 / SQLite<br/>ciphertext + DEKs<br/>users, roles, audit)]
+        KV[(KV<br/>feature flags)]
+    end
+
+    CLI --> Edge
+    API --> Edge
+    Browser --> Edge
+    Edge --> Access
+    Access -->|JWT| Auth
+    Auth -->|RBAC + tags| Crypto
+    Auth --> Flags
+    Crypto --> HMAC
+    HMAC --> D1
+    Audit --> D1
+    Flags --> KV
+```
+
+```
+Request flow:
+  Client → Edge (DDoS/TLS) → Access (IdP/JWT) → Worker (RBAC/tags) → Encrypt (DEK) → HMAC → D1
+
+Encryption layers:
+  Plaintext → [DEK: AES-256-GCM] → Ciphertext + [KEK: AES-256-GCM] → Encrypted DEK → D1
+  Secret key + ciphertext + IV → [HMAC-SHA256] → Integrity tag → D1
+```
+
 ## Packages
 
 | Package | What | Docs |

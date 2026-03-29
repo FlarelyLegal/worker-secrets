@@ -1,0 +1,90 @@
+# Security
+
+## Reporting vulnerabilities
+
+If you discover a security vulnerability, please report it privately via [GitHub Security Advisories](https://github.com/FlarelyLegal/worker-secrets/security/advisories/new). Do not open a public issue.
+
+We aim to acknowledge reports within 48 hours and provide a fix or mitigation plan within 7 days.
+
+## Threat model
+
+### What we protect against
+
+| Threat | Mitigation |
+|--------|-----------|
+| **Data at rest compromise** | Envelope encryption: per-secret DEK (AES-256-GCM) wrapped by master KEK. Compromising one DEK exposes one secret, not the vault. HMAC-SHA256 integrity binding detects tampering. |
+| **Stolen session or token** | Cloudflare Access validates at the edge, Worker re-validates the JWT. Service tokens must be registered with name, role, and scopes. Tag-based RBAC restricts access to matching secrets. |
+| **Privilege escalation** | RBAC with last-admin protection. Users can be disabled without deletion. ALLOWED_EMAILS fallback grants reader (not admin). Self-deletion blocked. |
+| **Audit tampering** | SHA-256 hash-chained audit log. Each entry links to the previous. Modifying or deleting entries breaks the chain. Verifiable with `hfs audit-verify`. |
+| **Insider bulk exfiltration** | `disable_export` feature flag blocks bulk export. Tag-based RBAC limits scope. All access logged with identity and request ID. |
+
+### What we explicitly do not protect against
+
+| Threat | Why |
+|--------|-----|
+| **Compromised Cloudflare account** | Dashboard access can read Wrangler secrets (the master key). Same trust boundary as any cloud-hosted vault. |
+| **Malicious Worker deployment** | A modified Worker can read the master key at runtime. Mitigate with CI/CD controls, branch protection, and Access policies on the deploy pipeline. |
+| **DDoS** | No application-level rate limiting. Relies on Cloudflare's edge DDoS protection. |
+| **Side-channel timing attacks** | Not specifically mitigated. AES-GCM via `crypto.subtle` is constant-time in the Workers runtime. |
+
+### Trust boundaries
+
+```
+Internet → Cloudflare Edge (DDoS, TLS, Access) → Worker (JWT validation, RBAC, encryption) → D1 (ciphertext only)
+```
+
+The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of trust. They are stored as Wrangler secrets, encrypted at rest by Cloudflare, and available only at Worker runtime.
+
+## Hardening guide
+
+### Required
+
+- [ ] Set `ENCRYPTION_KEY` via `wrangler secret put` (never in code or wrangler.jsonc)
+- [ ] Configure Cloudflare Access with your IdP and appropriate policies
+- [ ] Register all service tokens with minimal scopes (`read` for CI, `read,write` for deploy)
+- [ ] Add users to the `users` table with appropriate roles (don't rely on `ALLOWED_EMAILS`)
+
+### Recommended
+
+- [ ] Set a separate `INTEGRITY_KEY` via `wrangler secret put` for HMAC key separation
+- [ ] Run `hfs re-encrypt` to migrate all secrets to envelope encryption
+- [ ] Enable `require_description` and `require_tags` flags for organizational discipline
+- [ ] Set `max_secrets` to prevent unbounded growth
+- [ ] Set `disable_export` in production to prevent bulk exfiltration
+- [ ] Configure Access policy to require hardware keys (`hwk`) for interactive sessions
+- [ ] Use tag-based RBAC: create roles with `allowed_tags` to limit access by team/environment
+- [ ] Periodically run `hfs audit-verify` to check hash chain integrity
+- [ ] Set `audit_retention_days` appropriate to your compliance requirements
+
+### Key rotation
+
+```bash
+# 1. Generate a new key
+npm run generate-keys
+
+# 2. Ensure all secrets use envelope encryption
+hfs re-encrypt
+
+# 3. Re-wrap DEKs with the new key (secret data is NOT re-encrypted)
+hfs rotate-key <new-64-char-hex-key>
+
+# 4. Update the Wrangler secret
+wrangler secret put ENCRYPTION_KEY
+# Paste the new key
+
+# 5. Verify
+hfs health
+hfs get <any-secret> -q
+```
+
+## Architecture
+
+See the [architecture diagram](README.md#architecture) in the root README.
+
+## Dependencies
+
+The Worker uses only three runtime dependencies:
+- `hono` + `@hono/zod-openapi` — HTTP framework and schema validation
+- `jose` — JWT verification (JWKS)
+
+All cryptographic operations use the Web Crypto API (`crypto.subtle`), built into the Cloudflare Workers runtime. No third-party crypto libraries.
