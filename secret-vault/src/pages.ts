@@ -67,14 +67,18 @@ export function landingPage(
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <p class="desc">Self-hosted encrypted secret manager on Cloudflare Workers. No external dependencies, no third-party trust. Every secret is envelope-encrypted with its own key, integrity-bound via HMAC, and access-controlled through role-based permissions with tag-level restrictions. Manage with a CLI or REST API.</p>
+      <p class="desc">Self-hosted encrypted secret manager on Cloudflare Workers. No external dependencies, no third-party trust. Optional end-to-end encryption means even the server can't read your most sensitive secrets. Every secret is envelope-encrypted with its own key, integrity-bound via HMAC, and access-controlled through role-based permissions. Manage with a CLI or REST API.</p>
     </div>
     <div class="left">
       <h2>Security</h2>
       <div class="features">
+        <div class="feature" style="border-color:var(--accent)">
+          <div class="feature-title" style="color:var(--accent)">End-to-end encryption</div>
+          <div class="feature-desc">Optional zero-knowledge mode with <a href="https://age-encryption.org" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">age</a>. Secrets are encrypted on your machine before they reach the server. Even a compromised Worker only sees ciphertext. Multi-recipient support for team sharing.</div>
+        </div>
         <div class="feature">
           <div class="feature-title">Envelope encryption</div>
-          <div class="feature-desc">Each secret gets its own data encryption key (DEK), wrapped by a master key. AES-256-GCM with unique IVs. Enables key rotation without re-encrypting all data.</div>
+          <div class="feature-desc">Each secret gets its own data encryption key (DEK), wrapped by a master key. AES-256-GCM with unique IVs. Key rotation via DEK re-wrapping.</div>
         </div>
         <div class="feature">
           <div class="feature-title">HMAC integrity</div>
@@ -85,12 +89,12 @@ export function landingPage(
           <div class="feature-desc">Interactive sessions via your IdP with optional hardware keys. Service tokens with named identities. Role-based access control with tag-level restrictions.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Tamper-evident audit trail</div>
-          <div class="feature-desc">Every operation logged with identity, IP, user agent, and request ID. Hash-chained entries make modifications detectable.</div>
+          <div class="feature-title">Tamper-evident audit</div>
+          <div class="feature-desc">Every operation logged with identity, IP, user agent, and request ID. SHA-256 hash-chained entries make modifications detectable.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Secret lifecycle</div>
-          <div class="feature-desc">Version history with restore, expiry tracking, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
+          <div class="feature-title">Lifecycle &amp; flags</div>
+          <div class="feature-desc">Version history with restore, expiry enforcement, burn-after-reading, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
         </div>
       </div>
     </div>
