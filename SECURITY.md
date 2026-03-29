@@ -63,28 +63,7 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 
 ### Key rotation
 
-```bash
-# 1. Generate a new key
-npm run generate-keys
-
-# 2. Ensure all secrets use envelope encryption
-hfs re-encrypt
-
-# 3. Re-wrap DEKs with the new key (secret data is NOT re-encrypted)
-hfs rotate-key <new-64-char-hex-key>
-
-# 4. Update the Wrangler secret
-wrangler secret put ENCRYPTION_KEY
-# Paste the new key
-
-# 5. Verify
-hfs health
-hfs get <any-secret> -q
-```
-
-## Architecture
-
-See [Encryption Architecture](docs/encryption.md) for detailed diagrams of envelope encryption, key hierarchy, HMAC binding, key rotation, and audit chain integrity.
+See [Encryption Architecture — Key Rotation](docs/encryption.md#key-rotation) for step-by-step instructions and diagrams covering master key, integrity key, and age identity rotation.
 
 ## Dependencies
 

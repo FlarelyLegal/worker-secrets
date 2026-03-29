@@ -77,17 +77,7 @@ graph TB
     style E2E fill:#f97316,stroke:#f97316,color:#fff
 ```
 
-```
-Request flow (standard):
-  Client → Edge (DDoS/TLS) → Access (IdP/JWT) → Worker (RBAC/tags) → Encrypt (DEK) → HMAC → D1
-
-Request flow (e2e):
-  Client → [age encrypt] → age ciphertext → Edge → Access → Worker → Encrypt (DEK wraps age blob) → HMAC → D1
-  Server never sees plaintext. Decryption requires the client's age private key.
-
-Encryption layers:
-  Plaintext → [age: client-side, optional] → [DEK: AES-256-GCM] → [KEK: AES-256-GCM] → D1
-  Secret key + ciphertext + IV + encrypted DEK + DEK IV → [HMAC-SHA256] → Integrity tag → D1
+See [Encryption Architecture](docs/encryption.md) for detailed diagrams of envelope encryption, HMAC binding, e2e modes, team lifecycle, and key rotation.
 ```
 
 ## Packages

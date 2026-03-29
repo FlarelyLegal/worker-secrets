@@ -113,17 +113,55 @@ graph LR
     style C fill:#2563eb,color:#fff,stroke:#2563eb
 ```
 
-| Mode | Flag | Who can decrypt |
-|------|------|-----------------|
-| Standard | (default) | Anyone with vault access + KEK |
-| Private | `--private` | Only the key owner (single age recipient) |
-| Team E2E | `--e2e` | All RBAC-eligible team members |
+| Mode | Flag | Who can decrypt | Use for |
+|------|------|-----------------|---------|
+| Standard | (default) | Anyone with vault access + KEK | Shared infra secrets where server trust is acceptable |
+| Private | `--private` | Only the key owner (single age recipient) | Personal tokens, credentials only you need |
+| Team E2E | `--e2e` | All RBAC-eligible team members | Shared secrets where the server must not see plaintext |
+| Explicit | `--recipients <keys>` | Specific age public keys you list | Cross-team sharing with explicit control |
 
-The server stores age ciphertext as the "plaintext" input to envelope encryption. A compromised Worker or database sees only the age blob. Decryption requires the client's age private key.
+The server stores age ciphertext as the "plaintext" input to envelope encryption. A compromised Worker or database sees only the age blob. Decryption requires the recipient's age private key.
+
+### Team Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant New as New Member
+    participant Admin
+    participant Vault
+    participant CLI as hfs CLI
+
+    Note over New,CLI: Onboarding
+    New->>CLI: hfs keygen --register
+    CLI->>Vault: Store age public key
+    Admin->>CLI: hfs rewrap --all
+    CLI->>Vault: Re-encrypt e2e secrets<br/>now includes new member
+
+    Note over New,CLI: Offboarding
+    Admin->>Vault: hfs user disable alice@co
+    Admin->>CLI: hfs rewrap --all
+    CLI->>Vault: Re-encrypt e2e secrets<br/>excludes removed member
+
+    Note over New,CLI: Key Rotation
+    New->>CLI: hfs keygen --register
+    CLI->>Vault: Replace public key
+    New->>CLI: hfs rewrap --all
+    CLI->>Vault: Re-encrypt with new identity
+```
+
+- **Join**: new member runs `keygen --register`, then anyone runs `rewrap --all` to include them
+- **Leave**: admin disables the user, then `rewrap --all` to exclude their key
+- **Rotate**: member runs `keygen --register` (replaces their public key), then `rewrap --all`
+
+After `rewrap`, the old key can no longer decrypt any e2e secrets. The `--private` secrets are single-recipient — only the owner can rewrap those.
 
 ## Key Rotation
 
-Key rotation re-wraps DEKs without re-encrypting secret data:
+Each layer rotates independently. Secret data is never re-encrypted — only wrapping or signing keys change.
+
+### Master key (ENCRYPTION_KEY)
+
+Re-wraps every DEK with a new KEK. Ciphertext is untouched.
 
 ```mermaid
 sequenceDiagram
@@ -146,25 +184,34 @@ sequenceDiagram
     Worker-->>Admin: Done
 ```
 
-Secret data (ciphertext + IV) is untouched. Only the DEK wrapping changes. This makes rotation fast regardless of secret size.
+```bash
+hfs re-encrypt                            # ensure envelope encryption
+npm run generate-keys                     # generate new 256-bit key
+hfs rotate-key <new-64-char-hex-key>      # re-wrap all DEKs
+wrangler secret put ENCRYPTION_KEY        # update Wrangler secret
+hfs health && hfs get <any-secret> -q     # verify
+```
 
-### Rotation steps
+### Integrity key (INTEGRITY_KEY)
+
+Recomputes all HMACs. Export, delete, and re-import secrets after updating the Wrangler secret.
 
 ```bash
-# 1. Ensure all secrets use envelope encryption
-hfs re-encrypt
-
-# 2. Generate and apply new key
-npm run generate-keys
-hfs rotate-key <new-64-char-hex-key>
-
-# 3. Update the Wrangler secret
-wrangler secret put ENCRYPTION_KEY
-# Paste the new key
-
-# 4. Verify
-hfs health && hfs get <any-secret> -q
+openssl rand -hex 32                      # generate new key
+wrangler secret put INTEGRITY_KEY         # update Wrangler secret
+# redeploy, then re-save all secrets to recompute HMACs
 ```
+
+### Age identity (e2e key)
+
+Generates a new age keypair and re-encrypts all e2e secrets for the new identity.
+
+```bash
+hfs keygen --register                     # new identity, registers public key
+hfs rewrap --all                          # re-encrypt all e2e secrets
+```
+
+The old identity can no longer decrypt anything after rewrap.
 
 ## Audit Hash Chain
 

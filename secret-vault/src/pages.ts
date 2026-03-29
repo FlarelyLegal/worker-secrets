@@ -61,6 +61,10 @@ export function landingPage(
     h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 1rem; }
     h1 .highlight { color: var(--accent); }
     .subtitle { font-size: 1rem; color: var(--muted); line-height: 1.7; margin-bottom: 3rem; max-width: 580px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 0.75rem; overflow: hidden; margin-bottom: 2rem; }
+    .stat { background: var(--surface); padding: 1.25rem 1rem; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.625rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
     .step { display: grid; grid-template-columns: 48px 1fr; gap: 1rem; margin-bottom: 1.75rem; position: relative; }
     .step::before { content: ''; position: absolute; left: 23px; top: 48px; bottom: -1.75rem; width: 2px; background: var(--border); }
     .step:last-of-type::before { display: none; }
@@ -71,23 +75,27 @@ export function landingPage(
     .terminal { background: #1a1a1a; border-radius: 0.625rem; padding: 1rem 1.25rem; overflow-x: auto; border: 1px solid #333; }
     .terminal code { font-family: var(--mono); font-size: 0.75rem; line-height: 1.8; color: #e0e0e0; }
     .terminal .comment { color: #555; }
-    .terminal .cmd { color: #22c55e; }
-    .terminal .flag { color: #f97316; }
+    .terminal .cmd { color: var(--accent); }
+    .terminal .flag { color: var(--accent); }
     .terminal .output { color: #777; }
     .section-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-top: 3rem; margin-bottom: 1.25rem; }
-    .layers { display: grid; grid-template-columns: 1fr; gap: 1px; background: var(--border); border-radius: 0.75rem; overflow: hidden; margin-bottom: 2rem; }
-    .layer { background: var(--surface); padding: 1rem 1.25rem; display: grid; grid-template-columns: 120px 1fr; gap: 0.75rem; align-items: baseline; }
-    .layer-name { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); }
-    .layer-desc { font-size: 0.8125rem; color: var(--muted); line-height: 1.5; }
-    @media (max-width: 560px) { .layer { grid-template-columns: 1fr; gap: 0.125rem; } }
+    .arch-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; padding: 2rem; margin-bottom: 2rem; }
+    .arch-row { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.375rem; }
+    .arch-node { padding: 0.5rem 0.875rem; border-radius: 0.375rem; font-size: 0.6875rem; font-weight: 500; text-align: center; border: 1px solid rgba(249,115,22,0.2); color: var(--text); background: rgba(249,115,22,0.03); }
+    .arch-node.active { border-color: rgba(249,115,22,0.4); color: var(--accent); }
+    .arch-arrow-down { text-align: center; color: var(--muted); font-size: 0.6875rem; margin: 0.25rem 0; font-family: var(--mono); }
     .explanation { font-size: 0.8125rem; color: var(--muted); line-height: 1.75; margin-bottom: 2rem; padding: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.75rem; }
     .explanation strong { color: var(--text); font-weight: 600; }
     .explanation .accent { color: var(--accent); font-weight: 600; }
-    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-bottom: 3rem; }
-    .feat { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.875rem 1rem; }
-    .feat-name { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.125rem; }
-    .feat-desc { font-size: 0.6875rem; color: var(--muted); line-height: 1.4; }
-    @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+    .compare-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: 0.8125rem; background: var(--surface); border-radius: 0.75rem; overflow: hidden; border: 1px solid var(--border); }
+    .compare-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); border-bottom: 1px solid var(--border); font-weight: 600; }
+    .compare-table td { padding: 0.625rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table .check { color: var(--muted); }
+    .compare-table .ours-check { color: var(--accent); font-weight: 600; }
+    .compare-table .x { color: #ccc; }
+    @media (prefers-color-scheme: dark) { .compare-table .x { color: #333; } }
+    .compare-table .ours { color: var(--text); font-weight: 500; }
     .links { display: flex; gap: 0.625rem; flex-wrap: wrap; margin-bottom: 3rem; }
     .link { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; text-decoration: none; color: var(--text); font-size: 0.75rem; font-weight: 500; transition: border-color 0.15s; }
     .link:hover, .link:focus-visible { border-color: var(--accent); outline: none; }
@@ -95,6 +103,7 @@ export function landingPage(
     footer { padding: 1.25rem 0; border-top: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); }
     footer a { color: var(--muted); text-decoration: none; }
     footer a:hover { color: var(--accent); }
+    @media (max-width: 560px) { .stats { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -107,6 +116,47 @@ export function landingPage(
     <main>
     <h1>Your secrets. <span class="highlight">Your keys.</span> Your infrastructure.</h1>
     <p class="subtitle">A self-hosted secret manager on Cloudflare Workers. Store secrets only you can decrypt, share them with your team through roles, and revoke access with one command. No servers to run. No third parties to trust.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-value">AES-256</div><div class="stat-label">per-secret encryption</div></div>
+      <div class="stat"><div class="stat-value">E2E</div><div class="stat-label">zero-knowledge mode</div></div>
+      <div class="stat"><div class="stat-value">3</div><div class="stat-label">encryption layers</div></div>
+      <div class="stat"><div class="stat-value">SHA-256</div><div class="stat-label">hash-chained audit</div></div>
+    </div>
+
+    <div class="section-label">How does it compare?</div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="ours">${b}</th>
+          <th>HashiCorp Vault</th>
+          <th>AWS Secrets Mgr</th>
+          <th>Doppler</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Self-hosted</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Zero-knowledge E2E</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>No servers to run</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Per-secret encryption keys</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Key rotation without re-encrypting</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
+        <tr><td>RBAC + tag restrictions</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Hash-chained audit log</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Burn after reading</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Geo-fencing</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Version history + restore</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Runtime feature flags</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Config templates</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>GitHub Action</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Auto-provisioning</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Free at any scale</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Open source</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-label">Get started in 4 steps</div>
 
     <div class="step">
       <div class="step-number">1</div>
@@ -144,33 +194,29 @@ export function landingPage(
       </div>
     </div>
 
-    <div class="section-label">What protects your secrets</div>
+    <div class="section-label">How your secret is protected</div>
 
-    <div class="layers">
-      <div class="layer"><span class="layer-name">End-to-end</span><span class="layer-desc">age encryption on your machine. Private or team-shared. The server stores ciphertext it cannot decrypt.</span></div>
-      <div class="layer"><span class="layer-name">Envelope</span><span class="layer-desc">Each secret gets its own AES-256-GCM data encryption key, wrapped by a master key. Key rotation without re-encrypting data.</span></div>
-      <div class="layer"><span class="layer-name">Integrity</span><span class="layer-desc">HMAC-SHA256 binds every secret to its key name and encryption keys. Tampering is detectable at rest.</span></div>
-      <div class="layer"><span class="layer-name">Access</span><span class="layer-desc">Cloudflare Access at the edge. JWT validation in the Worker. RBAC with tag-level restrictions. Hardware keys supported.</span></div>
-      <div class="layer"><span class="layer-name">Audit</span><span class="layer-desc">Every operation logged. SHA-256 hash-chained. Verifiable with the CLI. Audit events posted to external URLs via webhooks.</span></div>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <div class="arch-node">hfs CLI</div>
+        <div class="arch-node">REST API</div>
+        <div class="arch-node">GitHub Action</div>
+      </div>
+      <div class="arch-arrow-down">&darr; age encrypt (e2e) &darr;</div>
+      <div class="arch-row">
+        <div class="arch-node active" style="min-width:380px">Cloudflare Edge &mdash; DDoS &middot; TLS &middot; Access (IdP + hardware keys)</div>
+      </div>
+      <div class="arch-arrow-down">&darr; JWT &darr;</div>
+      <div class="arch-row">
+        <div class="arch-node active" style="min-width:380px">Worker &mdash; DEK encrypt &rarr; KEK wrap &rarr; HMAC sign &rarr; Audit</div>
+      </div>
+      <div class="arch-arrow-down">&darr; ciphertext only &darr;</div>
+      <div class="arch-row">
+        <div class="arch-node">D1 (SQLite)</div>
+        <div class="arch-node">KV (flags)</div>
+      </div>
     </div>
 
-    <div class="explanation">
-      When you store a secret with <strong>--private</strong>, it is encrypted with your age key on your machine, then envelope-encrypted with a per-secret key on the server, then bound with HMAC. Three layers. The server holds ciphertext inside ciphertext.<br/><br/>
-      When you store with <strong>--e2e</strong>, the CLI asks the server who has access based on roles and tags, encrypts for all of them, and sends the result. <span class="accent">Revoke a user, rewrap, and their key is not included.</span> New team members run <strong>hfs keygen --register</strong> and they are included on the next encrypt.
-    </div>
-
-    <div class="section-label">Also built in</div>
-
-    <div class="features">
-      <div class="feat"><div class="feat-name">Burn after reading</div><div class="feat-desc">One-time secrets that delete after first read.</div></div>
-      <div class="feat"><div class="feat-name">Geo-fencing</div><div class="feat-desc">Restrict access by country. Only on Cloudflare.</div></div>
-      <div class="feat"><div class="feat-name">Runtime feature flags</div><div class="feat-desc">Toggle behavior from KV. No redeploy needed.</div></div>
-      <div class="feat"><div class="feat-name">Version history</div><div class="feat-desc">Diff, restore, and track every change.</div></div>
-      <div class="feat"><div class="feat-name">Config templates</div><div class="feat-desc">hfs template .env.tpl &gt; .env</div></div>
-      <div class="feat"><div class="feat-name">GitHub Action</div><div class="feat-desc">Fetch secrets into CI workflows. Masked in logs.</div></div>
-      <div class="feat"><div class="feat-name">Auto-provisioning</div><div class="feat-desc">Pass Access, get a role. No admin needed.</div></div>
-      <div class="feat"><div class="feat-name">Open source</div><div class="feat-desc">MIT license. Run it, fork it, audit it.</div></div>
-    </div>
     </main>
 
     <nav class="links" aria-label="Quick links">
