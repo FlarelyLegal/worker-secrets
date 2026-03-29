@@ -68,7 +68,8 @@ secretWrite.openapi(putRoute, async (c) => {
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Tag-based access control: check new tags on create/update
-  if (tags && !hasTagAccess(auth, tags))
+  // For tag-restricted roles, empty/missing tags are rejected — every secret must be tagged
+  if (auth.allowedTags.length > 0 && !hasTagAccess(auth, tags || ""))
     return c.json({ error: "Access denied — you cannot assign tags outside your role" }, 403);
 
   // Enforce max_secrets limit on new keys

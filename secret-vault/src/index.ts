@@ -119,7 +119,9 @@ const API_TAGS = [
 ];
 
 // Dynamic server URL + brand — adapts to deployment
-app.get("/doc/json", (c) => {
+app.get("/doc/json", async (c) => {
+  const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
+  if (!enabled) return c.notFound();
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
   return c.json(
