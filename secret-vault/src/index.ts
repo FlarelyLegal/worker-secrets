@@ -109,7 +109,7 @@ const API_TAGS = [
     name: "Tokens",
     description:
       "Register and manage service tokens. Each token gets a name, scoped permissions, " +
-      "and usage tracking. Interactive auth only.",
+      "and usage tracking. Admin only.",
   },
   { name: "Users", description: "User management with RBAC role assignment (admin only)" },
   { name: "Roles", description: "Role definitions with scoped permissions (admin only)" },

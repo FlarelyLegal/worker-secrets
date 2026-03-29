@@ -124,7 +124,9 @@ bulk.openapi(importRoute, async (c) => {
     for (const item of items) {
       if (!hasTagAccess(auth, item.tags ?? ""))
         return c.json(
-          { error: `Access denied — cannot import key '${item.key}' with tags outside your role` },
+          {
+            error: `Access denied — key '${item.key}' ${item.tags ? "has tags outside your role" : "requires tags for your role"}`,
+          },
           403,
         );
     }
