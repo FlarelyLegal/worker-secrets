@@ -4,10 +4,12 @@ import {
   ACTION_GET,
   ACTION_RESTORE,
   ACTION_VERSIONS,
+  FLAG_HMAC_REQUIRED,
   SCOPE_READ,
   SCOPE_WRITE,
 } from "../constants.js";
-import { decrypt, envelopeDecrypt } from "../crypto.js";
+import { decrypt, envelopeDecrypt, verifyHmac } from "../crypto.js";
+import { getFlag } from "../flags.js";
 import { ErrorSchema, R403, R500 } from "../schemas.js";
 import { KeyParam, type SecretRow } from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
@@ -124,6 +126,26 @@ versions.openapi(getVersionRoute, async (c) => {
     .first<VersionRow>();
   if (!version) return c.json({ error: "Version not found" }, 404);
 
+  // Verify HMAC integrity (same checks as GET /secrets/{key})
+  if (version.hmac) {
+    const valid = await verifyHmac(
+      key,
+      version.value,
+      version.iv,
+      version.hmac,
+      c.env.ENCRYPTION_KEY,
+      c.env.INTEGRITY_KEY,
+      version.encrypted_dek,
+      version.dek_iv,
+    );
+    if (!valid)
+      return c.json({ error: "Integrity check failed — version may have been tampered with" }, 500);
+  } else {
+    const hmacRequired = getFlag(c.get("flags"), FLAG_HMAC_REQUIRED, false);
+    if (hmacRequired)
+      return c.json({ error: "Version missing HMAC integrity tag — re-save to add one" }, 500);
+  }
+
   let plaintext: string;
   try {
     if (version.encrypted_dek && version.dek_iv) {
@@ -223,6 +245,28 @@ versions.openapi(restoreRoute, async (c) => {
     .bind(id, key)
     .first<VersionRow>();
   if (!version) return c.json({ error: "Version not found" }, 404);
+
+  // Verify HMAC integrity of the version being restored
+  if (version.hmac) {
+    const valid = await verifyHmac(
+      key,
+      version.value,
+      version.iv,
+      version.hmac,
+      c.env.ENCRYPTION_KEY,
+      c.env.INTEGRITY_KEY,
+      version.encrypted_dek,
+      version.dek_iv,
+    );
+    if (!valid)
+      return c.json(
+        {
+          error:
+            "Integrity check failed — version may have been tampered with, refusing to restore",
+        },
+        500,
+      );
+  }
 
   // Save current value as a new version before overwriting
   const current = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")

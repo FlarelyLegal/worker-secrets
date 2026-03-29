@@ -42,7 +42,7 @@ async function getHmacKey(encryptionKey: string, integrityKey?: string): Promise
       ["sign", "verify"],
     );
   } else {
-    // Derive from encryption key via HKDF
+    // Derive from encryption key via HKDF with fixed application salt
     const raw = hexToBytes(encryptionKey);
     const baseKey = await crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, "HKDF", false, [
       "deriveKey",
@@ -51,7 +51,7 @@ async function getHmacKey(encryptionKey: string, integrityKey?: string): Promise
       {
         name: "HKDF",
         hash: "SHA-256",
-        salt: new Uint8Array(0),
+        salt: new TextEncoder().encode("secret-vault-hmac-v1"),
         info: new TextEncoder().encode("hmac-integrity"),
       },
       baseKey,
