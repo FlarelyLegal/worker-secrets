@@ -116,7 +116,15 @@ secretWrite.openapi(putRoute, async (c) => {
   } catch {
     return c.json({ error: "Encryption failed" }, 500);
   }
-  const hmac = await computeHmac(key, ciphertext, iv, c.env.ENCRYPTION_KEY, c.env.INTEGRITY_KEY);
+  const hmac = await computeHmac(
+    key,
+    ciphertext,
+    iv,
+    c.env.ENCRYPTION_KEY,
+    c.env.INTEGRITY_KEY,
+    encrypted_dek,
+    dek_iv,
+  );
   const identity = auth.identity;
   await c.env.DB.prepare(
     `INSERT INTO secrets (key, value, iv, hmac, encrypted_dek, dek_iv, description, tags, expires_at, created_by, updated_by, created_at, updated_at)

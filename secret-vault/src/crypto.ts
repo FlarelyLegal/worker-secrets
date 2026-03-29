@@ -179,9 +179,15 @@ export async function computeHmac(
   iv: string,
   hexKey: string,
   integrityKey?: string,
+  encryptedDek?: string | null,
+  dekIv?: string | null,
 ): Promise<string> {
   const hmacKey = await getHmacKey(hexKey, integrityKey);
-  const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
+  // Bind all encrypted fields — prevents DEK swap attacks
+  const parts = [secretKey, ciphertext, iv];
+  if (encryptedDek) parts.push(encryptedDek);
+  if (dekIv) parts.push(dekIv);
+  const data = new TextEncoder().encode(parts.join(":"));
   const sig = await crypto.subtle.sign("HMAC", hmacKey, data);
   return toBase64url(sig);
 }
@@ -193,9 +199,14 @@ export async function verifyHmac(
   hmac: string,
   hexKey: string,
   integrityKey?: string,
+  encryptedDek?: string | null,
+  dekIv?: string | null,
 ): Promise<boolean> {
   const hmacKey = await getHmacKey(hexKey, integrityKey);
-  const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
+  const parts = [secretKey, ciphertext, iv];
+  if (encryptedDek) parts.push(encryptedDek);
+  if (dekIv) parts.push(dekIv);
+  const data = new TextEncoder().encode(parts.join(":"));
   const sig = fromBase64url(hmac);
   return crypto.subtle.verify("HMAC", hmacKey, sig, data);
 }

@@ -73,6 +73,8 @@ adminOps.openapi(reencryptRoute, async (c) => {
       iv,
       c.env.ENCRYPTION_KEY,
       c.env.INTEGRITY_KEY,
+      encrypted_dek,
+      dek_iv,
     );
 
     await c.env.DB.prepare(
@@ -197,12 +199,22 @@ adminOps.openapi(rotateKeyRoute, async (c) => {
     );
 
     // Recompute HMAC with new key
-    const hmac = await computeHmac(row.key, row.value, row.iv, new_key, c.env.INTEGRITY_KEY);
+    const newDekB64 = toBase64url(newEncryptedDek);
+    const newDekIvB64 = toBase64url(newDekIv);
+    const hmac = await computeHmac(
+      row.key,
+      row.value,
+      row.iv,
+      new_key,
+      c.env.INTEGRITY_KEY,
+      newDekB64,
+      newDekIvB64,
+    );
 
     await c.env.DB.prepare(
       "UPDATE secrets SET encrypted_dek = ?, dek_iv = ?, hmac = ?, updated_at = datetime('now') WHERE key = ?",
     )
-      .bind(toBase64url(newEncryptedDek), toBase64url(newDekIv), hmac, row.key)
+      .bind(newDekB64, newDekIvB64, hmac, row.key)
       .run();
 
     rotated++;

@@ -128,6 +128,8 @@ secrets.openapi(getRoute, async (c) => {
       row.hmac,
       c.env.ENCRYPTION_KEY,
       c.env.INTEGRITY_KEY,
+      row.encrypted_dek,
+      row.dek_iv,
     );
     if (!valid)
       return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);

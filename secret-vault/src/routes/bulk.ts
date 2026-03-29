@@ -156,6 +156,8 @@ bulk.openapi(importRoute, async (c) => {
       iv,
       c.env.ENCRYPTION_KEY,
       c.env.INTEGRITY_KEY,
+      encrypted_dek,
+      dek_iv,
     );
     toInsert.push({
       key: item.key,
