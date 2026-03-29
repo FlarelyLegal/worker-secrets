@@ -113,10 +113,21 @@ export class VaultClient {
       // Cloudflare Access redirects to login page when session is expired/invalid
       if (res.status >= 300 && res.status < 400) {
         const location = res.headers.get("Location") || "";
-        if (location.includes("cloudflareaccess.com") || location.includes("/cdn-cgi/access/")) {
-          throw new Error("Session expired or unauthorized. Run `hfs login` to re-authenticate.");
+        try {
+          const parsed = new URL(location);
+          if (
+            parsed.hostname.endsWith(".cloudflareaccess.com") ||
+            parsed.pathname.startsWith("/cdn-cgi/access/")
+          ) {
+            throw new Error("Session expired or unauthorized. Run `hfs login` to re-authenticate.");
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message.includes("Session expired")) throw e;
+          // Relative URL or parse failure — check pathname directly
+          if (location.startsWith("/cdn-cgi/access/")) {
+            throw new Error("Session expired or unauthorized. Run `hfs login` to re-authenticate.");
+          }
         }
-        // For non-Access redirects, throw a generic error
         throw new Error(`Unexpected redirect (HTTP ${res.status}) to ${location}`);
       }
 
