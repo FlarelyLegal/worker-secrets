@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { authenticate } from "./auth.js";
+import { auditRaw, authenticate } from "./auth.js";
 import {
   ACTION_AUTH_FAILED,
   AUTH_REJECTED,
@@ -170,19 +170,16 @@ app.use("*", async (c, next) => {
   const user = await authenticate(c.req.raw, c.env);
   if (!user) {
     try {
-      await c.env.DB.prepare(
-        "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      )
-        .bind(
-          AUTH_REJECTED,
-          "unknown",
-          ACTION_AUTH_FAILED,
-          null,
-          c.req.header("CF-Connecting-IP") ?? null,
-          c.req.header("User-Agent") ?? null,
-          c.get("requestId"),
-        )
-        .run();
+      await auditRaw(
+        c.env.DB,
+        AUTH_REJECTED,
+        "unknown",
+        ACTION_AUTH_FAILED,
+        null,
+        c.req.header("CF-Connecting-IP") ?? null,
+        c.req.header("User-Agent") ?? null,
+        c.get("requestId"),
+      );
     } catch {
       // Don't fail the 401 if audit logging fails
     }

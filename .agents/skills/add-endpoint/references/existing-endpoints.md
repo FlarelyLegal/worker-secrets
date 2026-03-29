@@ -25,13 +25,13 @@ Source: `secret-vault/src/routes/`
 | `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys); computes HMAC-SHA256 integrity tag |
 | `DELETE` | `/secrets/{key}` | delete | Delete a secret |
 | `GET` | `/audit?limit=&offset=&identity=&action=&key=&method=&from=&to=` | admin | Paginated audit log with filters |
-| `GET` | `/tokens` | interactive only | List registered service tokens |
-| `PUT` | `/tokens/{clientId}` | interactive only | Register a service token |
-| `DELETE` | `/tokens/{clientId}` | interactive only | Revoke a service token |
+| `GET` | `/tokens` | admin | List registered service tokens |
+| `PUT` | `/tokens/{clientId}` | admin | Register a service token |
+| `DELETE` | `/tokens/{clientId}` | admin | Revoke a service token |
 | `GET` | `/flags` | read | List all feature flags (KV-backed, plaintext) |
 | `GET` | `/flags/{key}` | read | Get a flag value with metadata |
-| `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type: boolean, number, json, string) |
-| `DELETE` | `/flags/{key}` | delete | Delete a flag |
+| `PUT` | `/flags/{key}` | admin | Set a flag (auto-detects type: boolean, number, json, string) |
+| `DELETE` | `/flags/{key}` | admin | Delete a flag |
 | `GET` | `/users` | admin | List all users with role, enabled status, last login |
 | `PUT` | `/users/{email}` | admin | Add or update a user with role assignment |
 | `PATCH` | `/users/{email}` | admin | Partial update (name, role, enabled) |

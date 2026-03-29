@@ -1,12 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope } from "../auth.js";
+import { audit, hasScope, isAdmin } from "../auth.js";
 import {
   ACTION_DELETE_FLAG,
   ACTION_GET_FLAG,
   ACTION_LIST_FLAGS,
   ACTION_SET_FLAG,
+  AUTH_INTERACTIVE,
   SCOPE_READ,
-  SCOPE_WRITE,
 } from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
@@ -148,7 +148,8 @@ const setRoute = createRoute({
 
 flags.openapi(setRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth))
+    return c.json({ error: "Admin only" }, 403);
 
   const { key } = c.req.valid("param");
   const { value, description } = c.req.valid("json");
@@ -190,7 +191,8 @@ const deleteRoute = createRoute({
 
 flags.openapi(deleteRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth))
+    return c.json({ error: "Admin only" }, 403);
 
   const { key } = c.req.valid("param");
   await c.env.FLAGS.delete(key);

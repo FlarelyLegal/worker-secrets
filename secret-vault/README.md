@@ -59,9 +59,9 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `POST` | `/admin/re-encrypt` | admin | Migrate legacy secrets to envelope encryption |
 | `POST` | `/admin/rotate-key` | admin | Re-wrap all DEKs with a new master key |
 | `GET` | `/audit` | admin | Audit log |
-| `GET` | `/tokens` | interactive | List service tokens |
-| `PUT` | `/tokens/{clientId}` | interactive | Register token |
-| `DELETE` | `/tokens/{clientId}` | interactive | Revoke token |
+| `GET` | `/tokens` | admin | List service tokens |
+| `PUT` | `/tokens/{clientId}` | admin | Register token |
+| `DELETE` | `/tokens/{clientId}` | admin | Revoke token |
 | `GET` | `/users` | admin | List all users |
 | `PUT` | `/users/{email}` | admin | Add or update a user |
 | `PATCH` | `/users/{email}` | admin | Partial update (role, name, enabled) |
@@ -72,8 +72,8 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |
-| `PUT` | `/flags/{key}` | write | Set a flag (auto-detects type) |
-| `DELETE` | `/flags/{key}` | delete | Delete a flag |
+| `PUT` | `/flags/{key}` | admin | Set a flag (auto-detects type) |
+| `DELETE` | `/flags/{key}` | admin | Delete a flag |
 
 ## Using from other Workers
 

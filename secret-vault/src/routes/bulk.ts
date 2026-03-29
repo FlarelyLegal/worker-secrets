@@ -118,6 +118,17 @@ bulk.openapi(importRoute, async (c) => {
 
   const { secrets: items, overwrite } = c.req.valid("json");
 
+  // Tag-based access control: reject items with tags outside caller's allowed_tags
+  if (auth.allowedTags.length > 0) {
+    for (const item of items) {
+      if (item.tags && !hasTagAccess(auth, item.tags))
+        return c.json(
+          { error: `Access denied — cannot import key '${item.key}' with tags outside your role` },
+          403,
+        );
+    }
+  }
+
   // First pass: encrypt and check overwrites
   const toInsert: {
     key: string;

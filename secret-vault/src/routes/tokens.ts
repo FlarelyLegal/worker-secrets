@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit } from "../auth.js";
+import { audit, isAdmin } from "../auth.js";
 import {
   ACTION_LIST_TOKENS,
   ACTION_REGISTER_TOKEN,
@@ -18,10 +18,11 @@ import type { HonoEnv } from "../types.js";
 
 const tokens = new OpenAPIHono<HonoEnv>();
 
-// Interactive-only middleware
+// Admin-only middleware
 tokens.use("*", async (c, next) => {
-  if (c.get("auth").method !== AUTH_INTERACTIVE) {
-    return c.json({ error: "Owner only" }, 403);
+  const auth = c.get("auth");
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
+    return c.json({ error: "Admin only" }, 403);
   }
   return next();
 });

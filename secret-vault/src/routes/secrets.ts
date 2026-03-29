@@ -56,10 +56,12 @@ secrets.openapi(listRoute, async (c) => {
   const binds: unknown[] = [];
 
   if (search) {
-    const where = " WHERE key LIKE ?";
+    const where = " WHERE key LIKE ? ESCAPE '\\'";
     countSql += where;
     listSql += where;
-    binds.push(`%${search}%`);
+    // Escape SQL LIKE wildcards in user input
+    const escaped = search.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+    binds.push(`%${escaped}%`);
   }
 
   listSql += " ORDER BY key LIMIT ? OFFSET ?";
@@ -206,8 +208,16 @@ secrets.openapi(deleteRoute, async (c) => {
   if (!hasScope(auth, SCOPE_DELETE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
-  const result = await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
-  if (result.meta.changes === 0) return c.json({ error: "Secret not found" }, 404);
+
+  // Check tag access before deleting
+  const row = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
+    .bind(key)
+    .first<{ tags: string }>();
+  if (!row) return c.json({ error: "Secret not found" }, 404);
+  if (!hasTagAccess(auth, row.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+
+  await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
   await audit(c.env, auth, ACTION_DELETE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, deleted: key }, 200);
 });
