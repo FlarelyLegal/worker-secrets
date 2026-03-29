@@ -29,7 +29,10 @@ async function getHmacKey(encryptionKey: string, integrityKey?: string): Promise
   if (_cachedHmacKey && _cachedHmacKeySource === source) return _cachedHmacKey;
 
   if (integrityKey) {
-    // Separate integrity key — use directly
+    // Separate integrity key — validate and use directly
+    if (!/^[0-9a-fA-F]{64}$/.test(integrityKey)) {
+      throw new Error("INTEGRITY_KEY must be exactly 64 hex characters (32 bytes)");
+    }
     const raw = hexToBytes(integrityKey);
     _cachedHmacKey = await crypto.subtle.importKey(
       "raw",

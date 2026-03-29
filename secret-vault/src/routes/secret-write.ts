@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { audit, hasScope } from "../auth.js";
+import { audit, hasScope, hasTagAccess } from "../auth.js";
 import {
   ACTION_SET,
   FLAG_MAX_SECRETS,
@@ -62,6 +62,15 @@ secretWrite.openapi(putRoute, async (c) => {
   const existing = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")
     .bind(key)
     .first<SecretRow>();
+
+  // Tag-based access control: check existing secret tags on update
+  if (existing && !hasTagAccess(auth, existing.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+
+  // Tag-based access control: check new tags on create/update
+  // For tag-restricted roles, empty/missing tags are rejected — every secret must be tagged
+  if (auth.allowedTags.length > 0 && !hasTagAccess(auth, tags || ""))
+    return c.json({ error: "Access denied — you cannot assign tags outside your role" }, 403);
 
   // Enforce max_secrets limit on new keys
   if (!existing) {

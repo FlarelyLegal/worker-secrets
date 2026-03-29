@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope } from "../auth.js";
+import { audit, hasScope, hasTagAccess } from "../auth.js";
 import { ACTION_RESTORE, ACTION_VERSIONS, SCOPE_READ, SCOPE_WRITE } from "../constants.js";
 import { ErrorSchema, R403, R500 } from "../schemas.js";
 import { KeyParam, type SecretRow } from "../schemas-secrets.js";
@@ -36,17 +36,20 @@ versions.openapi(versionsRoute, async (c) => {
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
+
+  // Tag-based access control
+  const secret = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
+    .bind(key)
+    .first<{ tags: string }>();
+  if (!secret) return c.json({ error: "Secret not found" }, 404);
+  if (!hasTagAccess(auth, secret.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+
   const { results } = await c.env.DB.prepare(
     "SELECT id, changed_by, changed_at FROM secret_versions WHERE secret_key = ? ORDER BY changed_at DESC",
   )
     .bind(key)
     .all();
-  if (results.length === 0) {
-    const exists = await c.env.DB.prepare("SELECT key FROM secrets WHERE key = ?")
-      .bind(key)
-      .first();
-    if (!exists) return c.json({ error: "Secret not found" }, 404);
-  }
   await audit(c.env, auth, ACTION_VERSIONS, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ versions: results }, 200);
 });
@@ -102,6 +105,13 @@ versions.openapi(restoreRoute, async (c) => {
   if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key, id } = c.req.valid("param");
+
+  // Tag-based access control
+  const secret = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
+    .bind(key)
+    .first<{ tags: string }>();
+  if (secret && !hasTagAccess(auth, secret.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Fetch the version to restore
   const version = await c.env.DB.prepare(

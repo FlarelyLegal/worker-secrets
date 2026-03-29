@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { authenticate } from "./auth.js";
+import { auditRaw, authenticate } from "./auth.js";
 import {
   ACTION_AUTH_FAILED,
   AUTH_REJECTED,
@@ -109,7 +109,7 @@ const API_TAGS = [
     name: "Tokens",
     description:
       "Register and manage service tokens. Each token gets a name, scoped permissions, " +
-      "and usage tracking. Interactive auth only.",
+      "and usage tracking. Admin only.",
   },
   { name: "Users", description: "User management with RBAC role assignment (admin only)" },
   { name: "Roles", description: "Role definitions with scoped permissions (admin only)" },
@@ -119,7 +119,9 @@ const API_TAGS = [
 ];
 
 // Dynamic server URL + brand — adapts to deployment
-app.get("/doc/json", (c) => {
+app.get("/doc/json", async (c) => {
+  const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
+  if (!enabled) return c.notFound();
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
   return c.json(
@@ -170,19 +172,16 @@ app.use("*", async (c, next) => {
   const user = await authenticate(c.req.raw, c.env);
   if (!user) {
     try {
-      await c.env.DB.prepare(
-        "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      )
-        .bind(
-          AUTH_REJECTED,
-          "unknown",
-          ACTION_AUTH_FAILED,
-          null,
-          c.req.header("CF-Connecting-IP") ?? null,
-          c.req.header("User-Agent") ?? null,
-          c.get("requestId"),
-        )
-        .run();
+      await auditRaw(
+        c.env.DB,
+        AUTH_REJECTED,
+        "unknown",
+        ACTION_AUTH_FAILED,
+        null,
+        c.req.header("CF-Connecting-IP") ?? null,
+        c.req.header("User-Agent") ?? null,
+        c.get("requestId"),
+      );
     } catch {
       // Don't fail the 401 if audit logging fails
     }

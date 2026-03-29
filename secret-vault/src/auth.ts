@@ -54,15 +54,21 @@ type TokenRow = { client_id: string; name: string; scopes: string; role: string 
 
 export async function authenticate(request: Request, env: Env): Promise<AuthUser | null> {
   // Dev-only bypass for local testing (wrangler dev).
+  // Safety: only activates when CF-Connecting-IP is absent (no real Cloudflare edge)
+  // AND the request comes from localhost. This cannot trigger in production.
   if (env.DEV_AUTH_BYPASS === "true" && !request.headers.get("CF-Connecting-IP")) {
-    return {
-      method: AUTH_INTERACTIVE,
-      identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
-      name: "dev",
-      role: ROLE_ADMIN,
-      scopes: [SCOPE_ALL],
-      allowedTags: [],
-    };
+    const url = new URL(request.url);
+    const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    if (isLocal) {
+      return {
+        method: AUTH_INTERACTIVE,
+        identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
+        name: "dev",
+        role: ROLE_ADMIN,
+        scopes: [SCOPE_ALL],
+        allowedTags: [],
+      };
+    }
   }
 
   const token = request.headers.get("Cf-Access-Jwt-Assertion");
@@ -146,24 +152,46 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     };
   }
 
-  // Auto-seed: if users table is empty, first interactive user becomes admin
+  // Auto-seed: if users table is empty, first interactive user becomes admin.
+  // Uses INSERT OR IGNORE to prevent race condition if two requests arrive simultaneously.
   const count = await env.DB.prepare("SELECT COUNT(*) as total FROM users").first<{
     total: number;
   }>();
   if (count && count.total === 0) {
-    await env.DB.prepare(
-      `INSERT INTO users (email, name, role, created_by) VALUES (?, ?, '${ROLE_ADMIN}', 'auto-seed')`,
+    const result = await env.DB.prepare(
+      `INSERT OR IGNORE INTO users (email, name, role, created_by) VALUES (?, ?, '${ROLE_ADMIN}', 'auto-seed')`,
     )
       .bind(email.toLowerCase(), email.split("@")[0])
       .run();
-    return {
-      method: AUTH_INTERACTIVE,
-      identity: email,
-      name: email.split("@")[0],
-      role: ROLE_ADMIN,
-      scopes: [SCOPE_ALL],
-      allowedTags: [],
-    };
+
+    // If we won the race, return admin. Otherwise, re-check if we were inserted by the winner.
+    if (result.meta.changes > 0) {
+      return {
+        method: AUTH_INTERACTIVE,
+        identity: email,
+        name: email.split("@")[0],
+        role: ROLE_ADMIN,
+        scopes: [SCOPE_ALL],
+        allowedTags: [],
+      };
+    }
+    // Lost the race — fall through to re-query the users table
+    const retryUser = await env.DB.prepare(
+      "SELECT email, name, role, enabled FROM users WHERE email = ?",
+    )
+      .bind(email.toLowerCase())
+      .first<UserRow>();
+    if (retryUser?.enabled) {
+      const { scopes, allowedTags } = await resolveRole(env.DB, retryUser.role);
+      return {
+        method: AUTH_INTERACTIVE,
+        identity: email,
+        name: retryUser.name || email.split("@")[0],
+        role: retryUser.role,
+        scopes,
+        allowedTags,
+      };
+    }
   }
 
   // Fallback: ALLOWED_EMAILS env var (migration path)
@@ -209,6 +237,21 @@ export function hasTagAccess(auth: AuthUser, secretTags: string): boolean {
 
 // --- Audit logging ---
 
+async function computeChainHash(
+  db: D1Database,
+  method: string,
+  identity: string,
+  action: string,
+  secretKey: string | null,
+): Promise<string> {
+  const prev = await db
+    .prepare("SELECT id, prev_hash FROM audit_log ORDER BY id DESC LIMIT 1")
+    .first<{ id: number; prev_hash: string | null }>();
+  const chainInput = `${prev?.id ?? 0}|${prev?.prev_hash ?? "genesis"}|${method}|${identity}|${action}|${secretKey ?? ""}`;
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chainInput));
+  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export async function audit(
   env: Env,
   auth: AuthUser,
@@ -218,20 +261,31 @@ export async function audit(
   userAgent: string | null = null,
   requestId: string | null = null,
 ): Promise<void> {
-  // Fetch previous entry's hash for chain integrity
-  const prev = await env.DB.prepare(
-    "SELECT id, prev_hash FROM audit_log ORDER BY id DESC LIMIT 1",
-  ).first<{ id: number; prev_hash: string | null }>();
-
-  // Hash: SHA-256 of "id|method|identity|action|key|timestamp"
   const method = auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name;
-  const chainInput = `${prev?.id ?? 0}|${prev?.prev_hash ?? "genesis"}|${method}|${auth.identity}|${action}|${secretKey ?? ""}`;
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chainInput));
-  const prevHash = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
-
+  const prevHash = await computeChainHash(env.DB, method, auth.identity, action, secretKey);
   await env.DB.prepare(
     "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   )
     .bind(method, auth.identity, action, secretKey, ip, userAgent, requestId, prevHash)
+    .run();
+}
+
+/** Audit logging for failed auth — no AuthUser available, uses raw method/identity strings. */
+export async function auditRaw(
+  db: D1Database,
+  method: string,
+  identity: string,
+  action: string,
+  secretKey: string | null,
+  ip: string | null,
+  userAgent: string | null,
+  requestId: string | null,
+): Promise<void> {
+  const prevHash = await computeChainHash(db, method, identity, action, secretKey);
+  await db
+    .prepare(
+      "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(method, identity, action, secretKey, ip, userAgent, requestId, prevHash)
     .run();
 }
