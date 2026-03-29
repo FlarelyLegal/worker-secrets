@@ -2,4 +2,24 @@ node_modules/
 dist/
 .wrangler/
 .dev.vars
+
+# Local env (never commit secrets)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Tests / tooling output
+coverage/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE / assistant local state
+.cursor/
+.claude/
+.idea/
+
 .DS_Store
