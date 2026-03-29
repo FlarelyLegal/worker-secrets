@@ -21,9 +21,10 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 ## Key features
 
 - [CLI](https://github.com/FlarelyLegal/worker-secrets/tree/main/hfs): `hfs` command-line tool for all operations
+- [Encryption architecture](https://github.com/FlarelyLegal/worker-secrets/blob/main/docs/encryption.md): envelope encryption, HMAC, key rotation, audit chain
 - [E2E encryption](https://github.com/FlarelyLegal/worker-secrets/blob/main/hfs/README.md): `--private` for personal secrets, `--e2e` for team sharing, `--recipients` for explicit keys
 - [RBAC](https://github.com/FlarelyLegal/worker-secrets/blob/main/SECURITY.md): roles with scoped permissions and tag-based access restrictions
-- [Feature flags](https://github.com/FlarelyLegal/worker-secrets/blob/main/FEATURE-FLAGS.md): runtime configuration stored in KV, no redeploy needed
+- [Feature flags](https://github.com/FlarelyLegal/worker-secrets/blob/main/docs/feature-flags.md): runtime configuration stored in KV, no redeploy needed
 - [GitHub Action](https://github.com/FlarelyLegal/worker-secrets/tree/main/action): fetch secrets into CI workflows
 - [OpenAPI spec](https://secrets.homeflare.dev/doc/json): auto-generated from Zod schemas
 - [API docs](https://secrets.homeflare.dev/doc): interactive Scalar UI
@@ -49,10 +50,11 @@ hfs get DB_PASSWORD -q
 ## Documentation
 
 - [README](https://github.com/FlarelyLegal/worker-secrets/blob/main/README.md): project overview and architecture
+- [Encryption architecture](https://github.com/FlarelyLegal/worker-secrets/blob/main/docs/encryption.md): key hierarchy, envelope encryption, HMAC, rotation, audit chain
 - [CLI README](https://github.com/FlarelyLegal/worker-secrets/blob/main/hfs/README.md): all commands and usage
 - [Worker README](https://github.com/FlarelyLegal/worker-secrets/blob/main/secret-vault/README.md): API endpoints and setup
 - [Security](https://github.com/FlarelyLegal/worker-secrets/blob/main/SECURITY.md): threat model, hardening guide, key rotation
-- [Feature flags](https://github.com/FlarelyLegal/worker-secrets/blob/main/FEATURE-FLAGS.md): all runtime flags with defaults and behavior
+- [Feature flags](https://github.com/FlarelyLegal/worker-secrets/blob/main/docs/feature-flags.md): all runtime flags with defaults and behavior
 - [Changelog](https://github.com/FlarelyLegal/worker-secrets/blob/main/CHANGELOG.md): version history
 
 ## Optional

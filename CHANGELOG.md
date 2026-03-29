@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- Harden security across audit, crypto, bulk, secrets, and versions
+
 ## [0.21.0] - 2026-03-29
 
 ### Bug Fixes
@@ -19,6 +25,10 @@ All notable changes to this project will be documented in this file.
 - Robots.txt welcomes AI crawlers to index docs and landing page
 - Serve /llms.txt for AI model discovery
 - Redesigned landing page, health check, robots.txt, security.txt, llms.txt (#8)
+
+### Miscellaneous
+
+- Bump version to 0.21.0
 
 ## [0.20.0] - 2026-03-29
 

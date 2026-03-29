@@ -53,21 +53,29 @@ secrets.openapi(listRoute, async (c) => {
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { limit, offset, search } = c.req.valid("query");
-  let countSql = "SELECT COUNT(*) as total FROM secrets";
-  let listSql =
-    "SELECT key, description, tags, expires_at, created_by, updated_by, created_at, updated_at FROM secrets";
+  const conditions: string[] = [];
   const binds: unknown[] = [];
 
   if (search) {
-    const where = " WHERE key LIKE ? ESCAPE '\\'";
-    countSql += where;
-    listSql += where;
     // Escape SQL LIKE wildcards in user input
     const escaped = search.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+    conditions.push("key LIKE ? ESCAPE '\\'");
     binds.push(`%${escaped}%`);
   }
 
-  listSql += " ORDER BY key LIMIT ? OFFSET ?";
+  // Tag-based access control: filter in SQL for correct pagination
+  if (auth.allowedTags.length > 0) {
+    const tagConditions = auth.allowedTags.map(() => "',' || tags || ',' LIKE ?").join(" OR ");
+    conditions.push(`(${tagConditions})`);
+    for (const tag of auth.allowedTags) {
+      binds.push(`%,${tag},%`);
+    }
+  }
+
+  const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const countSql = `SELECT COUNT(*) as total FROM secrets${where}`;
+  const listSql = `SELECT key, description, tags, expires_at, created_by, updated_by, created_at, updated_at FROM secrets${where} ORDER BY key LIMIT ? OFFSET ?`;
+
   const { results: countResult } = await c.env.DB.prepare(countSql)
     .bind(...binds)
     .all();
@@ -75,17 +83,12 @@ secrets.openapi(listRoute, async (c) => {
   const { results } = await c.env.DB.prepare(listSql)
     .bind(...binds, limit, offset)
     .all();
-  // Filter by tag access
-  const filtered =
-    auth.allowedTags.length > 0
-      ? (results as { tags: string }[]).filter((s) => hasTagAccess(auth, s.tags))
-      : results;
 
   await audit(c.env, auth, ACTION_LIST, null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json(
     {
-      secrets: filtered as z.infer<typeof SecretListItemSchema>[],
-      total: auth.allowedTags.length > 0 ? filtered.length : dbTotal,
+      secrets: results as z.infer<typeof SecretListItemSchema>[],
+      total: dbTotal,
     },
     200,
   );
@@ -244,7 +247,11 @@ secrets.openapi(deleteRoute, async (c) => {
   if (!hasTagAccess(auth, row.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
-  await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
+  // Delete versions first (explicit cleanup — FK CASCADE may not be enforced in D1)
+  await c.env.DB.batch([
+    c.env.DB.prepare("DELETE FROM secret_versions WHERE secret_key = ?").bind(key),
+    c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key),
+  ]);
   await audit(c.env, auth, ACTION_DELETE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, deleted: key }, 200);
 });

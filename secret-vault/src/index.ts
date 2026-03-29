@@ -208,9 +208,9 @@ app.use("*", async (c, next) => {
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Webhook — fire latest audit entry for this request to external URL
+  // Webhook — fire latest audit entry for this request to external URL (HTTPS only)
   const webhookUrl = getFlag(flagCache, FLAG_WEBHOOK_URL, "") as string;
-  if (webhookUrl) {
+  if (webhookUrl?.startsWith("https://")) {
     const filter = (getFlag(flagCache, FLAG_WEBHOOK_FILTER, "") as string)
       .split(",")
       .map((s) => s.trim())

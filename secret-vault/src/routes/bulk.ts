@@ -5,10 +5,16 @@ import {
   ACTION_IMPORT,
   AUTH_INTERACTIVE,
   FLAG_DISABLE_EXPORT,
+  FLAG_MAX_SECRET_SIZE_KB,
+  FLAG_MAX_SECRETS,
+  FLAG_MAX_TAGS_PER_SECRET,
+  FLAG_REQUIRE_DESCRIPTION,
+  FLAG_REQUIRE_TAGS,
+  FLAG_SECRET_NAME_PATTERN,
   SCOPE_READ,
   SCOPE_WRITE,
 } from "../constants.js";
-import { computeHmac, decrypt, envelopeDecrypt, envelopeEncrypt } from "../crypto.js";
+import { computeHmac, decrypt, envelopeDecrypt, envelopeEncrypt, verifyHmac } from "../crypto.js";
 import { getFlag } from "../flags.js";
 import { R403, R500 } from "../schemas.js";
 import {
@@ -55,6 +61,30 @@ bulk.openapi(exportRoute, async (c) => {
   const decrypted = await Promise.all(
     rows.map(async (row) => {
       try {
+        // Verify HMAC integrity before decryption
+        if (row.hmac) {
+          const valid = await verifyHmac(
+            row.key,
+            row.value,
+            row.iv,
+            row.hmac,
+            c.env.ENCRYPTION_KEY,
+            c.env.INTEGRITY_KEY,
+            row.encrypted_dek,
+            row.dek_iv,
+          );
+          if (!valid)
+            return {
+              key: row.key,
+              value: null,
+              error: "Integrity check failed",
+              description: row.description,
+              tags: row.tags,
+              expires_at: row.expires_at,
+              created_at: row.created_at,
+              updated_at: row.updated_at,
+            };
+        }
         return {
           key: row.key,
           value:
@@ -130,6 +160,72 @@ bulk.openapi(importRoute, async (c) => {
           403,
         );
     }
+  }
+
+  // Enforce same flag-driven validations as PUT /secrets/{key}
+  const flags = c.get("flags");
+  const reqDesc = getFlag(flags, FLAG_REQUIRE_DESCRIPTION, false);
+  const reqTags = getFlag(flags, FLAG_REQUIRE_TAGS, false);
+  const namePattern = getFlag(flags, FLAG_SECRET_NAME_PATTERN, "") as string;
+  const maxSizeKb = getFlag(flags, FLAG_MAX_SECRET_SIZE_KB, 0) as number;
+  const maxTagsPer = getFlag(flags, FLAG_MAX_TAGS_PER_SECRET, 0) as number;
+
+  for (const item of items) {
+    if (reqDesc && !item.description)
+      return c.json({ error: `Description is required (key: '${item.key}')` }, 400);
+    if (reqTags && !item.tags)
+      return c.json({ error: `Tags are required (key: '${item.key}')` }, 400);
+    if (namePattern) {
+      try {
+        if (namePattern.length <= 200 && !new RegExp(namePattern).test(item.key))
+          return c.json(
+            { error: `Key '${item.key}' does not match required pattern: ${namePattern}` },
+            400,
+          );
+      } catch {
+        // Invalid regex in flag — skip enforcement
+      }
+    }
+    if (maxSizeKb > 0 && item.value.length > maxSizeKb * 1024)
+      return c.json({ error: `Value exceeds ${maxSizeKb}KB limit (key: '${item.key}')` }, 400);
+    if (item.tags && maxTagsPer > 0) {
+      const tagCount = item.tags.split(",").filter((t) => t.trim()).length;
+      if (tagCount > maxTagsPer)
+        return c.json(
+          { error: `Too many tags (${tagCount}) on key '${item.key}' — maximum is ${maxTagsPer}` },
+          400,
+        );
+    }
+  }
+
+  // Enforce max_secrets limit for net new keys
+  const maxSecrets = getFlag(flags, FLAG_MAX_SECRETS, 0) as number;
+  if (maxSecrets > 0) {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
+      total: number;
+    }>();
+    const currentTotal = count?.total ?? 0;
+    // Count how many items are genuinely new (not overwrites)
+    let newCount = 0;
+    if (!overwrite) {
+      // Without overwrite, existing keys are skipped, so all non-existing are new
+      for (const item of items) {
+        const existing = await c.env.DB.prepare("SELECT key FROM secrets WHERE key = ?")
+          .bind(item.key)
+          .first();
+        if (!existing) newCount++;
+      }
+    } else {
+      // With overwrite, only keys that don't already exist are new
+      for (const item of items) {
+        const existing = await c.env.DB.prepare("SELECT key FROM secrets WHERE key = ?")
+          .bind(item.key)
+          .first();
+        if (!existing) newCount++;
+      }
+    }
+    if (currentTotal + newCount > maxSecrets)
+      return c.json({ error: `Import would exceed vault limit of ${maxSecrets} secrets` }, 400);
   }
 
   // First pass: encrypt and check overwrites

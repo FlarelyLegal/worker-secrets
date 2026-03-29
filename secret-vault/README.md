@@ -92,18 +92,10 @@ Service Bindings are not supported — auth requires a valid Access JWT.
 
 ## Feature flags
 
-Flags are stored in a `FLAGS` KV namespace as plaintext key-value pairs (not encrypted in D1 like secrets). Each flag stores its value, type, description, and provenance (`updated_by`, `updated_at`). Types are auto-detected: `"true"`/`"false"` become boolean, numeric strings become number, valid JSON objects become json, everything else is string. All flag operations are audit-logged.
+22 runtime flags stored in KV (not encrypted). See [Feature Flags Reference](../docs/feature-flags.md) for the full list with defaults and behavior notes.
 
 ## Security
 
-- **Envelope encryption**: per-secret DEK wrapped by a master KEK, enabling key rotation via DEK re-encryption (backwards compatible with legacy single-key secrets)
-- **Encryption at rest**: AES-256-GCM with per-secret random IV (PQC-safe symmetric)
-- **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key (or optional `INTEGRITY_KEY`), detecting tampering or ciphertext swaps at rest
-- **Tag-based access control**: roles can restrict access to secrets matching specific tags via `allowed_tags`
-- **Secret expiry tracking**: optional `expires_at` per secret, settable via `--expires` flag
-- **Dual auth**: Access validates at edge, Worker validates again as defense-in-depth
-- **RBAC**: Users and service tokens assigned to roles (admin, operator, reader) with scoped permissions
-- **Hardware key support**: Access policy can require `hwk` (FIDO2/passkey/YubiKey) for interactive sessions
-- **Registered tokens only**: Valid Access token is rejected until registered with name + scopes
-- **Full audit log**: Every operation logged with identity, action, key, IP, user agent; hash-chained (`prev_hash`) for tamper-evident history
-- **Zod validation**: All inputs validated via OpenAPI schemas with size limits
+Envelope encryption (per-secret DEK + master KEK), HMAC-SHA256 integrity binding, dual auth via Cloudflare Access, RBAC with tag-based restrictions, and tamper-evident hash-chained audit logging.
+
+See [Encryption Architecture](../docs/encryption.md) for detailed diagrams and [Threat Model](../SECURITY.md) for the hardening guide.

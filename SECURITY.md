@@ -84,7 +84,7 @@ hfs get <any-secret> -q
 
 ## Architecture
 
-See the [architecture diagram](README.md#architecture) in the root README.
+See [Encryption Architecture](docs/encryption.md) for detailed diagrams of envelope encryption, key hierarchy, HMAC binding, key rotation, and audit chain integrity.
 
 ## Dependencies
 

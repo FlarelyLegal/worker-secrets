@@ -62,11 +62,11 @@ secretWrite.openapi(putRoute, async (c) => {
     if (reqTags) return c.json({ error: "Tags are required" }, 400);
   }
 
-  // Secret name pattern enforcement
-  const namePattern = getFlag(c.get("flags"), FLAG_SECRET_NAME_PATTERN, "");
-  if (namePattern) {
+  // Secret name pattern enforcement (length-capped to prevent ReDoS)
+  const namePattern = getFlag(c.get("flags"), FLAG_SECRET_NAME_PATTERN, "") as string;
+  if (namePattern && namePattern.length <= 200) {
     try {
-      if (!new RegExp(namePattern as string).test(key))
+      if (!new RegExp(namePattern).test(key))
         return c.json({ error: `Key does not match required pattern: ${namePattern}` }, 400);
     } catch {
       // Invalid regex in flag — skip enforcement, don't block writes
