@@ -16,7 +16,7 @@ import {
   SCOPE_WRITE,
 } from "../constants.js";
 import { computeHmac, decrypt, encrypt, verifyHmac } from "../crypto.js";
-import { getFlagValue } from "../flags.js";
+import { getFlag } from "../flags.js";
 import { ErrorSchema, PaginationQuery, R403, R500 } from "../schemas.js";
 import {
   KeyParam,
@@ -118,7 +118,7 @@ secrets.openapi(getRoute, async (c) => {
     if (!valid)
       return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
   } else {
-    const hmacRequired = await getFlagValue(c.env.FLAGS, FLAG_HMAC_REQUIRED, false);
+    const hmacRequired = getFlag(c.get("flags"), FLAG_HMAC_REQUIRED, false);
     if (hmacRequired)
       return c.json({ error: "Secret missing HMAC integrity tag — re-save to add one" }, 500);
   }
@@ -168,11 +168,11 @@ secrets.openapi(putRoute, async (c) => {
 
   // Flag-driven input requirements
   if (!description) {
-    const reqDesc = await getFlagValue(c.env.FLAGS, FLAG_REQUIRE_DESCRIPTION, false);
+    const reqDesc = getFlag(c.get("flags"), FLAG_REQUIRE_DESCRIPTION, false);
     if (reqDesc) return c.json({ error: "Description is required" }, 400);
   }
   if (!tags) {
-    const reqTags = await getFlagValue(c.env.FLAGS, FLAG_REQUIRE_TAGS, false);
+    const reqTags = getFlag(c.get("flags"), FLAG_REQUIRE_TAGS, false);
     if (reqTags) return c.json({ error: "Tags are required" }, 400);
   }
 
@@ -182,7 +182,7 @@ secrets.openapi(putRoute, async (c) => {
 
   // Enforce max_secrets limit on new keys
   if (!existing) {
-    const maxSecrets = await getFlagValue(c.env.FLAGS, FLAG_MAX_SECRETS, 0);
+    const maxSecrets = getFlag(c.get("flags"), FLAG_MAX_SECRETS, 0);
     if (maxSecrets > 0) {
       const count = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
         total: number;
@@ -191,7 +191,7 @@ secrets.openapi(putRoute, async (c) => {
         return c.json({ error: `Vault limit reached (${maxSecrets} secrets)` }, 400);
     }
   }
-  const versioningEnabled = await getFlagValue(c.env.FLAGS, FLAG_VERSIONING_ENABLED, true);
+  const versioningEnabled = getFlag(c.get("flags"), FLAG_VERSIONING_ENABLED, true);
   if (versioningEnabled && existing) {
     await c.env.DB.prepare(
       "INSERT INTO secret_versions (secret_key, value, iv, hmac, description, changed_by) VALUES (?, ?, ?, ?, ?, ?)",
@@ -200,7 +200,7 @@ secrets.openapi(putRoute, async (c) => {
       .run();
 
     // Prune old versions if max_versions is set
-    const maxVersions = await getFlagValue(c.env.FLAGS, FLAG_MAX_VERSIONS, 0);
+    const maxVersions = getFlag(c.get("flags"), FLAG_MAX_VERSIONS, 0);
     if (maxVersions > 0) {
       await c.env.DB.prepare(
         `DELETE FROM secret_versions WHERE secret_key = ? AND id NOT IN (

@@ -9,7 +9,7 @@ import {
   FLAG_PUBLIC_PAGES_ENABLED,
   FLAG_READ_ONLY,
 } from "./constants.js";
-import { getFlagValue } from "./flags.js";
+import { getFlag, getFlagValue, loadAllFlags } from "./flags.js";
 import admin from "./routes/admin.js";
 import bulk from "./routes/bulk.js";
 import flags from "./routes/flags.js";
@@ -152,15 +152,17 @@ app.get("/doc", async (c) => {
 // --- Auth middleware ---
 
 app.use("*", async (c, next) => {
-  // Flag 1: maintenance mode — checked before authentication
-  const maintenance = await getFlagValue(c.env.FLAGS, FLAG_MAINTENANCE, false);
-  if (maintenance) {
+  // Load all flags in a single KV batch — cached in context for the request
+  const flagCache = await loadAllFlags(c.env.FLAGS);
+  c.set("flags", flagCache);
+
+  // Maintenance mode — checked before authentication
+  if (getFlag(flagCache, FLAG_MAINTENANCE, false)) {
     return c.json({ error: "Service is in maintenance mode" }, 503);
   }
 
   const user = await authenticate(c.req.raw, c.env);
   if (!user) {
-    // Log failed auth attempt (best-effort, don't block the 401 response)
     try {
       await c.env.DB.prepare(
         "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -185,10 +187,10 @@ app.use("*", async (c, next) => {
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Background audit cleanup (probability controlled by flag)
-  const cleanupProbability = await getFlagValue(c.env.FLAGS, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);
+  // Background audit cleanup
+  const cleanupProbability = getFlag(flagCache, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);
   if (Math.random() < cleanupProbability) {
-    const retentionDays = await getFlagValue(c.env.FLAGS, FLAG_AUDIT_RETENTION_DAYS, 90);
+    const retentionDays = getFlag(flagCache, FLAG_AUDIT_RETENTION_DAYS, 90);
     c.executionCtx.waitUntil(
       c.env.DB.prepare(
         `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${retentionDays} days')`,
@@ -201,8 +203,7 @@ app.use("*", async (c, next) => {
 
 app.use("*", async (c, next) => {
   if (["PUT", "POST", "DELETE"].includes(c.req.method)) {
-    const readOnly = await getFlagValue(c.env.FLAGS, FLAG_READ_ONLY, false);
-    if (readOnly) {
+    if (getFlag(c.get("flags"), FLAG_READ_ONLY, false)) {
       return c.json({ error: "Vault is in read-only mode" }, 503);
     }
   }

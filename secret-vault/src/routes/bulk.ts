@@ -9,7 +9,7 @@ import {
   SCOPE_WRITE,
 } from "../constants.js";
 import { computeHmac, decrypt, encrypt } from "../crypto.js";
-import { getFlagValue } from "../flags.js";
+import { getFlag } from "../flags.js";
 import { R403, R500 } from "../schemas.js";
 import {
   SecretExportItemSchema,
@@ -44,7 +44,7 @@ bulk.openapi(exportRoute, async (c) => {
   if (auth.method !== AUTH_INTERACTIVE) return c.json({ error: "Owner only" }, 403);
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
-  const exportDisabled = await getFlagValue(c.env.FLAGS, FLAG_DISABLE_EXPORT, false);
+  const exportDisabled = getFlag(c.get("flags"), FLAG_DISABLE_EXPORT, false);
   if (exportDisabled) return c.json({ error: "Bulk export is disabled" }, 403);
 
   const { results } = await c.env.DB.prepare("SELECT * FROM secrets ORDER BY key").all();

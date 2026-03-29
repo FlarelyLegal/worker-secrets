@@ -27,5 +27,6 @@ export type HonoEnv = {
     ip: string | null;
     ua: string | null;
     requestId: string;
+    flags: Map<string, unknown>;
   };
 };
