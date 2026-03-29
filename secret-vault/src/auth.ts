@@ -10,7 +10,7 @@ import {
   SCOPE_READ,
 } from "./constants.js";
 import { getFlagValue } from "./flags.js";
-import type { AuthUser, Env } from "./types.js";
+import type { AuthUser, Env, PolicyRule } from "./types.js";
 
 // --- JWKS cache ---
 
@@ -31,12 +31,38 @@ type RoleRow = { name: string; scopes: string; allowed_tags: string };
 async function resolveRole(
   db: D1Database,
   role: string,
-): Promise<{ scopes: string[]; allowedTags: string[] }> {
+): Promise<{ scopes: string[]; allowedTags: string[]; policies: PolicyRule[] }> {
+  // Check for policy-based rules first
+  const { results: policyRows } = await db
+    .prepare("SELECT scopes, tags FROM role_policies WHERE role = ?")
+    .bind(role)
+    .all<{ scopes: string; tags: string }>();
+
+  if (policyRows.length > 0) {
+    const policies: PolicyRule[] = policyRows.map((p) => ({
+      scopes: p.scopes === SCOPE_ALL ? [SCOPE_ALL] : p.scopes.split(",").map((s) => s.trim()),
+      tags: p.tags
+        ? p.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
+    }));
+    // Derive legacy fields from policies for backward compat
+    const allScopes = [...new Set(policies.flatMap((p) => p.scopes))];
+    const allTags = [...new Set(policies.flatMap((p) => p.tags))];
+    return { scopes: allScopes, allowedTags: allTags, policies };
+  }
+
+  // Fall back to legacy single-policy from roles table
   const row = await db
     .prepare("SELECT scopes, allowed_tags FROM roles WHERE name = ?")
     .bind(role)
     .first<RoleRow>();
-  if (!row) return { scopes: [SCOPE_READ], allowedTags: [] };
+  if (!row) {
+    const fallback: PolicyRule = { scopes: [SCOPE_READ], tags: [] };
+    return { scopes: [SCOPE_READ], allowedTags: [], policies: [fallback] };
+  }
   const scopes =
     row.scopes === SCOPE_ALL ? [SCOPE_ALL] : row.scopes.split(",").map((s) => s.trim());
   const allowedTags = row.allowed_tags
@@ -45,7 +71,8 @@ async function resolveRole(
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
-  return { scopes, allowedTags };
+  const policy: PolicyRule = { scopes, tags: allowedTags };
+  return { scopes, allowedTags, policies: [policy] };
 }
 
 // --- Auth ---
@@ -68,6 +95,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
         role: ROLE_ADMIN,
         scopes: [SCOPE_ALL],
         allowedTags: [],
+        policies: [{ scopes: [SCOPE_ALL], tags: [] }],
       };
     }
   }
@@ -106,15 +134,18 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
 
     let scopes: string[];
     let allowedTags: string[] = [];
+    let policies: PolicyRule[];
     if (registered.role) {
       const resolved = await resolveRole(env.DB, registered.role);
       scopes = resolved.scopes;
       allowedTags = resolved.allowedTags;
+      policies = resolved.policies;
     } else {
       scopes =
         registered.scopes === SCOPE_ALL
           ? [SCOPE_ALL]
           : registered.scopes.split(",").map((s) => s.trim());
+      policies = [{ scopes, tags: allowedTags }];
     }
 
     return {
@@ -124,6 +155,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       role: registered.role || "custom",
       scopes,
       allowedTags,
+      policies,
     };
   }
 
@@ -142,14 +174,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(email.toLowerCase())
       .run();
 
-    const { scopes, allowedTags } = await resolveRole(env.DB, user.role);
+    const resolved = await resolveRole(env.DB, user.role);
     return {
       method: AUTH_INTERACTIVE,
       identity: email,
       name: user.name || email.split("@")[0],
       role: user.role,
-      scopes,
-      allowedTags,
+      ...resolved,
     };
   }
 
@@ -174,6 +205,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
         role: ROLE_ADMIN,
         scopes: [SCOPE_ALL],
         allowedTags: [],
+        policies: [{ scopes: [SCOPE_ALL], tags: [] }],
       };
     }
     // Lost the race — fall through to re-query the users table
@@ -183,14 +215,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(email.toLowerCase())
       .first<UserRow>();
     if (retryUser?.enabled) {
-      const { scopes, allowedTags } = await resolveRole(env.DB, retryUser.role);
+      const resolved = await resolveRole(env.DB, retryUser.role);
       return {
         method: AUTH_INTERACTIVE,
         identity: email,
         name: retryUser.name || email.split("@")[0],
         role: retryUser.role,
-        scopes,
-        allowedTags,
+        ...resolved,
       };
     }
   }
@@ -208,14 +239,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       )
         .bind(email.toLowerCase(), email.split("@")[0], autoRole)
         .run();
-      const { scopes, allowedTags } = await resolveRole(env.DB, autoRole);
+      const resolved = await resolveRole(env.DB, autoRole);
       return {
         method: AUTH_INTERACTIVE,
         identity: email,
         name: email.split("@")[0],
         role: autoRole,
-        scopes,
-        allowedTags,
+        ...resolved,
       };
     }
   }
@@ -225,14 +255,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
     if (allowed.includes(email.toLowerCase())) {
       const fallbackRole = await getFlagValue(env.FLAGS, FLAG_ALLOWED_EMAILS_ROLE, ROLE_READER);
-      const { scopes, allowedTags } = await resolveRole(env.DB, fallbackRole);
+      const resolved = await resolveRole(env.DB, fallbackRole);
       return {
         method: AUTH_INTERACTIVE,
         identity: email,
         name: email.split("@")[0],
         role: fallbackRole,
-        scopes,
-        allowedTags,
+        ...resolved,
       };
     }
   }
@@ -240,137 +269,8 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   return null;
 }
 
-// --- Scope checking ---
+// Re-export access functions so existing imports from auth.js still work
+export { accessibleTags, hasAccess, hasScope, hasTagAccess, isAdmin } from "./access.js";
 
-export function hasScope(auth: AuthUser, required: string): boolean {
-  return auth.scopes.includes(SCOPE_ALL) || auth.scopes.includes(required);
-}
-
-// --- Admin check ---
-
-export function isAdmin(auth: AuthUser): boolean {
-  return auth.role === ROLE_ADMIN;
-}
-
-// --- Tag-based access ---
-
-export function hasTagAccess(auth: AuthUser, secretTags: string): boolean {
-  if (auth.allowedTags.length === 0) return true; // no restriction
-  if (!secretTags) return false; // restricted role, untagged secret
-  const tags = secretTags.split(",").map((t) => t.trim());
-  return auth.allowedTags.some((allowed) => tags.includes(allowed));
-}
-
-// --- Audit logging ---
-
-/** Compute SHA-256 chain hash including timestamp to prevent reordering. */
-async function hashChainEntry(
-  prevId: number,
-  prevHash: string | null,
-  timestamp: string,
-  method: string,
-  identity: string,
-  action: string,
-  secretKey: string | null,
-): Promise<string> {
-  const chainInput = `${prevId}|${prevHash ?? "genesis"}|${timestamp}|${method}|${identity}|${action}|${secretKey ?? ""}`;
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chainInput));
-  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/**
- * Insert an audit entry with hash-chain integrity, self-healing under concurrency.
- *
- * The chain hash depends on the previous entry, but reading it and inserting are
- * separate D1 calls, so a concurrent insert can interleave. After our INSERT we
- * verify the entry immediately before ours is the one we hashed against; if not,
- * we recompute and UPDATE to repair the chain.
- */
-async function auditInsert(
-  db: D1Database,
-  method: string,
-  identity: string,
-  action: string,
-  secretKey: string | null,
-  ip: string | null,
-  userAgent: string | null,
-  requestId: string | null,
-): Promise<void> {
-  // Generate timestamp in code so it's available for hashing before INSERT
-  const timestamp = new Date()
-    .toISOString()
-    .replace("T", " ")
-    .replace(/\.\d+Z$/, "");
-
-  const prev = await db
-    .prepare("SELECT id, prev_hash FROM audit_log ORDER BY id DESC LIMIT 1")
-    .first<{ id: number; prev_hash: string | null }>();
-  const prevHash = await hashChainEntry(
-    prev?.id ?? 0,
-    prev?.prev_hash ?? null,
-    timestamp,
-    method,
-    identity,
-    action,
-    secretKey,
-  );
-
-  const result = await db
-    .prepare(
-      "INSERT INTO audit_log (timestamp, method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
-    .bind(timestamp, method, identity, action, secretKey, ip, userAgent, requestId, prevHash)
-    .run();
-
-  // Self-heal: if a concurrent insert landed between our SELECT and INSERT,
-  // our prev_hash references the wrong entry. Detect and repair.
-  const ourId = result.meta.last_row_id;
-  if (ourId && prev) {
-    const actualPrev = await db
-      .prepare("SELECT id, prev_hash FROM audit_log WHERE id < ? ORDER BY id DESC LIMIT 1")
-      .bind(ourId)
-      .first<{ id: number; prev_hash: string | null }>();
-    if (actualPrev && actualPrev.id !== prev.id) {
-      const correctHash = await hashChainEntry(
-        actualPrev.id,
-        actualPrev.prev_hash,
-        timestamp,
-        method,
-        identity,
-        action,
-        secretKey,
-      );
-      await db
-        .prepare("UPDATE audit_log SET prev_hash = ? WHERE id = ?")
-        .bind(correctHash, ourId)
-        .run();
-    }
-  }
-}
-
-export async function audit(
-  env: Env,
-  auth: AuthUser,
-  action: string,
-  secretKey: string | null,
-  ip: string | null,
-  userAgent: string | null = null,
-  requestId: string | null = null,
-): Promise<void> {
-  const method = auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name;
-  await auditInsert(env.DB, method, auth.identity, action, secretKey, ip, userAgent, requestId);
-}
-
-/** Audit logging for failed auth — no AuthUser available, uses raw method/identity strings. */
-export async function auditRaw(
-  db: D1Database,
-  method: string,
-  identity: string,
-  action: string,
-  secretKey: string | null,
-  ip: string | null,
-  userAgent: string | null,
-  requestId: string | null,
-): Promise<void> {
-  await auditInsert(db, method, identity, action, secretKey, ip, userAgent, requestId);
-}
+// Re-export audit functions from dedicated module
+export { audit, auditRaw } from "./audit.js";

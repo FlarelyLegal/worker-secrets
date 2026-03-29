@@ -236,4 +236,5 @@ roles.openapi(deleteRoute, async (c) => {
   return c.json({ ok: true, deleted: name }, 200);
 });
 
+// Policy sub-routes are in policies.ts, mounted via index.ts
 export default roles;

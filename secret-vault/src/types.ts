@@ -13,13 +13,19 @@ export interface Env {
   DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only — never set in production
 }
 
+export type PolicyRule = {
+  scopes: string[];
+  tags: string[];
+};
+
 export type AuthUser = {
   method: "interactive" | "service_token";
   identity: string;
   name: string;
   role: string;
   scopes: string[];
-  allowedTags: string[]; // empty = all tags allowed
+  allowedTags: string[]; // empty = all tags allowed (legacy, derived from policies)
+  policies: PolicyRule[];
 };
 
 export type HonoEnv = {

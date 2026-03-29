@@ -70,4 +70,97 @@ export function registerRoleCommands(program: Command) {
         die(errorMessage(e));
       }
     });
+
+  // --- Policy subcommands ---
+
+  const policy = role.command("policy").description("Manage role policies (fine-grained RBAC)");
+
+  policy
+    .command("ls <role>")
+    .description("List policies for a role")
+    .option("-j, --json", "Output as JSON")
+    .action(async (roleName: string, opts: { json?: boolean }) => {
+      try {
+        const policies = await client().listPolicies(roleName);
+        if (opts.json) {
+          console.log(JSON.stringify(policies, null, 2));
+          return;
+        }
+        if (policies.length === 0) {
+          console.log(chalk.dim("No policies (using role-level scopes/tags)."));
+          return;
+        }
+        const header = `${"ID".padEnd(6)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(20)} DESCRIPTION`;
+        console.log(header);
+        for (const p of policies) {
+          const tags = p.tags || chalk.dim("all");
+          console.log(
+            `${String(p.id).padEnd(6)} ${p.scopes.padEnd(18)} ${tags.toString().padEnd(20)} ${p.description || chalk.dim("—")}`,
+          );
+        }
+        console.log(chalk.dim(`\n${policies.length} policy(ies)`));
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  policy
+    .command("add <role> <scopes>")
+    .description("Add a policy rule to a role")
+    .option("-t, --tags <tags>", "Restrict to these tags (comma-separated)")
+    .option("-d, --description <desc>", "Policy description")
+    .action(
+      async (
+        roleName: string,
+        scopes: string,
+        opts: { tags?: string; description?: string },
+      ) => {
+        try {
+          // Fetch existing policies, append new one
+          const existing = await client().listPolicies(roleName);
+          const policies = [
+            ...existing.map((p) => ({
+              scopes: p.scopes,
+              tags: p.tags,
+              description: p.description,
+            })),
+            { scopes, tags: opts.tags || "", description: opts.description || "" },
+          ];
+          await client().setPolicies(roleName, policies);
+          console.log(
+            `${chalk.green("✓")} Added policy to ${chalk.bold(roleName)}: ${scopes}${opts.tags ? ` (tags: ${opts.tags})` : ""}`,
+          );
+        } catch (e) {
+          die(errorMessage(e));
+        }
+      },
+    );
+
+  policy
+    .command("rm <role> <id>")
+    .description("Remove a policy rule by ID")
+    .option("-f, --force", "Skip confirmation")
+    .action(async (roleName: string, id: string, opts: { force?: boolean }) => {
+      try {
+        const existing = await client().listPolicies(roleName);
+        const target = existing.find((p) => p.id === parseInt(id, 10));
+        if (!target) die(`Policy #${id} not found on role ${roleName}`);
+        if (!opts.force) {
+          const ok = await confirm(
+            `Remove policy #${id} (${target!.scopes} on ${target!.tags || "all tags"})?`,
+          );
+          if (!ok) return;
+        }
+        const remaining = existing
+          .filter((p) => p.id !== parseInt(id, 10))
+          .map((p) => ({ scopes: p.scopes, tags: p.tags, description: p.description }));
+        if (remaining.length === 0) {
+          die("Cannot remove the last policy. Use `hfs role set` to reset the role instead.");
+        }
+        await client().setPolicies(roleName, remaining);
+        console.log(`${chalk.green("✓")} Removed policy #${id} from ${chalk.bold(roleName)}`);
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
 }

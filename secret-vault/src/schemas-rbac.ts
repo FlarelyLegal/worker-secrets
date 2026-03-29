@@ -94,3 +94,34 @@ export const RoleUpdateBody = z.object({
   allowed_tags: z.string().max(500).optional(),
   description: z.string().max(500).optional(),
 });
+
+// --- Policies ---
+
+export const PolicySchema = z
+  .object({
+    id: z.number(),
+    role: z.string(),
+    scopes: z.string().openapi({ example: "read,write" }),
+    tags: z.string().openapi({ example: "customer-zero" }),
+    description: z.string(),
+    created_by: z.string(),
+    created_at: z.string(),
+  })
+  .openapi("Policy");
+
+export const PolicyCreateItem = z.object({
+  scopes: z.string().refine(
+    (s) =>
+      s
+        .split(",")
+        .map((v) => v.trim())
+        .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
+    { message: "Valid scopes: *, read, write, delete (comma-separated)" },
+  ),
+  tags: z.string().max(500).optional().default(""),
+  description: z.string().max(500).optional().default(""),
+});
+
+export const PoliciesBody = z.object({
+  policies: z.array(PolicyCreateItem).min(1, "At least one policy required"),
+});
