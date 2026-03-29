@@ -68,7 +68,7 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `DELETE` | `/users/{email}` | admin | Remove a user |
 | `GET` | `/roles` | admin | List all roles |
 | `PUT` | `/roles/{name}` | admin | Create or update a role |
-| `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description) |
+| `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description, allowed_tags) |
 | `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |

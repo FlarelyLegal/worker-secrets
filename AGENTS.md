@@ -165,4 +165,3 @@ hfs flag rm <key>               # Delete a flag
 ## KNOWN GAPS
 
 - No rate limiting — relying on Cloudflare edge protection
-- Key rotation is now possible via DEK re-encryption (envelope encryption), but no automated rotation CLI command yet

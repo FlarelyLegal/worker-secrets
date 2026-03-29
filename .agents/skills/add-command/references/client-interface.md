@@ -9,6 +9,8 @@ interface SecretEntry {
   key: string;
   value?: string;
   description: string;
+  tags: string;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +42,7 @@ interface UserEntry {
 interface RoleEntry {
   name: string;
   scopes: string;
+  allowed_tags: string;
   description: string;
   created_by: string;
   created_at: string;
@@ -66,6 +69,7 @@ interface AuditEntry {
   ip: string | null;
   user_agent: string | null;
   request_id: string | null;
+  prev_hash: string | null;
 }
 ```
 
@@ -76,14 +80,14 @@ class VaultClient {
   // Secrets
   list(opts?: { limit?: number; offset?: number; search?: string }): Promise<{ secrets: SecretEntry[]; total: number }>
   get(key: string): Promise<SecretEntry>
-  set(key: string, value: string, description?: string): Promise<{ ok: boolean; key: string }>
+  set(key: string, value: string, opts?: { description?: string; tags?: string; expires_at?: string | null }): Promise<{ ok: boolean; key: string }>
   delete(key: string): Promise<{ ok: boolean; deleted: string }>
   exportAll(): Promise<SecretEntry[]>
   importAll(secrets: { key: string; value: string; description?: string }[], overwrite?: boolean): Promise<{ ok: boolean; imported: number; skipped: number }>
 
   // Admin operations
   reEncrypt(): Promise<{ ok: boolean; migrated: number; skipped: number }>
-  rotateKey(newKey: string): Promise<{ ok: boolean; rotated: number; versions_rotated: number; legacy: number }>
+  rotateKey(newKey: string): Promise<{ ok: boolean; rotated: number; legacy: number }>
 
   // Versions
   listVersions(key: string): Promise<{ id: number; changed_by: string; changed_at: string }[]>
@@ -102,11 +106,11 @@ class VaultClient {
 
   // Roles (admin only)
   listRoles(): Promise<RoleEntry[]>
-  setRole(name: string, scopes: string, description?: string): Promise<{ ok: boolean; name: string }>
+  setRole(name: string, scopes: string, description?: string, allowedTags?: string): Promise<{ ok: boolean; name: string }>
   deleteRole(name: string): Promise<{ ok: boolean; deleted: string }>
 
   // Audit
-  audit(opts?: { limit?: number; offset?: number }): Promise<AuditEntry[]>
+  audit(opts?: { limit?: number; offset?: number; identity?: string; action?: string; key?: string; method?: string; from?: string; to?: string }): Promise<AuditEntry[]>
 
   // Feature flags
   listFlags(): Promise<FlagEntry[]>

@@ -24,7 +24,7 @@ Source: `secret-vault/src/routes/`
 | `POST` | `/secrets/{key}/versions/{id}/restore` | write | Restore a secret to a previous version (archives current first) |
 | `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys); computes HMAC-SHA256 integrity tag |
 | `DELETE` | `/secrets/{key}` | delete | Delete a secret |
-| `GET` | `/audit?limit=&offset=` | admin | Paginated audit log |
+| `GET` | `/audit?limit=&offset=&identity=&action=&key=&method=&from=&to=` | admin | Paginated audit log with filters |
 | `GET` | `/tokens` | interactive only | List registered service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive only | Register a service token |
 | `DELETE` | `/tokens/{clientId}` | interactive only | Revoke a service token |
@@ -69,9 +69,9 @@ Valid scopes: `*`, `read`, `write`, `delete` (comma-separated). Name max 256, de
 
 ### PUT body (roles)
 ```json
-{ "name": "role-name", "scopes": "read,write", "description": "optional" }
+{ "name": "role-name", "scopes": "read,write", "description": "optional", "allowed_tags": "production,staging" }
 ```
-Role names: lowercase alphanumeric, hyphens, underscores. Scopes max 64 chars.
+Role names: lowercase alphanumeric, hyphens, underscores. Scopes max 64 chars. `allowed_tags` optional, max 500 chars.
 
 ### List response (paginated)
 ```json
