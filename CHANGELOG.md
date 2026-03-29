@@ -6,7 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
+- Show version and health status in landing page footer
+- Cloudflare WARP / Zero Trust integration (#12)
+
+## [0.22.0] - 2026-03-29
+
+### Features
+
 - Policy-based RBAC + separation of concerns (#11)
+
+### Miscellaneous
+
+- Bump version to 0.22.0
 
 ## [0.21.2] - 2026-03-29
 
