@@ -61,7 +61,7 @@ secrets.openapi(listRoute, async (c) => {
   const { limit, offset, search } = c.req.valid("query");
   let countSql = "SELECT COUNT(*) as total FROM secrets";
   let listSql =
-    "SELECT key, description, tags, created_by, updated_by, created_at, updated_at FROM secrets";
+    "SELECT key, description, tags, expires_at, created_by, updated_by, created_at, updated_at FROM secrets";
   const binds: unknown[] = [];
 
   if (search) {
@@ -130,9 +130,28 @@ secrets.openapi(getRoute, async (c) => {
     return c.json({ error: "Decryption failed" }, 500);
   }
   await audit(c.env, auth, ACTION_GET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
-  const { key: k, description, tags, created_by, updated_by, created_at, updated_at } = row;
+  const {
+    key: k,
+    description,
+    tags,
+    expires_at,
+    created_by,
+    updated_by,
+    created_at,
+    updated_at,
+  } = row;
   return c.json(
-    { key: k, value: plaintext, description, tags, created_by, updated_by, created_at, updated_at },
+    {
+      key: k,
+      value: plaintext,
+      description,
+      tags,
+      expires_at,
+      created_by,
+      updated_by,
+      created_at,
+      updated_at,
+    },
     200,
   );
 });
@@ -164,7 +183,7 @@ secrets.openapi(putRoute, async (c) => {
   if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
-  const { value, description, tags } = c.req.valid("json");
+  const { value, description, tags, expires_at } = c.req.valid("json");
 
   // Flag-driven input requirements
   if (!description) {
@@ -221,14 +240,15 @@ secrets.openapi(putRoute, async (c) => {
   const hmac = await computeHmac(key, ciphertext, iv, c.env.ENCRYPTION_KEY);
   const identity = auth.identity;
   await c.env.DB.prepare(
-    `INSERT INTO secrets (key, value, iv, hmac, description, tags, created_by, updated_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `INSERT INTO secrets (key, value, iv, hmac, description, tags, expires_at, created_by, updated_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
      ON CONFLICT(key) DO UPDATE SET
        value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
        description = excluded.description, tags = excluded.tags,
+       expires_at = excluded.expires_at,
        updated_by = excluded.updated_by, updated_at = datetime('now')`,
   )
-    .bind(key, ciphertext, iv, hmac, description, tags, identity, identity)
+    .bind(key, ciphertext, iv, hmac, description, tags, expires_at, identity, identity)
     .run();
   await audit(c.env, auth, ACTION_SET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, key }, 201);

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS secrets (
   hmac TEXT NOT NULL DEFAULT '',  -- HMAC-SHA256 integrity binding (key + ciphertext + iv)
   description TEXT DEFAULT '',
   tags TEXT DEFAULT '',            -- comma-separated tags for organization
+  expires_at TEXT,                 -- optional expiry date (UTC text, null = no expiry)
   created_by TEXT DEFAULT '',
   updated_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),

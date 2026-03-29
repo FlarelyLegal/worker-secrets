@@ -57,6 +57,7 @@ bulk.openapi(exportRoute, async (c) => {
           value: await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY),
           description: row.description,
           tags: row.tags,
+          expires_at: row.expires_at,
           created_at: row.created_at,
           updated_at: row.updated_at,
         };
@@ -67,6 +68,7 @@ bulk.openapi(exportRoute, async (c) => {
           error: "Decryption failed",
           description: row.description,
           tags: row.tags,
+          expires_at: row.expires_at,
           created_at: row.created_at,
           updated_at: row.updated_at,
         };

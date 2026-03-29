@@ -9,6 +9,7 @@ export type SecretRow = {
   hmac: string;
   description: string;
   tags: string;
+  expires_at: string | null;
   created_by: string;
   updated_by: string;
   created_at: string;
@@ -35,6 +36,7 @@ export const SecretListItemSchema = z
     key: z.string().openapi({ example: "api-key" }),
     description: z.string().openapi({ example: "Anthropic API key" }),
     tags: z.string().openapi({ example: "production,ci" }),
+    expires_at: z.string().nullable().openapi({ example: "2026-06-01 00:00:00" }),
     created_by: z.string().openapi({ example: "you@example.com" }),
     updated_by: z.string().openapi({ example: "you@example.com" }),
     created_at: z.string().openapi({ example: "2026-03-28 12:00:00" }),
@@ -53,6 +55,7 @@ export const SecretExportItemSchema = z
     error: z.string().optional(),
     description: z.string(),
     tags: z.string(),
+    expires_at: z.string().nullable(),
     created_at: z.string(),
     updated_at: z.string(),
   })
@@ -62,6 +65,7 @@ export const SecretCreateBody = z.object({
   value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
   description: z.string().max(1000, "description exceeds 1000 char limit").optional().default(""),
   tags: z.string().max(500, "tags exceeds 500 char limit").optional().default(""),
+  expires_at: z.string().nullable().optional().default(null),
 });
 
 export const SecretCreateResponse = z

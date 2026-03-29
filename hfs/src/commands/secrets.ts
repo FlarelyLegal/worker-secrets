@@ -28,6 +28,12 @@ export function registerSecretCommands(program: Command): void {
           if (secret.tags) {
             console.log(chalk.dim("tags:       ") + secret.tags);
           }
+          if (secret.expires_at) {
+            const exp = new Date(secret.expires_at);
+            const isExpired = exp < new Date();
+            const label = isExpired ? chalk.red("EXPIRED") : exp.toISOString().slice(0, 10);
+            console.log(chalk.dim("expires:    ") + label);
+          }
           console.log(chalk.dim("created:    ") + secret.created_at);
           console.log(chalk.dim("updated:    ") + secret.updated_at);
         }
@@ -41,13 +47,20 @@ export function registerSecretCommands(program: Command): void {
     .description("Store a secret (use --from-stdin or --from-file for sensitive values)")
     .option("-d, --description <desc>", "Description for the secret")
     .option("-t, --tags <tags>", "Comma-separated tags (e.g. production,ci)")
+    .option("--expires <date>", "Expiry date (YYYY-MM-DD or datetime)")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
     .action(
       async (
         key: string,
         value: string | undefined,
-        opts: { description?: string; tags?: string; fromStdin?: boolean; fromFile?: string },
+        opts: {
+          description?: string;
+          tags?: string;
+          expires?: string;
+          fromStdin?: boolean;
+          fromFile?: string;
+        },
       ) => {
         try {
           let secretValue: string;
@@ -62,7 +75,11 @@ export function registerSecretCommands(program: Command): void {
             die("No value provided. Pass as argument, --from-stdin, or --from-file <path>");
           }
 
-          await client().set(key, secretValue, opts.description, opts.tags);
+          await client().set(key, secretValue, {
+            description: opts.description,
+            tags: opts.tags,
+            expires_at: opts.expires || null,
+          });
           console.log(`${chalk.green("✓")} Stored ${chalk.bold(key)}`);
         } catch (e) {
           die(errorMessage(e));
@@ -207,7 +224,7 @@ export function registerSecretCommands(program: Command): void {
               skipped++;
               continue;
             }
-            await c.set(entry.key, entry.value, entry.description);
+            await c.set(entry.key, entry.value, { description: entry.description });
             console.log(`${chalk.green("✓")} Imported ${chalk.bold(entry.key)}`);
             imported++;
           }
@@ -291,7 +308,7 @@ export function registerSecretCommands(program: Command): void {
       try {
         const c = client();
         const secret = await c.get(source);
-        await c.set(destination, secret.value || "", secret.description);
+        await c.set(destination, secret.value || "", { description: secret.description });
         if (opts.move) await c.delete(source);
         const verb = opts.move ? "Moved" : "Copied";
         console.log(
