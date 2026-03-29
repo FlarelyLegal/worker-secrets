@@ -30,7 +30,7 @@ import type { HonoEnv } from "./types.js";
 import { VERSION } from "./version.js";
 
 /** Reject webhook URLs pointing to private/reserved IP ranges or localhost. */
-function isSafeWebhookUrl(urlStr: string): boolean {
+export function isSafeWebhookUrl(urlStr: string): boolean {
   try {
     const { hostname } = new URL(urlStr);
     const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
