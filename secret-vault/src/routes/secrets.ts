@@ -186,7 +186,11 @@ secrets.openapi(getRoute, async (c) => {
   // Burn after reading: delete secret after successful read if tagged "burn" and flag enabled
   const burnEnabled = getFlag(c.get("flags"), FLAG_BURN_AFTER_READING, false);
   if (burnEnabled && row.tags?.split(",").some((t) => t.trim() === "burn")) {
-    await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
+    await c.env.DB.batch([
+      c.env.DB.prepare("DELETE FROM secret_versions WHERE secret_key = ?").bind(key),
+      c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key),
+    ]);
+    await audit(c.env, auth, ACTION_DELETE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   }
 
   const {

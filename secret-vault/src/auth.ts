@@ -263,16 +263,17 @@ export function hasTagAccess(auth: AuthUser, secretTags: string): boolean {
 
 // --- Audit logging ---
 
-/** Compute SHA-256 chain hash from a known previous entry's data. */
+/** Compute SHA-256 chain hash including timestamp to prevent reordering. */
 async function hashChainEntry(
   prevId: number,
   prevHash: string | null,
+  timestamp: string,
   method: string,
   identity: string,
   action: string,
   secretKey: string | null,
 ): Promise<string> {
-  const chainInput = `${prevId}|${prevHash ?? "genesis"}|${method}|${identity}|${action}|${secretKey ?? ""}`;
+  const chainInput = `${prevId}|${prevHash ?? "genesis"}|${timestamp}|${method}|${identity}|${action}|${secretKey ?? ""}`;
   const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chainInput));
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -295,12 +296,19 @@ async function auditInsert(
   userAgent: string | null,
   requestId: string | null,
 ): Promise<void> {
+  // Generate timestamp in code so it's available for hashing before INSERT
+  const timestamp = new Date()
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d+Z$/, "");
+
   const prev = await db
     .prepare("SELECT id, prev_hash FROM audit_log ORDER BY id DESC LIMIT 1")
     .first<{ id: number; prev_hash: string | null }>();
   const prevHash = await hashChainEntry(
     prev?.id ?? 0,
     prev?.prev_hash ?? null,
+    timestamp,
     method,
     identity,
     action,
@@ -309,9 +317,9 @@ async function auditInsert(
 
   const result = await db
     .prepare(
-      "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO audit_log (timestamp, method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .bind(method, identity, action, secretKey, ip, userAgent, requestId, prevHash)
+    .bind(timestamp, method, identity, action, secretKey, ip, userAgent, requestId, prevHash)
     .run();
 
   // Self-heal: if a concurrent insert landed between our SELECT and INSERT,
@@ -326,6 +334,7 @@ async function auditInsert(
       const correctHash = await hashChainEntry(
         actualPrev.id,
         actualPrev.prev_hash,
+        timestamp,
         method,
         identity,
         action,

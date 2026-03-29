@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, isAdmin } from "../auth.js";
 import { AUTH_INTERACTIVE } from "../constants.js";
-import { computeHmac, decrypt, envelopeEncrypt } from "../crypto.js";
+import { computeHmac, decrypt, envelopeEncrypt, verifyHmac } from "../crypto.js";
 import { R403, R500 } from "../schemas.js";
 import type { SecretRow } from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
@@ -51,6 +51,22 @@ adminOps.openapi(reencryptRoute, async (c) => {
     if (row.encrypted_dek && row.dek_iv) {
       skipped++;
       continue;
+    }
+
+    // Verify existing HMAC before migrating (if present)
+    if (row.hmac) {
+      const valid = await verifyHmac(
+        row.key,
+        row.value,
+        row.iv,
+        row.hmac,
+        c.env.ENCRYPTION_KEY,
+        c.env.INTEGRITY_KEY,
+      );
+      if (!valid) {
+        skipped++;
+        continue;
+      }
     }
 
     let plaintext: string;

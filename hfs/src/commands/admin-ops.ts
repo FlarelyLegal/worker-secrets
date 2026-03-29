@@ -92,12 +92,12 @@ export function registerAdminOpsCommands(program: Command): void {
             continue;
           }
 
-          // Compute expected hash: SHA-256 of "prev_id|prev_hash|method|identity|action|key"
+          // Compute expected hash: SHA-256 of "prev_id|prev_hash|timestamp|method|identity|action|key"
           const prev = i > 0 ? sorted[i - 1] : null;
           const prevId = prev?.id ?? 0;
           const prevHash = prev?.prev_hash ?? "genesis";
           const method = entry.method;
-          const chainInput = `${prevId}|${prevHash}|${method}|${entry.identity}|${entry.action}|${entry.secret_key ?? ""}`;
+          const chainInput = `${prevId}|${prevHash}|${entry.timestamp}|${method}|${entry.identity}|${entry.action}|${entry.secret_key ?? ""}`;
 
           const hashBuf = await crypto.subtle.digest(
             "SHA-256",

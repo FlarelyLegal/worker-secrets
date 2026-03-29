@@ -29,6 +29,27 @@ import versions from "./routes/versions.js";
 import type { HonoEnv } from "./types.js";
 import { VERSION } from "./version.js";
 
+/** Reject webhook URLs pointing to private/reserved IP ranges or localhost. */
+export function isSafeWebhookUrl(urlStr: string): boolean {
+  try {
+    const { hostname } = new URL(urlStr);
+    const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "0.0.0.0") return false;
+    if (!h.includes(".") && !h.includes(":")) return false; // bare hostnames
+    // Block private IPv4 ranges
+    const parts = h.split(".").map(Number);
+    if (parts.length === 4 && parts.every((n) => !Number.isNaN(n))) {
+      if (parts[0] === 10) return false;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+      if (parts[0] === 192 && parts[1] === 168) return false;
+      if (parts[0] === 169 && parts[1] === 254) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const app = new OpenAPIHono<HonoEnv>({
   defaultHook: (result, c) => {
     if (!result.success) {
@@ -141,20 +162,26 @@ app.get("/doc/json", async (c) => {
 app.get("/doc", async (c) => {
   const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
   if (!enabled) return c.notFound();
-  const brand = c.env.BRAND_NAME || "Secret Vault";
+  const raw = c.env.BRAND_NAME || "Secret Vault";
+  const brand = raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  const initial = brand.charAt(0);
   return c.html(`<!DOCTYPE html>
 <html>
 <head>
   <title>${brand} API</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${brand.charAt(0)}</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${initial}</text></svg>" />
 </head>
 <body>
   <script id="api-reference" data-url="/doc/json" data-configuration='${JSON.stringify({
     theme: "kepler",
     hideDownloadButton: true,
-    metaData: { title: `${brand} API` },
+    metaData: { title: `${raw} API` },
   })}'></script>
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1"></script>
 </body>
@@ -181,7 +208,7 @@ app.use("*", async (c, next) => {
   if (allowedCountries.length > 0) {
     const country = (c.req.raw as unknown as { cf?: { country?: string } }).cf?.country ?? "";
     if (!allowedCountries.includes(country.toUpperCase())) {
-      return c.json({ error: `Access denied from ${country || "unknown"} — geo-restricted` }, 403);
+      return c.json({ error: "Access denied — geo-restricted" }, 403);
     }
   }
 
@@ -208,9 +235,9 @@ app.use("*", async (c, next) => {
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Webhook — fire latest audit entry for this request to external URL (HTTPS only)
+  // Webhook — fire latest audit entry for this request to external URL (HTTPS only, no private IPs)
   const webhookUrl = getFlag(flagCache, FLAG_WEBHOOK_URL, "") as string;
-  if (webhookUrl?.startsWith("https://")) {
+  if (webhookUrl?.startsWith("https://") && isSafeWebhookUrl(webhookUrl)) {
     const filter = (getFlag(flagCache, FLAG_WEBHOOK_FILTER, "") as string)
       .split(",")
       .map((s) => s.trim())

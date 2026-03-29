@@ -179,7 +179,7 @@ bulk.openapi(importRoute, async (c) => {
       try {
         if (namePattern.length <= 200 && !new RegExp(namePattern).test(item.key))
           return c.json(
-            { error: `Key '${item.key}' does not match required pattern: ${namePattern}` },
+            { error: `Key '${item.key}' does not match the required naming pattern` },
             400,
           );
       } catch {
@@ -238,6 +238,7 @@ bulk.openapi(importRoute, async (c) => {
     dek_iv: string;
     description: string;
     tags: string;
+    expires_at: string | null;
   }[] = [];
   let skipped = 0;
 
@@ -249,6 +250,17 @@ bulk.openapi(importRoute, async (c) => {
       if (existing) {
         skipped++;
         continue;
+      }
+    } else {
+      // Check tag access on existing secret before allowing overwrite
+      const existing = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
+        .bind(item.key)
+        .first<{ tags: string }>();
+      if (existing && auth.allowedTags.length > 0 && !hasTagAccess(auth, existing.tags)) {
+        return c.json(
+          { error: `Access denied — cannot overwrite '${item.key}' (tags outside your role)` },
+          403,
+        );
       }
     }
     let ciphertext: string;
@@ -281,6 +293,7 @@ bulk.openapi(importRoute, async (c) => {
       dek_iv,
       description: item.description,
       tags: item.tags ?? "",
+      expires_at: item.expires_at ?? null,
     });
   }
 
@@ -288,12 +301,12 @@ bulk.openapi(importRoute, async (c) => {
   if (toInsert.length > 0) {
     const stmts = toInsert.map((item) =>
       c.env.DB.prepare(
-        `INSERT INTO secrets (key, value, iv, hmac, encrypted_dek, dek_iv, description, tags, created_by, updated_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `INSERT INTO secrets (key, value, iv, hmac, encrypted_dek, dek_iv, description, tags, expires_at, created_by, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(key) DO UPDATE SET
            value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
            encrypted_dek = excluded.encrypted_dek, dek_iv = excluded.dek_iv,
-           description = excluded.description, tags = excluded.tags,
+           description = excluded.description, tags = excluded.tags, expires_at = excluded.expires_at,
            updated_by = excluded.updated_by, updated_at = datetime('now')`,
       ).bind(
         item.key,
@@ -304,6 +317,7 @@ bulk.openapi(importRoute, async (c) => {
         item.dek_iv,
         item.description,
         item.tags,
+        item.expires_at,
         auth.identity,
         auth.identity,
       ),

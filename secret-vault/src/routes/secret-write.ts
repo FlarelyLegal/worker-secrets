@@ -67,7 +67,7 @@ secretWrite.openapi(putRoute, async (c) => {
   if (namePattern && namePattern.length <= 200) {
     try {
       if (!new RegExp(namePattern).test(key))
-        return c.json({ error: `Key does not match required pattern: ${namePattern}` }, 400);
+        return c.json({ error: "Key does not match the required naming pattern" }, 400);
     } catch {
       // Invalid regex in flag — skip enforcement, don't block writes
     }
