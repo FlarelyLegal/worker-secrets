@@ -3,11 +3,14 @@ import { auditRaw, authenticate } from "./auth.js";
 import {
   ACTION_AUTH_FAILED,
   AUTH_REJECTED,
+  FLAG_ALLOWED_COUNTRIES,
   FLAG_AUDIT_CLEANUP_PROBABILITY,
   FLAG_AUDIT_RETENTION_DAYS,
   FLAG_MAINTENANCE,
   FLAG_PUBLIC_PAGES_ENABLED,
   FLAG_READ_ONLY,
+  FLAG_WEBHOOK_FILTER,
+  FLAG_WEBHOOK_URL,
 } from "./constants.js";
 import { getFlag, getFlagValue, loadAllFlags } from "./flags.js";
 import admin from "./routes/admin.js";
@@ -169,6 +172,18 @@ app.use("*", async (c, next) => {
     return c.json({ error: "Service is in maintenance mode" }, 503);
   }
 
+  // Geo-fencing — restrict all access by country
+  const allowedCountries = (getFlag(flagCache, FLAG_ALLOWED_COUNTRIES, "") as string)
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  if (allowedCountries.length > 0) {
+    const country = (c.req.raw as unknown as { cf?: { country?: string } }).cf?.country ?? "";
+    if (!allowedCountries.includes(country.toUpperCase())) {
+      return c.json({ error: `Access denied from ${country || "unknown"} — geo-restricted` }, 403);
+    }
+  }
+
   const user = await authenticate(c.req.raw, c.env);
   if (!user) {
     try {
@@ -191,6 +206,32 @@ app.use("*", async (c, next) => {
   c.set("ip", c.req.header("CF-Connecting-IP") ?? null);
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
+
+  // Webhook — fire latest audit entry for this request to external URL
+  const webhookUrl = getFlag(flagCache, FLAG_WEBHOOK_URL, "") as string;
+  if (webhookUrl) {
+    const filter = (getFlag(flagCache, FLAG_WEBHOOK_FILTER, "") as string)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const requestId = c.get("requestId");
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare("SELECT * FROM audit_log WHERE request_id = ? ORDER BY id DESC LIMIT 1")
+        .bind(requestId)
+        .first()
+        .then((entry) => {
+          if (!entry) return;
+          if (filter.length > 0 && !filter.includes(entry.action as string)) return;
+          return fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(entry),
+            signal: AbortSignal.timeout(5000),
+          });
+        })
+        .catch(() => {}),
+    );
+  }
 
   // Background audit cleanup
   const cleanupProbability = getFlag(flagCache, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);

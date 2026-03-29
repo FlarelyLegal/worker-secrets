@@ -99,7 +99,7 @@ export function landingPage(
         </div>
         <div class="feature">
           <div class="feature-title">Lifecycle &amp; flags</div>
-          <div class="feature-desc">Version history with restore, expiry enforcement, burn-after-reading, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
+          <div class="feature-desc">Version history with restore, expiry enforcement, burn-after-reading, tag-based organization. 22 runtime feature flags for operational control without redeploying.</div>
         </div>
       </div>
     </div>

@@ -12,6 +12,9 @@ import { registerFlagCommands } from "./commands/flags.js";
 import { registerKeygenCommands } from "./commands/keygen.js";
 import { registerRoleCommands } from "./commands/roles.js";
 import { registerSecretCommands } from "./commands/secrets.js";
+import { registerSecretBulkCommands } from "./commands/secrets-bulk.js";
+import { registerSecretOpsCommands } from "./commands/secrets-ops.js";
+import { registerTemplateCommands } from "./commands/template.js";
 import { registerTokenCommands } from "./commands/tokens.js";
 import { registerUserCommands } from "./commands/users.js";
 
@@ -21,6 +24,8 @@ const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/
 
 registerAuthCommands(program);
 registerSecretCommands(program);
+registerSecretBulkCommands(program);
+registerSecretOpsCommands(program);
 registerTokenCommands(program);
 registerUserCommands(program);
 registerRoleCommands(program);
@@ -28,6 +33,7 @@ registerFlagCommands(program);
 registerAuditCommands(program);
 registerConfigCommands(program);
 registerKeygenCommands(program);
+registerTemplateCommands(program);
 registerAdminOpsCommands(program);
 registerDeployCommands(program);
 registerCompletionCommands(program);

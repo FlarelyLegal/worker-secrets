@@ -19,7 +19,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Worker pages | `secret-vault/src/pages.ts` | Landing page and health page HTML templates |
 | Worker version | `secret-vault/src/version.ts` | Auto-synced from VERSION file during build |
 | CLI entry | `hfs/src/cli.ts` | Program setup, command registration |
-| CLI commands | `hfs/src/commands/` | `auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`, `keygen.ts` |
+| CLI commands | `hfs/src/commands/` | `auth.ts`, `secrets.ts`, `secrets-bulk.ts`, `secrets-ops.ts`, `template.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`, `keygen.ts` |
 | CLI e2e | `hfs/src/e2e.ts` | age encryption/decryption, identity management, recipient loading |
 | CLI client | `hfs/src/client.ts` | `VaultClient` with typed methods and 30s timeout |
 | CLI config | `hfs/src/config.ts` | `resolveAuth()`, JWT storage |

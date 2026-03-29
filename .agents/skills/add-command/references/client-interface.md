@@ -91,6 +91,7 @@ class VaultClient {
 
   // Versions
   listVersions(key: string): Promise<{ id: number; changed_by: string; changed_at: string }[]>
+  getVersion(key: string, id: number): Promise<{ id: number; key: string; value: string; description: string; changed_by: string; changed_at: string }>
   restoreVersion(key: string, id: number): Promise<{ ok: boolean; key: string; restored_from: number }>
 
   // Service tokens

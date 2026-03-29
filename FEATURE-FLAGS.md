@@ -36,6 +36,9 @@ Flag mutations require **admin** role. Reading flags requires **read** scope.
 | `max_secret_size_kb` | number | `0` (unlimited) | Maximum value size in KB. Rejects `PUT /secrets/{key}` if value exceeds limit. |
 | `secret_name_pattern` | string | `""` (any) | Regex that new secret keys must match (e.g., `^[A-Z][A-Z0-9_]+$`). Invalid regex is ignored. |
 | `max_tags_per_secret` | number | `0` (unlimited) | Maximum number of comma-separated tags per secret. |
+| `webhook_url` | string | `""` (disabled) | POST audit events as JSON to this URL after every operation. Uses `waitUntil` — zero latency impact. |
+| `webhook_filter` | string | `""` (all events) | Comma-separated actions to send (e.g., `set,delete,auth_failed`). Empty sends everything. |
+| `allowed_countries` | string | `""` (all countries) | Comma-separated country codes (e.g., `US,DE,GB`). Blocks requests from non-matching countries via `request.cf.country`. |
 
 ## Behavior notes
 
@@ -49,6 +52,8 @@ Flag mutations require **admin** role. Reading flags requires **read** scope.
 - **`burn_after_reading`** — tag a secret with `burn` and it self-destructs after one read. The delete is synchronous (guaranteed before response returns). The flag is a global toggle; only secrets tagged `burn` are affected.
 - **`enforce_expiry`** — checks `expires_at` on every GET. Expired secrets return 403 with the expiry timestamp. Set or update the secret to clear.
 - **`secret_name_pattern`** — if the regex is invalid, enforcement is silently skipped (won't break writes). Test your pattern before deploying.
+- **`webhook_url`** — fires via `waitUntil` after every request, so it adds zero latency. The payload is the full audit entry JSON. If the webhook endpoint is down, the request still succeeds.
+- **`allowed_countries`** — uses `request.cf.country` (Cloudflare-provided, ISO 3166-1 alpha-2). Checked before authentication — blocked users don't even get a 401. This feature is unique to Cloudflare Workers.
 
 ## Examples
 
@@ -87,4 +92,11 @@ hfs flag set secret_name_pattern '^[A-Z][A-Z0-9_]+$'
 # Force migration off legacy encryption
 hfs flag set require_envelope_encryption true
 # Then: hfs re-encrypt
+
+# Webhooks — send audit events to Slack/SIEM
+hfs flag set webhook_url "https://hooks.slack.com/services/T.../B.../xxx"
+hfs flag set webhook_filter "set,delete,auth_failed"
+
+# Geo-fencing — restrict access by country (Cloudflare-only)
+hfs flag set allowed_countries "US,DE,GB"
 ```

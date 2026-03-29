@@ -21,6 +21,7 @@ Source: `secret-vault/src/routes/`
 | `POST` | `/secrets/import` | interactive + write | Bulk import from JSON (atomic via db.batch) |
 | `GET` | `/secrets/{key}` | read | Get decrypted secret (includes `created_by`, `updated_by`) |
 | `GET` | `/secrets/{key}/versions` | read | List previous versions of a secret (returns version metadata) |
+| `GET` | `/secrets/{key}/versions/{id}` | read | Get decrypted version value (for diff) |
 | `POST` | `/secrets/{key}/versions/{id}/restore` | write | Restore a secret to a previous version (archives current first) |
 | `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys); computes HMAC-SHA256 integrity tag |
 | `DELETE` | `/secrets/{key}` | delete | Delete a secret |

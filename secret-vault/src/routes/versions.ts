@@ -1,6 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope, hasTagAccess } from "../auth.js";
-import { ACTION_RESTORE, ACTION_VERSIONS, SCOPE_READ, SCOPE_WRITE } from "../constants.js";
+import {
+  ACTION_GET,
+  ACTION_RESTORE,
+  ACTION_VERSIONS,
+  SCOPE_READ,
+  SCOPE_WRITE,
+} from "../constants.js";
+import { decrypt, envelopeDecrypt } from "../crypto.js";
 import { ErrorSchema, R403, R500 } from "../schemas.js";
 import { KeyParam, type SecretRow } from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
@@ -54,6 +61,100 @@ versions.openapi(versionsRoute, async (c) => {
   return c.json({ versions: results }, 200);
 });
 
+// --- Get version value ---
+
+const getVersionRoute = createRoute({
+  method: "get",
+  path: "/{key}/versions/{id}",
+  tags: ["Secrets"],
+  summary: "Get a decrypted version value",
+  request: {
+    params: z.object({
+      key: z
+        .string()
+        .min(1)
+        .openapi({ param: { name: "key", in: "path" }, example: "api-key" }),
+      id: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .openapi({ param: { name: "id", in: "path" }, example: 1 }),
+    }),
+  },
+  responses: {
+    200: {
+      content: {
+        "application/json": {
+          schema: z.object({
+            id: z.number(),
+            key: z.string(),
+            value: z.string(),
+            description: z.string(),
+            changed_by: z.string(),
+            changed_at: z.string(),
+          }),
+        },
+      },
+      description: "Decrypted version value",
+    },
+    403: R403,
+    404: { content: { "application/json": { schema: ErrorSchema } }, description: "Not found" },
+    500: R500,
+  },
+});
+
+versions.openapi(getVersionRoute, async (c) => {
+  const auth = c.get("auth");
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
+
+  const { key, id } = c.req.valid("param");
+
+  // Tag-based access control
+  const secret = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
+    .bind(key)
+    .first<{ tags: string }>();
+  if (!secret) return c.json({ error: "Secret not found" }, 404);
+  if (!hasTagAccess(auth, secret.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+
+  const version = await c.env.DB.prepare(
+    "SELECT id, secret_key, value, iv, encrypted_dek, dek_iv, description, changed_by, changed_at FROM secret_versions WHERE id = ? AND secret_key = ?",
+  )
+    .bind(id, key)
+    .first<VersionRow>();
+  if (!version) return c.json({ error: "Version not found" }, 404);
+
+  let plaintext: string;
+  try {
+    if (version.encrypted_dek && version.dek_iv) {
+      plaintext = await envelopeDecrypt(
+        version.value,
+        version.iv,
+        version.encrypted_dek,
+        version.dek_iv,
+        c.env.ENCRYPTION_KEY,
+      );
+    } else {
+      plaintext = await decrypt(version.value, version.iv, c.env.ENCRYPTION_KEY);
+    }
+  } catch {
+    return c.json({ error: "Decryption failed" }, 500);
+  }
+
+  await audit(c.env, auth, ACTION_GET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  return c.json(
+    {
+      id: version.id,
+      key,
+      value: plaintext,
+      description: version.description,
+      changed_by: version.changed_by,
+      changed_at: version.changed_at as string,
+    },
+    200,
+  );
+});
+
 // --- Restore ---
 
 const VersionIdParam = z.object({
@@ -77,6 +178,8 @@ type VersionRow = {
   encrypted_dek: string | null;
   dek_iv: string | null;
   description: string;
+  changed_by: string;
+  changed_at: string;
 };
 
 const restoreRoute = createRoute({
