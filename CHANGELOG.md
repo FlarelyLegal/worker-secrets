@@ -2,6 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2026-03-29
+
+### Bug Fixes
+
+- Security hardening — tag bypass in export, audit admin-only, parameterized SQL, headers
+
+## [0.14.0] - 2026-03-29
+
+### Bug Fixes
+
+- Parse redirect URL properly to satisfy CodeQL URL sanitization
+- Add explicit permissions to CI workflow (CodeQL actions/missing-workflow-permissions)
+- Version archive and restore now preserve DEK columns
+- HMAC now binds encrypted_dek and dek_iv to prevent DEK swap attacks
+- Rotate-key now includes secret_versions DEKs
+- Split admin-ops, update completions, validate expires_at, import expires_at
+
+### Miscellaneous
+
+- Bump version to 0.14.0
+
+### Testing
+
+- Security path tests (42 total, was 36)
+
+## [0.13.0] - 2026-03-29
+
+### Features
+
+- Re-encrypt, rotate-key, audit-verify commands + secrets.ts split
+- V0.13.0 — SECURITY.md, architecture diagram, key rotation workflow
+
+## [0.12.0] - 2026-03-29
+
+### Features
+
+- Secret expiry/rotation tracking
+- Tamper-evident audit log with SHA-256 hash chaining
+- Envelope encryption with per-secret DEKs and optional INTEGRITY_KEY
+- Tag-based access control — roles can restrict access by secret tags
+- V0.12.0 — envelope encryption, tag-based RBAC, hash-chained audit, 36 tests
+
+### Performance
+
+- Batch flag reads — single KV load per request instead of 2-5
+
+### Refactor
+
+- Replace magic strings with typed constants
+
+### Testing
+
+- Comprehensive test suite + CLI updates for tag-based RBAC
+
+## [0.11.0] - 2026-03-29
+
+### Features
+
+- Add 7 new runtime feature flags
+
+### Miscellaneous
+
+- Bump version to 0.11.0
+
+## [0.10.0] - 2026-03-28
+
+### Bug Fixes
+
+- Last-admin protection and ALLOWED_EMAILS fallback demotion
+- Add incremental migrations for deployments upgrading from v0.7.x/v0.8.x
+
+### Features
+
+- Wire tags end-to-end through API, export/import, and CLI
+- Add --role flag to token register CLI and show role in token ls
+- Version restore endpoint and CLI commands
+- Audit log filtering by identity, action, key, method, and date range
+- Add --json flag to get, whoami, and flag get commands
+- V0.10.0 — health check KV, per-service status in CLI and health page
+
+## [0.9.0] - 2026-03-28
+
+### Bug Fixes
+
+- Update tests for RBAC schema (roles/users tables, new columns)
+
+### Features
+
+- V0.9.0 — RBAC, user/role management, schema split, production hardening
+
+## [0.8.0] - 2026-03-28
+
+### Features
+
+- Wire 6 runtime feature flags, extract versions route, bump v0.8.0
+
 ## [0.7.0] - 2026-03-28
 
 ### Features
