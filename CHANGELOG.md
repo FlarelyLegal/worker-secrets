@@ -6,7 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
-- Harden security across audit, crypto, bulk, secrets, and versions
+- Correct comparison table after competitor research
+- Security audit remediation + 57 new tests (#10)
+
+### Features
+
+- Redesign landing page with comparison table, architecture diagram, and stats
+
+## [0.21.1] - 2026-03-29
+
+### Bug Fixes
+
+- Security hardening across vault routes and audit (#9)
 
 ## [0.21.0] - 2026-03-29
 
