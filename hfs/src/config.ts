@@ -4,6 +4,7 @@ export interface HfsConfig {
   url?: string;
   jwt?: string;
   jwtExpiry?: number; // unix timestamp
+  e2eIdentity?: string; // path to age identity file
 }
 
 const config = new Conf<HfsConfig>({
@@ -12,6 +13,7 @@ const config = new Conf<HfsConfig>({
     url: { type: "string" },
     jwt: { type: "string" },
     jwtExpiry: { type: "number" },
+    e2eIdentity: { type: "string" },
   },
 });
 

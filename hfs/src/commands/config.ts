@@ -2,6 +2,7 @@ import { createInterface } from "node:readline";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { clearConfig, getConfig, getConfigPath, resolveAuth, setConfig } from "../config.js";
+import { identityFilePath } from "../e2e.js";
 import { confirm, errorMessage } from "../helpers.js";
 
 function validateUrl(input: string): string {
@@ -23,10 +24,15 @@ export function registerConfigCommands(program: Command): void {
     .command("set")
     .description("Set vault URL")
     .option("--url <url>", "Vault URL (e.g. https://vault.example.com)")
-    .action(async (opts: { url?: string }) => {
+    .option("--e2e-identity <path>", "Path to age identity file for e2e encryption")
+    .action(async (opts: { url?: string; e2eIdentity?: string }) => {
+      if (opts.e2eIdentity) {
+        setConfig("e2eIdentity", opts.e2eIdentity);
+        console.log(`${chalk.green("✓")} e2e identity set to ${opts.e2eIdentity}`);
+      }
       if (opts.url) {
         setConfig("url", validateUrl(opts.url));
-      } else {
+      } else if (!opts.e2eIdentity) {
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const ask = (q: string): Promise<string> => new Promise((r) => rl.question(q, r));
 
@@ -46,7 +52,7 @@ export function registerConfigCommands(program: Command): void {
   configCmd
     .command("show")
     .description("Show current configuration and auth status")
-    .action(() => {
+    .action(async () => {
       const cfg = getConfig();
 
       console.log(chalk.dim("config:    ") + getConfigPath());
@@ -81,6 +87,18 @@ export function registerConfigCommands(program: Command): void {
         console.log(
           chalk.dim("  status:    ") + chalk.dim("not set (set HFS_CLIENT_ID + HFS_CLIENT_SECRET)"),
         );
+      }
+
+      console.log("");
+      console.log(chalk.underline("E2E Encryption"));
+      const e2ePath = cfg.e2eIdentity || identityFilePath();
+      try {
+        const { loadRecipient } = await import("../e2e.js");
+        const pubkey = await loadRecipient(cfg.e2eIdentity);
+        console.log(chalk.dim("  identity:  ") + chalk.dim(e2ePath));
+        console.log(chalk.dim("  public key:") + ` ${chalk.cyan(pubkey)}`);
+      } catch {
+        console.log(chalk.dim("  identity:  ") + chalk.dim("not set (run hfs keygen)"));
       }
 
       console.log("");

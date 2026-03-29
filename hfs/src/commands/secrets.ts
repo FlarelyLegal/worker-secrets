@@ -2,6 +2,15 @@ import { readFileSync } from "node:fs";
 import chalk from "chalk";
 import type { Command } from "commander";
 import type { SecretEntry } from "../client.js";
+import { getConfig } from "../config.js";
+import {
+  e2eDecrypt,
+  e2eEncrypt,
+  ensureE2ETag,
+  isE2E,
+  loadRecipient,
+  loadRecipients,
+} from "../e2e.js";
 import { client, confirm, die, errorMessage, readStdin } from "../helpers.js";
 
 export function registerSecretCommands(program: Command): void {
@@ -10,9 +19,24 @@ export function registerSecretCommands(program: Command): void {
     .description("Get a decrypted secret")
     .option("-q, --quiet", "Print only the value (for piping)")
     .option("-j, --json", "Output as JSON")
-    .action(async (key: string, opts: { quiet?: boolean; json?: boolean }) => {
+    .option("--raw", "Skip e2e decryption (show ciphertext)")
+    .action(async (key: string, opts: { quiet?: boolean; json?: boolean; raw?: boolean }) => {
       try {
         const secret = await client().get(key);
+
+        // Auto-decrypt e2e secrets
+        if (isE2E(secret.tags) && secret.value && !opts.raw) {
+          try {
+            secret.value = await e2eDecrypt(secret.value, getConfig().e2eIdentity);
+          } catch (e) {
+            if (opts.quiet) die(errorMessage(e));
+            console.error(
+              chalk.yellow("⚠ e2e decryption failed — showing ciphertext. Use --raw to suppress."),
+            );
+            console.error(chalk.dim(`  ${errorMessage(e)}`));
+          }
+        }
+
         if (opts.json) {
           console.log(JSON.stringify(secret, null, 2));
           return;
@@ -50,6 +74,8 @@ export function registerSecretCommands(program: Command): void {
     .option("--expires <date>", "Expiry date (YYYY-MM-DD or datetime)")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
+    .option("--e2e", "Encrypt client-side with age (zero-knowledge)")
+    .option("--recipients <file>", "Encrypt for recipients in file (one age1... per line)")
     .action(
       async (
         key: string,
@@ -60,6 +86,8 @@ export function registerSecretCommands(program: Command): void {
           expires?: string;
           fromStdin?: boolean;
           fromFile?: string;
+          e2e?: boolean;
+          recipients?: string;
         },
       ) => {
         try {
@@ -75,12 +103,27 @@ export function registerSecretCommands(program: Command): void {
             die("No value provided. Pass as argument, --from-stdin, or --from-file <path>");
           }
 
+          // E2E encryption: encrypt client-side before sending to server
+          if (opts.e2e || opts.recipients) {
+            const recipients: string[] = [];
+            if (opts.recipients) {
+              recipients.push(...loadRecipients(opts.recipients));
+            } else {
+              // Default: encrypt for own public key
+              recipients.push(await loadRecipient(getConfig().e2eIdentity));
+            }
+            secretValue = await e2eEncrypt(secretValue, recipients);
+            opts.tags = ensureE2ETag(opts.tags || "");
+          }
+
           await client().set(key, secretValue, {
             description: opts.description,
             tags: opts.tags,
             expires_at: opts.expires || null,
           });
-          console.log(`${chalk.green("✓")} Stored ${chalk.bold(key)}`);
+          console.log(
+            `${chalk.green("✓")} Stored ${chalk.bold(key)}${opts.e2e || opts.recipients ? chalk.cyan(" (e2e)") : ""}`,
+          );
         } catch (e) {
           die(errorMessage(e));
         }
@@ -249,6 +292,14 @@ export function registerSecretCommands(program: Command): void {
         const c = client();
         for (const key of keys) {
           const secret = await c.get(key);
+          // Auto-decrypt e2e secrets
+          if (isE2E(secret.tags) && secret.value) {
+            try {
+              secret.value = await e2eDecrypt(secret.value, getConfig().e2eIdentity);
+            } catch {
+              // If decryption fails, output the ciphertext (let the user notice)
+            }
+          }
           const escaped = (secret.value || "").replace(/'/g, "'\\''");
           const prefix = opts.export ? "export " : "";
           const shellKey = key.replace(/[^a-zA-Z0-9_]/g, "_");
