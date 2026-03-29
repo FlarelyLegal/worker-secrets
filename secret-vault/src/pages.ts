@@ -101,9 +101,9 @@ export function landingPage(
     <div class="step">
       <div class="step-number">2</div>
       <div class="step-content">
-        <div class="step-title">Log in and generate your encryption key</div>
-        <div class="step-desc">Authenticate through your identity provider. Then generate an age identity. This key pair lives on your machine and never touches the server.</div>
-        <div class="terminal"><code><span class="cmd">$</span> hfs login<br/><span class="output">  Authenticated successfully</span><br/><span class="cmd">$</span> hfs keygen <span class="flag">--register</span><br/><span class="output">  public key: age196nua3eewwvud6k858la...</span></code></div>
+        <div class="step-title">Connect, log in, generate your key</div>
+        <div class="step-desc">Point the CLI to your vault, authenticate through your identity provider, and generate an age identity. The key pair lives on your machine and never touches the server.</div>
+        <div class="terminal"><code><span class="cmd">$</span> hfs config set --url ${origin}<br/><span class="cmd">$</span> hfs login<br/><span class="output">  Authenticated successfully</span><br/><span class="cmd">$</span> hfs keygen <span class="flag">--register</span><br/><span class="output">  public key: age196nua3eewwvud6k858la...</span></code></div>
       </div>
     </div>
 

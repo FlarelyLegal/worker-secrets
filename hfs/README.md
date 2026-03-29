@@ -18,11 +18,21 @@ npm install -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
 
 Requires [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) for interactive login.
 
+## Getting started
+
+```bash
+hfs config set --url https://secrets.yourcompany.com   # point to your vault
+hfs login                                               # authenticate (opens browser)
+hfs keygen --register                                   # generate e2e encryption key
+```
+
+An admin gives you the vault URL. If auto-provisioning is enabled, your account is created on first login.
+
 ## Auth
 
 Two modes, no fallback. They never mix.
 
-**Human** — `hfs login` opens browser via cloudflared, you tap your YubiKey. Short-lived JWT stored locally.
+**Human** — Set the vault URL with `hfs config set --url`, then `hfs login` opens a browser via cloudflared. Tap your YubiKey or use your IdP. Short-lived JWT stored locally.
 
 **Machine** — Set `HFS_URL`, `HFS_CLIENT_ID`, `HFS_CLIENT_SECRET` env vars. Must correspond to a registered service token.
 
