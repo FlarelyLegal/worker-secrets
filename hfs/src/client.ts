@@ -54,6 +54,8 @@ export interface AuditEntry {
   secret_key: string | null;
   ip: string | null;
   user_agent: string | null;
+  request_id: string | null;
+  prev_hash: string | null;
 }
 
 export interface FlagEntry {
@@ -261,6 +263,16 @@ export class VaultClient {
 
   async deleteFlag(key: string): Promise<{ ok: boolean; deleted: string }> {
     return this.request("DELETE", `/flags/${encodeURIComponent(key)}`);
+  }
+
+  // --- Admin operations ---
+
+  async reEncrypt(): Promise<{ ok: boolean; migrated: number; skipped: number }> {
+    return this.request("POST", "/admin/re-encrypt");
+  }
+
+  async rotateKey(newKey: string): Promise<{ ok: boolean; rotated: number; legacy: number }> {
+    return this.request("POST", "/admin/rotate-key", { new_key: newKey });
   }
 
   // --- Versions ---

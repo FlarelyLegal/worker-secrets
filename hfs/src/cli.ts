@@ -2,6 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { program } from "commander";
+import { registerAdminOpsCommands } from "./commands/admin-ops.js";
 import { registerAuditCommands } from "./commands/audit.js";
 import { registerAuthCommands } from "./commands/auth.js";
 import { registerCompletionCommands } from "./commands/completion.js";
@@ -25,6 +26,7 @@ registerRoleCommands(program);
 registerFlagCommands(program);
 registerAuditCommands(program);
 registerConfigCommands(program);
+registerAdminOpsCommands(program);
 registerDeployCommands(program);
 registerCompletionCommands(program);
 
