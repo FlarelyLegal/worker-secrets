@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0] - 2026-03-29
+
+### Bug Fixes
+
+- Enforce tag-based RBAC on all paths, tighten privilege boundaries
+- Close empty-tags bypass for tag-restricted roles, flag-gate /doc/json
+- Update OpenAPI tokens tag to admin-only, clearer import error messages
+- Tag-based RBAC enforcement + privilege hardening (#4)
+
+### Miscellaneous
+
+- Expand .gitignore for env files, IDE state, build artifacts
+
 ## [0.15.0] - 2026-03-29
 
 ### Bug Fixes
 
 - Security hardening — tag bypass in export, audit admin-only, parameterized SQL, headers
+
+### Miscellaneous
+
+- Bump version to 0.15.0
 
 ## [0.14.0] - 2026-03-29
 
