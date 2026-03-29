@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0] - 2026-03-29
+
+### Features
+
+- Webhooks, geo-fencing, template, diff, GitHub Action + split secrets commands
+- Webhooks, geo-fencing, template, diff, GitHub Action (#6)
+
 ## [0.18.0] - 2026-03-29
 
 ### Features
@@ -10,6 +17,10 @@ All notable changes to this project will be documented in this file.
 - Update landing page with e2e encryption highlight
 - Landing page orange accents — headline, section headers, hover states, footer
 - End-to-end encryption with age (#5)
+
+### Miscellaneous
+
+- Bump version to 0.18.0
 
 ## [0.17.0] - 2026-03-29
 
