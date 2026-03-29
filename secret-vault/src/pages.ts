@@ -40,23 +40,27 @@ export function landingPage(
     .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
     .brand-name { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
     h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 0.75rem; }
+    h1 .accent { color: var(--accent); }
     .desc { color: var(--muted); font-size: 0.875rem; line-height: 1.6; margin-bottom: 1.5rem; }
+    .desc strong { color: var(--accent); font-weight: 600; }
     .links { display: flex; flex-direction: column; gap: 0.5rem; }
     .link { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; text-decoration: none; color: var(--text); transition: border-color 0.15s; }
-    .link:hover { border-color: var(--muted); }
+    .link:hover { border-color: var(--accent); }
+    .link:hover .link-arrow { color: var(--accent); }
     .link-label { font-size: 0.8125rem; font-weight: 500; }
     .link-path { font-family: var(--mono); font-size: 0.6875rem; color: var(--muted); }
     .link-arrow { color: var(--muted); font-size: 0.875rem; }
-    .footer { grid-column: 1 / -1; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .footer { grid-column: 1 / -1; margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; }
+    .footer a:hover { color: var(--accent) !important; }
     .footer-text { font-size: 0.6875rem; color: var(--muted); }
     .status { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: var(--green); }
     .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     .right { }
-    h2 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+    h2 { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
     .features { display: flex; flex-direction: column; gap: 0.5rem; }
     .feature { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
-    .feature-title { font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .feature-title { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.25rem; }
     .feature-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
   </style>
 </head>
@@ -67,14 +71,19 @@ export function landingPage(
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <p class="desc">Self-hosted encrypted secret manager on Cloudflare Workers. No external dependencies, no third-party trust. Every secret is envelope-encrypted with its own key, integrity-bound via HMAC, and access-controlled through role-based permissions with tag-level restrictions. Manage with a CLI or REST API.</p>
+      <h1>Secrets that <span class="accent">even the server</span> can't read.</h1>
+      <p class="desc">Self-hosted encrypted secret manager on Cloudflare Workers. <strong>No external dependencies, no third-party trust.</strong> Optional end-to-end encryption with age means the server never sees plaintext. Every secret is envelope-encrypted with its own key, integrity-bound via HMAC, and access-controlled through role-based permissions. Manage with a CLI or REST API.</p>
     </div>
     <div class="left">
       <h2>Security</h2>
       <div class="features">
+        <div class="feature" style="border-color:var(--accent)">
+          <div class="feature-title" style="color:var(--accent)">End-to-end encryption</div>
+          <div class="feature-desc">Optional zero-knowledge mode with <a href="https://age-encryption.org" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">age</a>. Secrets are encrypted on your machine before they reach the server. Even a compromised Worker only sees ciphertext. Multi-recipient support for team sharing.</div>
+        </div>
         <div class="feature">
           <div class="feature-title">Envelope encryption</div>
-          <div class="feature-desc">Each secret gets its own data encryption key (DEK), wrapped by a master key. AES-256-GCM with unique IVs. Enables key rotation without re-encrypting all data.</div>
+          <div class="feature-desc">Each secret gets its own data encryption key (DEK), wrapped by a master key. AES-256-GCM with unique IVs. Key rotation via DEK re-wrapping.</div>
         </div>
         <div class="feature">
           <div class="feature-title">HMAC integrity</div>
@@ -85,12 +94,12 @@ export function landingPage(
           <div class="feature-desc">Interactive sessions via your IdP with optional hardware keys. Service tokens with named identities. Role-based access control with tag-level restrictions.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Tamper-evident audit trail</div>
-          <div class="feature-desc">Every operation logged with identity, IP, user agent, and request ID. Hash-chained entries make modifications detectable.</div>
+          <div class="feature-title">Tamper-evident audit</div>
+          <div class="feature-desc">Every operation logged with identity, IP, user agent, and request ID. SHA-256 hash-chained entries make modifications detectable.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Secret lifecycle</div>
-          <div class="feature-desc">Version history with restore, expiry tracking, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
+          <div class="feature-title">Lifecycle &amp; flags</div>
+          <div class="feature-desc">Version history with restore, expiry enforcement, burn-after-reading, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
         </div>
       </div>
     </div>
