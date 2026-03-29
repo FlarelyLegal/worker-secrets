@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0] - 2026-03-29
+
+### Bug Fixes
+
+- Audit ORDER BY id for chain alignment, deduplicate JWT parse in login
+
+### Features
+
+- 6 new feature flags — enforce_expiry, burn_after_reading, and more
+
 ## [0.16.1] - 2026-03-29
 
 ### Bug Fixes
 
 - CLI hardening — rotate-key stdin, cp --move confirm, import tags, JWT parse
+
+### Miscellaneous
+
+- Bump version to 0.16.1
 
 ## [0.16.0] - 2026-03-29
 
