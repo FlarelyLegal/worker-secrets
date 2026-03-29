@@ -61,3 +61,6 @@ export const FLAG_MAX_SECRET_SIZE_KB = "max_secret_size_kb";
 export const FLAG_REQUIRE_ENVELOPE_ENCRYPTION = "require_envelope_encryption";
 export const FLAG_SECRET_NAME_PATTERN = "secret_name_pattern";
 export const FLAG_MAX_TAGS_PER_SECRET = "max_tags_per_secret";
+export const FLAG_WEBHOOK_URL = "webhook_url";
+export const FLAG_WEBHOOK_FILTER = "webhook_filter";
+export const FLAG_ALLOWED_COUNTRIES = "allowed_countries";

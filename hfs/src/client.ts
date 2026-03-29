@@ -303,6 +303,20 @@ export class VaultClient {
     return data.versions;
   }
 
+  async getVersion(
+    key: string,
+    id: number,
+  ): Promise<{
+    id: number;
+    key: string;
+    value: string;
+    description: string;
+    changed_by: string;
+    changed_at: string;
+  }> {
+    return this.request("GET", `/secrets/${encodeURIComponent(key)}/versions/${id}`);
+  }
+
   async restoreVersion(
     key: string,
     id: number,
