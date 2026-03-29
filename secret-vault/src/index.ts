@@ -16,6 +16,7 @@ import bulk from "./routes/bulk.js";
 import flags from "./routes/flags.js";
 import pub from "./routes/public.js";
 import roles from "./routes/roles.js";
+import rotateKeyRoute from "./routes/rotate-key.js";
 import secretWrite from "./routes/secret-write.js";
 import secrets from "./routes/secrets.js";
 import tokens from "./routes/tokens.js";
@@ -216,6 +217,7 @@ app.use("*", async (c, next) => {
 
 app.route("/", admin);
 app.route("/admin", adminOps);
+app.route("/admin", rotateKeyRoute);
 app.route("/users", users);
 app.route("/roles", roles);
 app.route("/tokens", tokens);

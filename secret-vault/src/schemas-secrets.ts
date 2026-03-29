@@ -67,7 +67,14 @@ export const SecretCreateBody = z.object({
   value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
   description: z.string().max(1000, "description exceeds 1000 char limit").optional().default(""),
   tags: z.string().max(500, "tags exceeds 500 char limit").optional().default(""),
-  expires_at: z.string().nullable().optional().default(null),
+  expires_at: z
+    .string()
+    .nullable()
+    .optional()
+    .default(null)
+    .refine((v) => !v || !Number.isNaN(Date.parse(v)), {
+      message: "Invalid date format for expires_at",
+    }),
 });
 
 export const SecretCreateResponse = z
@@ -88,6 +95,12 @@ export const SecretImportItem = z.object({
   value: z.string().min(1, "value is required").max(1_000_000, "value exceeds 1MB limit"),
   description: z.string().max(1000).optional().default(""),
   tags: z.string().max(500).optional().default(""),
+  expires_at: z
+    .string()
+    .nullable()
+    .optional()
+    .default(null)
+    .refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "Invalid date format" }),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   created_by: z.string().optional(),
