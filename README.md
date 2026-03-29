@@ -99,10 +99,12 @@ Encryption layers:
 
 **1. Deploy the Worker** — see [secret-vault/README.md](secret-vault/README.md)
 
-**2. Install the CLI**
+**2. Install the CLI and connect**
 
 ```bash
 npm install -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
+hfs config set --url https://secrets.yourcompany.com
+hfs login
 ```
 
 **3. Use it**

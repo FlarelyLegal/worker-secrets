@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secret Vault - Health 5: Split</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>S</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fafafa; --surface: #fff; --border: #e5e5e5;
+      --text: #171717; --muted: #737373; --accent: #f97316; --green: #22c55e; --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #ededed; --muted: #888; }
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+    .page { max-width: 440px; width: 100%; }
+    .top { text-align: center; margin-bottom: 2rem; }
+    .brand { display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; }
+    .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
+    .brand-name { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .status-big { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.625rem; }
+    .status-big .dot { width: 10px; height: 10px; border-radius: 50%; animation: pulse 2s infinite; }
+    .status-big .dot.ok { background: var(--green); }
+    .status-big .dot.down { background: var(--red); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .section-label { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; margin-top: 1.5rem; }
+
+    .services { display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: 0.5rem; overflow: hidden; }
+    .svc { display: grid; grid-template-columns: 8px 1fr auto; gap: 0.75rem; align-items: center; background: var(--surface); padding: 0.75rem 1rem; }
+    .svc-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .svc-dot.ok { background: var(--green); }
+    .svc-dot.down { background: var(--red); }
+    .svc-name { font-size: 0.8125rem; font-weight: 500; }
+    .svc-tech { font-size: 0.6875rem; color: var(--muted); font-family: var(--mono); }
+
+    .details { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
+    .detail { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem 1rem; }
+    .detail-label { font-size: 0.6875rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.25rem; }
+    .detail-value { font-size: 0.875rem; font-weight: 600; font-family: var(--mono); }
+
+    .footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid var(--accent); display: flex; justify-content: center; gap: 1rem; font-size: 0.6875rem; }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div class="brand">
+        <div class="brand-icon">S</div>
+        <span class="brand-name">Secret Vault</span>
+      </div>
+      <div class="status-big">
+        <span class="dot ok"></span>
+        All systems healthy
+      </div>
+    </div>
+
+    <div class="section-label">Services</div>
+    <div class="services">
+      <div class="svc">
+        <div class="svc-dot ok"></div>
+        <span class="svc-name">Database</span>
+        <span class="svc-tech">D1</span>
+      </div>
+      <div class="svc">
+        <div class="svc-dot ok"></div>
+        <span class="svc-name">Feature Flags</span>
+        <span class="svc-tech">KV</span>
+      </div>
+      <div class="svc">
+        <div class="svc-dot ok"></div>
+        <span class="svc-name">Authentication</span>
+        <span class="svc-tech">Access</span>
+      </div>
+    </div>
+
+    <div class="section-label">Info</div>
+    <div class="details">
+      <div class="detail">
+        <div class="detail-label">Version</div>
+        <div class="detail-value">0.20.0</div>
+      </div>
+      <div class="detail">
+        <div class="detail-label">Region</div>
+        <div class="detail-value">ATL</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a href="/">Home</a>
+      <a href="/doc">API Docs</a>
+      <a href="/doc/json">OpenAPI</a>
+    </div>
+  </div>
+</body>
+</html>

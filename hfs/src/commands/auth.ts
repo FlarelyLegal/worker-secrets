@@ -69,25 +69,44 @@ export function registerAuthCommands(program: Command): void {
   program
     .command("health")
     .description("Check if the vault is reachable (no auth required)")
-    .action(async () => {
+    .option("-j, --json", "Output as JSON")
+    .action(async (opts: { json?: boolean }) => {
       const url = process.env.HFS_URL || getConfig().url;
       if (!url) die("Vault URL not configured. Run `hfs config set --url <url>` first.");
 
       const base = url.replace(/\/+$/, "");
       try {
         const res = await fetch(`${base}/health`);
-        const data = (await res.json()) as { status?: string; database?: string; kv?: string };
-        if (data.status === "ok") {
-          console.log(`${chalk.green("✓")} Vault is healthy ${chalk.dim(`(${base})`)}`);
-          console.log(chalk.dim(`  database: ${data.database}  kv: ${data.kv}`));
-        } else if (data.status === "degraded") {
-          console.error(chalk.yellow(`⚠ Vault degraded`));
-          console.error(chalk.dim(`  database: ${data.database}  kv: ${data.kv}`));
-          process.exit(1);
-        } else {
-          console.error(chalk.red(`✗ Unexpected response: ${JSON.stringify(data)}`));
-          process.exit(1);
+        const data = (await res.json()) as {
+          status?: string;
+          database?: string;
+          kv?: string;
+          version?: string;
+          region?: string;
+          maintenance?: boolean;
+          read_only?: boolean;
+          timestamp?: string;
+        };
+
+        if (opts.json) {
+          console.log(JSON.stringify(data, null, 2));
+          if (data.status !== "ok") process.exit(1);
+          return;
         }
+
+        const ok = (v?: string) => (v === "ok" ? chalk.green(v) : chalk.red(v || "unknown"));
+        if (data.status === "ok") {
+          console.log(`${chalk.green("\u2713")} Vault is healthy ${chalk.dim(`(${base})`)}`);
+        } else {
+          console.log(`${chalk.red("\u2717")} Vault is degraded ${chalk.dim(`(${base})`)}`);
+        }
+        console.log(`${chalk.dim("  database    ")}${ok(data.database)} ${chalk.dim("(D1)")}`);
+        console.log(`${chalk.dim("  kv          ")}${ok(data.kv)} ${chalk.dim("(flags)")}`);
+        if (data.maintenance) console.log(`  ${chalk.hex("#f97316")("maintenance   on")}`);
+        if (data.read_only) console.log(`  ${chalk.hex("#f97316")("read-only     on")}`);
+        if (data.version) console.log(chalk.dim(`  version     ${data.version}`));
+        if (data.region) console.log(chalk.dim(`  region      ${data.region}`));
+        if (data.status !== "ok") process.exit(1);
       } catch (e) {
         die(`Cannot reach vault at ${base}: ${errorMessage(e)}`);
       }

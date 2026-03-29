@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secret Vault - Health 1: Minimal</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>S</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fafafa; --surface: #fff; --border: #e5e5e5;
+      --text: #171717; --muted: #737373; --accent: #f97316; --green: #22c55e; --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #ededed; --muted: #888; }
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+    .card { max-width: 400px; width: 100%; }
+    .brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; }
+    .brand-icon { width: 24px; height: 24px; background: var(--accent); border-radius: 0.3rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: #fff; }
+    .brand-name { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+    .status-line { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    .status-dot.down { background: var(--red); }
+    .status-text { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .checks { display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: 0.5rem; overflow: hidden; margin-bottom: 1.5rem; }
+    .check { display: flex; align-items: center; justify-content: space-between; background: var(--surface); padding: 0.75rem 1rem; }
+    .check-name { font-size: 0.8125rem; font-weight: 500; }
+    .check-status { font-size: 0.75rem; font-weight: 600; }
+    .check-status.ok { color: var(--green); }
+    .check-status.fail { color: var(--red); }
+
+    .meta { font-size: 0.6875rem; color: var(--muted); display: flex; justify-content: space-between; }
+    .meta a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="brand-icon">S</div>
+      <span class="brand-name">Secret Vault</span>
+    </div>
+
+    <div class="status-line">
+      <div class="status-dot"></div>
+      <span class="status-text">All systems healthy</span>
+    </div>
+
+    <div class="checks">
+      <div class="check">
+        <span class="check-name">Database (D1)</span>
+        <span class="check-status ok">ok</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Feature flags (KV)</span>
+        <span class="check-status ok">ok</span>
+      </div>
+    </div>
+
+    <div class="meta">
+      <span>2026-03-29T04:30:00.000Z</span>
+      <span><a href="/">Home</a> &middot; <a href="/doc">API Docs</a></span>
+    </div>
+  </div>
+</body>
+</html>

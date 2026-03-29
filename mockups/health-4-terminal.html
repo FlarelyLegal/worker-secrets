@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secret Vault - Health 4: Terminal</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>S</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fafafa; --surface: #fff; --border: #e5e5e5;
+      --text: #171717; --muted: #737373; --accent: #f97316; --green: #22c55e; --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #ededed; --muted: #888; }
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+    .terminal { max-width: 480px; width: 100%; background: #1a1a1a; border-radius: 0.75rem; overflow: hidden; border: 1px solid #333; }
+    .terminal-bar { display: flex; align-items: center; gap: 6px; padding: 0.75rem 1rem; border-bottom: 1px solid #333; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .terminal-title { margin-left: auto; font-family: var(--mono); font-size: 0.6875rem; color: #666; }
+
+    .terminal-body { padding: 1.25rem 1.5rem; font-family: var(--mono); font-size: 0.8125rem; line-height: 2; color: #e0e0e0; }
+    .prompt { color: var(--green); }
+    .ok { color: var(--green); }
+    .fail { color: var(--red); }
+    .dim { color: #555; }
+    .accent { color: var(--accent); }
+    .label { color: #888; }
+
+    .links { padding: 0.75rem 1.5rem; border-top: 1px solid #333; display: flex; gap: 1rem; }
+    .links a { font-family: var(--mono); font-size: 0.6875rem; color: var(--accent); text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot r"></div>
+      <div class="dot y"></div>
+      <div class="dot g"></div>
+      <span class="terminal-title">hfs health</span>
+    </div>
+    <div class="terminal-body">
+      <span class="prompt">$</span> hfs health<br/>
+      <span class="ok">&#10003;</span> <span class="accent">Secret Vault</span> is healthy<br/>
+      <br/>
+      <span class="label">  database</span>  <span class="ok">ok</span> <span class="dim">(D1)</span><br/>
+      <span class="label">  kv      </span>  <span class="ok">ok</span> <span class="dim">(flags)</span><br/>
+      <span class="label">  auth    </span>  <span class="ok">ok</span> <span class="dim">(Cloudflare Access)</span><br/>
+      <span class="label">  crypto  </span>  <span class="ok">ok</span> <span class="dim">(AES-256-GCM + age)</span><br/>
+      <br/>
+      <span class="dim">  version   0.20.0</span><br/>
+      <span class="dim">  region    ATL</span><br/>
+      <span class="dim">  checked   2026-03-29T04:30:00Z</span><br/>
+    </div>
+    <div class="links">
+      <a href="/">home</a>
+      <a href="/doc">docs</a>
+      <a href="/doc/json">openapi</a>
+    </div>
+  </div>
+</body>
+</html>

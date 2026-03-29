@@ -19,7 +19,12 @@ describe("public endpoints", () => {
     const res = await app.fetch(req("/health"), env);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({ status: "ok", database: "ok", kv: "ok" });
+    expect(body).toMatchObject({ status: "ok", database: "ok", kv: "ok" });
+    expect(body).toHaveProperty("version");
+    expect(body).toHaveProperty("region");
+    expect(body).toHaveProperty("maintenance", false);
+    expect(body).toHaveProperty("read_only", false);
+    expect(body).toHaveProperty("timestamp");
   });
 
   it("GET / returns 200 with HTML content-type", async () => {

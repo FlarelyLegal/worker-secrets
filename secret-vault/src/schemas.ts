@@ -100,6 +100,11 @@ export const HealthSchema = z
     status: z.string().openapi({ example: "ok" }),
     database: z.string().openapi({ example: "ok" }),
     kv: z.string().openapi({ example: "ok" }),
+    version: z.string().openapi({ example: "0.20.0" }),
+    region: z.string().openapi({ example: "ATL" }),
+    maintenance: z.boolean().openapi({ example: false }),
+    read_only: z.boolean().openapi({ example: false }),
+    timestamp: z.string().openapi({ example: "2026-03-29T04:30:00.000Z" }),
   })
   .openapi("Health");
 
