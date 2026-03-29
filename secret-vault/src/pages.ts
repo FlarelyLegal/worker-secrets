@@ -67,7 +67,7 @@ export function landingPage(
         <div class="brand-icon">${initial}</div>
         <span class="brand-name">${brand}</span>
       </div>
-      <p class="desc">Self-hosted secret vault that runs on your own Cloudflare account. Store API keys, tokens, certificates, and credentials with a CLI or REST API. Protected by Cloudflare Access, supporting any identity provider, passkeys, YubiKeys, OTP, and hardware security keys. Like Vaultwarden, but on the edge.</p>
+      <p class="desc">Self-hosted encrypted secret manager on Cloudflare Workers. No external dependencies, no third-party trust. Every secret is envelope-encrypted with its own key, integrity-bound via HMAC, and access-controlled through role-based permissions with tag-level restrictions. Manage with a CLI or REST API.</p>
     </div>
     <div class="left">
       <h2>Security</h2>
