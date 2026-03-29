@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope } from "../auth.js";
+import { audit, hasScope, hasTagAccess } from "../auth.js";
 import {
   ACTION_EXPORT,
   ACTION_IMPORT,
@@ -48,7 +48,10 @@ bulk.openapi(exportRoute, async (c) => {
   if (exportDisabled) return c.json({ error: "Bulk export is disabled" }, 403);
 
   const { results } = await c.env.DB.prepare("SELECT * FROM secrets ORDER BY key").all();
-  const rows = results as SecretRow[];
+  const allRows = results as SecretRow[];
+  // Filter by tag-based access control (same as list/get endpoints)
+  const rows =
+    auth.allowedTags.length > 0 ? allRows.filter((r) => hasTagAccess(auth, r.tags)) : allRows;
   const decrypted = await Promise.all(
     rows.map(async (row) => {
       try {

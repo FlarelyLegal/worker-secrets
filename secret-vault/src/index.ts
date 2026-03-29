@@ -47,6 +47,9 @@ app.use("*", async (c, next) => {
   await next();
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.res.headers.set("Permissions-Policy", "interest-cohort=()");
+  c.res.headers.set("Cross-Origin-Resource-Policy", "same-site");
   c.res.headers.set("X-Request-ID", requestId);
   if (c.res.headers.get("Content-Type")?.includes("text/html")) {
     c.res.headers.set("X-Frame-Options", "DENY");
@@ -195,9 +198,9 @@ app.use("*", async (c, next) => {
   if (Math.random() < cleanupProbability) {
     const retentionDays = getFlag(flagCache, FLAG_AUDIT_RETENTION_DAYS, 90);
     c.executionCtx.waitUntil(
-      c.env.DB.prepare(
-        `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${retentionDays} days')`,
-      ).run(),
+      c.env.DB.prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', ? || ' days')")
+        .bind(`-${Math.max(1, Math.floor(Number(retentionDays)))}`)
+        .run(),
     );
   }
 });

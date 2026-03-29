@@ -21,20 +21,24 @@ This is an encrypted secret store — security mistakes leak credentials.
 ### Encryption
 - **ONLY `crypto.subtle`** — no third-party crypto
 - **ONLY AES-256-GCM** with random 12-byte IV per secret
+- **Envelope encryption** — each secret gets a random DEK; DEK wrapped by master KEK (`ENCRYPTION_KEY`)
 - `ENCRYPTION_KEY` is a Wrangler secret — **NEVER** in code or wrangler.jsonc
-- Changing the key makes all existing secrets unreadable (no rotation support)
+- Key rotation supported via `/admin/rotate-key` — re-wraps all DEKs with a new master key
 
 ### HMAC integrity
 - **ALWAYS** compute HMAC-SHA256 on write, verify on read
-- HMAC key derived via HKDF from `ENCRYPTION_KEY` — **NEVER** use the encryption key directly as HMAC key
-- HMAC binds key name + ciphertext + IV, preventing ciphertext swap attacks
+- HMAC key from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` — **NEVER** use the encryption key directly as HMAC key
+- HMAC binds key name + ciphertext + IV + encrypted_dek + dek_iv, preventing ciphertext and DEK swap attacks
 - Tamper detection: if HMAC verification fails, return error — do not decrypt
 
 ### Scope enforcement
 - **ALWAYS** call `hasScope(auth, scope)` before every data operation
+- **ALWAYS** call `hasTagAccess(auth, secretTags)` before returning secret data
 - Scopes resolved from role via `roles` table: `read`, `write`, `delete`, `*`
-- Token management + audit: restricted to `interactive` auth only
-- User/role management: restricted to `interactive` auth + `admin` role
+- Tag-based RBAC: roles can restrict access via `allowed_tags`
+- Token management: restricted to `interactive` auth only
+- Audit log + user/role management: restricted to `interactive` auth + `admin` role
+- Admin operations (re-encrypt, rotate-key) intentionally bypass tag restrictions — they must process ALL secrets
 
 ### Feature flags
 - Flags are **plaintext** in KV — they are configuration values, not secrets
@@ -61,7 +65,7 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 ## REVIEW CHECKLIST
 
 - [ ] No secret values logged, returned in list endpoints, or included in errors
-- [ ] New endpoints have scope guards via `hasScope()` or `isAdmin()`
+- [ ] New endpoints have scope guards via `hasScope()` or `isAdmin()` and tag guards via `hasTagAccess()`
 - [ ] All data access calls `audit()` with `requestId`
 - [ ] No raw `ENCRYPTION_KEY` exposure outside `encrypt`/`decrypt`
 - [ ] Auth middleware cannot be bypassed (route ordering in Hono)
@@ -73,5 +77,4 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 
 ## KNOWN GAPS
 
-- No rate limiting — relying on Cloudflare edge protection
-- No encryption key rotation — changing `ENCRYPTION_KEY` breaks all secrets (export first, rotate, re-import)
+- No rate limiting — relying on Cloudflare edge protection (native Rate Limiting binding available for future use)

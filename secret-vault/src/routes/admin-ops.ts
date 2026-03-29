@@ -19,6 +19,7 @@ adminOps.use("*", async (c, next) => {
 
 // --- Re-encrypt ---
 // Migrates legacy (direct-encrypted) secrets to envelope encryption.
+// Intentionally bypasses tag-based access control — must process ALL secrets to complete migration.
 
 const reencryptRoute = createRoute({
   method: "post",

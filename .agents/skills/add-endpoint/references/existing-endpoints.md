@@ -24,7 +24,7 @@ Source: `secret-vault/src/routes/`
 | `POST` | `/secrets/{key}/versions/{id}/restore` | write | Restore a secret to a previous version (archives current first) |
 | `PUT` | `/secrets/{key}` | write | Create or update (`"export"` and `"import"` are reserved keys); computes HMAC-SHA256 integrity tag |
 | `DELETE` | `/secrets/{key}` | delete | Delete a secret |
-| `GET` | `/audit?limit=&offset=` | interactive only | Paginated audit log |
+| `GET` | `/audit?limit=&offset=` | admin | Paginated audit log |
 | `GET` | `/tokens` | interactive only | List registered service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive only | Register a service token |
 | `DELETE` | `/tokens/{clientId}` | interactive only | Revoke a service token |
@@ -87,6 +87,9 @@ Status codes: 400 (bad input/validation), 401 (no auth), 403 (wrong scope/role),
 ### Security headers (all responses)
 - `X-Content-Type-Options: nosniff`
 - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: interest-cohort=()`
+- `Cross-Origin-Resource-Policy: same-site`
 - `X-Request-ID: <uuid>` (for debugging)
 - `Content-Security-Policy` (HTML only)
 - `X-Frame-Options: DENY` (HTML only)
