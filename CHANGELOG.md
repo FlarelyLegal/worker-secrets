@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.1] - 2026-03-29
+
+### Bug Fixes
+
+- CLI hardening — rotate-key stdin, cp --move confirm, import tags, JWT parse
+
 ## [0.16.0] - 2026-03-29
 
 ### Bug Fixes
@@ -14,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous
 
 - Expand .gitignore for env files, IDE state, build artifacts
+- Bump version to 0.16.0
 
 ## [0.15.0] - 2026-03-29
 
