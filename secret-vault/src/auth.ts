@@ -1,4 +1,13 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import {
+  AUTH_INTERACTIVE,
+  AUTH_SERVICE_TOKEN,
+  FLAG_ALLOWED_EMAILS_ROLE,
+  ROLE_ADMIN,
+  ROLE_READER,
+  SCOPE_ALL,
+  SCOPE_READ,
+} from "./constants.js";
 import { getFlagValue } from "./flags.js";
 import type { AuthUser, Env } from "./types.js";
 
@@ -23,8 +32,8 @@ async function resolveScopes(db: D1Database, role: string): Promise<string[]> {
     .prepare("SELECT scopes FROM roles WHERE name = ?")
     .bind(role)
     .first<RoleRow>();
-  if (!row) return ["read"];
-  return row.scopes === "*" ? ["*"] : row.scopes.split(",").map((s) => s.trim());
+  if (!row) return [SCOPE_READ];
+  return row.scopes === SCOPE_ALL ? [SCOPE_ALL] : row.scopes.split(",").map((s) => s.trim());
 }
 
 // --- Auth ---
@@ -36,11 +45,11 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   // Dev-only bypass for local testing (wrangler dev).
   if (env.DEV_AUTH_BYPASS === "true" && !request.headers.get("CF-Connecting-IP")) {
     return {
-      method: "interactive",
+      method: AUTH_INTERACTIVE,
       identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
       name: "dev",
-      role: "admin",
-      scopes: ["*"],
+      role: ROLE_ADMIN,
+      scopes: [SCOPE_ALL],
     };
   }
 
@@ -76,15 +85,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(clientId)
       .run();
 
-    // Role overrides raw scopes when set
     const scopes = registered.role
       ? await resolveScopes(env.DB, registered.role)
-      : registered.scopes === "*"
-        ? ["*"]
+      : registered.scopes === SCOPE_ALL
+        ? [SCOPE_ALL]
         : registered.scopes.split(",").map((s) => s.trim());
 
     return {
-      method: "service_token",
+      method: AUTH_SERVICE_TOKEN,
       identity: registered.client_id,
       name: registered.name,
       role: registered.role || "custom",
@@ -96,7 +104,6 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   const email = payload.email as string | undefined;
   if (!email) return null;
 
-  // Check users table first
   const user = await env.DB.prepare("SELECT email, name, role, enabled FROM users WHERE email = ?")
     .bind(email.toLowerCase())
     .first<UserRow>();
@@ -104,14 +111,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   if (user) {
     if (!user.enabled) return null;
 
-    // Update last login (best-effort)
     await env.DB.prepare("UPDATE users SET last_login_at = datetime('now') WHERE email = ?")
       .bind(email.toLowerCase())
       .run();
 
     const scopes = await resolveScopes(env.DB, user.role);
     return {
-      method: "interactive",
+      method: AUTH_INTERACTIVE,
       identity: email,
       name: user.name || email.split("@")[0],
       role: user.role,
@@ -125,28 +131,27 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
   }>();
   if (count && count.total === 0) {
     await env.DB.prepare(
-      "INSERT INTO users (email, name, role, created_by) VALUES (?, ?, 'admin', 'auto-seed')",
+      `INSERT INTO users (email, name, role, created_by) VALUES (?, ?, '${ROLE_ADMIN}', 'auto-seed')`,
     )
       .bind(email.toLowerCase(), email.split("@")[0])
       .run();
     return {
-      method: "interactive",
+      method: AUTH_INTERACTIVE,
       identity: email,
       name: email.split("@")[0],
-      role: "admin",
-      scopes: ["*"],
+      role: ROLE_ADMIN,
+      scopes: [SCOPE_ALL],
     };
   }
 
-  // Fallback: ALLOWED_EMAILS env var (migration path for existing deployments)
-  // Default role controlled by allowed_emails_role flag (default: reader)
+  // Fallback: ALLOWED_EMAILS env var (migration path)
   if (env.ALLOWED_EMAILS) {
     const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
     if (allowed.includes(email.toLowerCase())) {
-      const fallbackRole = await getFlagValue(env.FLAGS, "allowed_emails_role", "reader");
+      const fallbackRole = await getFlagValue(env.FLAGS, FLAG_ALLOWED_EMAILS_ROLE, ROLE_READER);
       const scopes = await resolveScopes(env.DB, fallbackRole);
       return {
-        method: "interactive",
+        method: AUTH_INTERACTIVE,
         identity: email,
         name: email.split("@")[0],
         role: fallbackRole,
@@ -161,13 +166,13 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
 // --- Scope checking ---
 
 export function hasScope(auth: AuthUser, required: string): boolean {
-  return auth.scopes.includes("*") || auth.scopes.includes(required);
+  return auth.scopes.includes(SCOPE_ALL) || auth.scopes.includes(required);
 }
 
 // --- Admin check ---
 
 export function isAdmin(auth: AuthUser): boolean {
-  return auth.role === "admin";
+  return auth.role === ROLE_ADMIN;
 }
 
 // --- Audit logging ---
@@ -185,7 +190,7 @@ export async function audit(
     "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
   )
     .bind(
-      auth.method === "interactive" ? "interactive" : auth.name,
+      auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name,
       auth.identity,
       action,
       secretKey,

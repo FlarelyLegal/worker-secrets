@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { AUTH_INTERACTIVE } from "../constants.js";
 import { AuditEntrySchema, AuditQuery, ErrorSchema, WhoamiSchema } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
 
@@ -54,7 +55,7 @@ const auditRoute = createRoute({
 
 admin.openapi(auditRoute, async (c) => {
   const auth = c.get("auth");
-  if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
+  if (auth.method !== AUTH_INTERACTIVE) return c.json({ error: "Owner only" }, 403);
 
   const { limit, offset, identity, action, key, method, from, to } = c.req.valid("query");
   const conditions: string[] = [];

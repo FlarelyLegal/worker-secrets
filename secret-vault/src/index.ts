@@ -1,5 +1,14 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { authenticate } from "./auth.js";
+import {
+  ACTION_AUTH_FAILED,
+  AUTH_REJECTED,
+  FLAG_AUDIT_CLEANUP_PROBABILITY,
+  FLAG_AUDIT_RETENTION_DAYS,
+  FLAG_MAINTENANCE,
+  FLAG_PUBLIC_PAGES_ENABLED,
+  FLAG_READ_ONLY,
+} from "./constants.js";
 import { getFlagValue } from "./flags.js";
 import admin from "./routes/admin.js";
 import bulk from "./routes/bulk.js";
@@ -118,7 +127,7 @@ app.get("/doc/json", (c) => {
 });
 
 app.get("/doc", async (c) => {
-  const enabled = await getFlagValue(c.env.FLAGS, "public_pages_enabled", true);
+  const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
   if (!enabled) return c.notFound();
   const brand = c.env.BRAND_NAME || "Secret Vault";
   return c.html(`<!DOCTYPE html>
@@ -144,7 +153,7 @@ app.get("/doc", async (c) => {
 
 app.use("*", async (c, next) => {
   // Flag 1: maintenance mode — checked before authentication
-  const maintenance = await getFlagValue(c.env.FLAGS, "maintenance", false);
+  const maintenance = await getFlagValue(c.env.FLAGS, FLAG_MAINTENANCE, false);
   if (maintenance) {
     return c.json({ error: "Service is in maintenance mode" }, 503);
   }
@@ -157,9 +166,9 @@ app.use("*", async (c, next) => {
         "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
         .bind(
-          "rejected",
+          AUTH_REJECTED,
           "unknown",
-          "auth_failed",
+          ACTION_AUTH_FAILED,
           null,
           c.req.header("CF-Connecting-IP") ?? null,
           c.req.header("User-Agent") ?? null,
@@ -177,9 +186,9 @@ app.use("*", async (c, next) => {
   await next();
 
   // Background audit cleanup (probability controlled by flag)
-  const cleanupProbability = await getFlagValue(c.env.FLAGS, "audit_cleanup_probability", 0.01);
+  const cleanupProbability = await getFlagValue(c.env.FLAGS, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);
   if (Math.random() < cleanupProbability) {
-    const retentionDays = await getFlagValue(c.env.FLAGS, "audit_retention_days", 90);
+    const retentionDays = await getFlagValue(c.env.FLAGS, FLAG_AUDIT_RETENTION_DAYS, 90);
     c.executionCtx.waitUntil(
       c.env.DB.prepare(
         `DELETE FROM audit_log WHERE timestamp < datetime('now', '-${retentionDays} days')`,
@@ -192,7 +201,7 @@ app.use("*", async (c, next) => {
 
 app.use("*", async (c, next) => {
   if (["PUT", "POST", "DELETE"].includes(c.req.method)) {
-    const readOnly = await getFlagValue(c.env.FLAGS, "read_only", false);
+    const readOnly = await getFlagValue(c.env.FLAGS, FLAG_READ_ONLY, false);
     if (readOnly) {
       return c.json({ error: "Vault is in read-only mode" }, 503);
     }

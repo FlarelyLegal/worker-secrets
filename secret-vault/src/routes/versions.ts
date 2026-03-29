@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
+import { ACTION_RESTORE, ACTION_VERSIONS, SCOPE_READ, SCOPE_WRITE } from "../constants.js";
 import { ErrorSchema, R403, R500 } from "../schemas.js";
 import { KeyParam, type SecretRow } from "../schemas-secrets.js";
 import type { HonoEnv } from "../types.js";
@@ -32,7 +33,7 @@ const versionsRoute = createRoute({
 
 versions.openapi(versionsRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const { results } = await c.env.DB.prepare(
@@ -46,7 +47,7 @@ versions.openapi(versionsRoute, async (c) => {
       .first();
     if (!exists) return c.json({ error: "Secret not found" }, 404);
   }
-  await audit(c.env, auth, "versions", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_VERSIONS, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ versions: results }, 200);
 });
 
@@ -96,7 +97,7 @@ const restoreRoute = createRoute({
 
 versions.openapi(restoreRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "write")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key, id } = c.req.valid("param");
 
@@ -125,7 +126,7 @@ versions.openapi(restoreRoute, async (c) => {
     ).bind(version.value, version.iv, version.hmac, version.description, auth.identity, key),
   ]);
 
-  await audit(c.env, auth, "restore", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_RESTORE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, key, restored_from: id }, 200);
 });
 

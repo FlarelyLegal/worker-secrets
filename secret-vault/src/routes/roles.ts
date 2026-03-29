@@ -1,5 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, isAdmin } from "../auth.js";
+import {
+  ACTION_DELETE_ROLE,
+  ACTION_LIST_ROLES,
+  ACTION_SET_ROLE,
+  ACTION_UPDATE_ROLE,
+  AUTH_INTERACTIVE,
+} from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { RoleCreateBody, RoleNameParam, RoleSchema, RoleUpdateBody } from "../schemas-rbac.js";
 import type { HonoEnv } from "../types.js";
@@ -9,7 +16,7 @@ const roles = new OpenAPIHono<HonoEnv>();
 // Admin-only middleware
 roles.use("*", async (c, next) => {
   const auth = c.get("auth");
-  if (auth.method !== "interactive" || !isAdmin(auth)) {
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
     return c.json({ error: "Admin only" }, 403);
   }
   return next();
@@ -38,7 +45,7 @@ roles.openapi(listRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "list_roles",
+    ACTION_LIST_ROLES,
     null,
     c.get("ip"),
     c.get("ua"),
@@ -83,7 +90,15 @@ roles.openapi(createRoleRoute, async (c) => {
     .bind(name, scopes, description, identity, identity)
     .run();
 
-  await audit(c.env, c.get("auth"), "set_role", name, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(
+    c.env,
+    c.get("auth"),
+    ACTION_SET_ROLE,
+    name,
+    c.get("ip"),
+    c.get("ua"),
+    c.get("requestId"),
+  );
   return c.json({ ok: true, name }, 201);
 });
 
@@ -140,7 +155,7 @@ roles.openapi(updateRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "update_role",
+    ACTION_UPDATE_ROLE,
     name,
     c.get("ip"),
     c.get("ua"),
@@ -203,7 +218,7 @@ roles.openapi(deleteRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "delete_role",
+    ACTION_DELETE_ROLE,
     name,
     c.get("ip"),
     c.get("ua"),

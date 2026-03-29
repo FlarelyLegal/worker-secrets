@@ -1,5 +1,11 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit } from "../auth.js";
+import {
+  ACTION_LIST_TOKENS,
+  ACTION_REGISTER_TOKEN,
+  ACTION_REVOKE_TOKEN,
+  AUTH_INTERACTIVE,
+} from "../constants.js";
 import { ErrorSchema } from "../schemas.js";
 import {
   ClientIdParam,
@@ -14,7 +20,7 @@ const tokens = new OpenAPIHono<HonoEnv>();
 
 // Interactive-only middleware
 tokens.use("*", async (c, next) => {
-  if (c.get("auth").method !== "interactive") {
+  if (c.get("auth").method !== AUTH_INTERACTIVE) {
     return c.json({ error: "Owner only" }, 403);
   }
   return next();
@@ -44,7 +50,7 @@ tokens.openapi(listRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "list_tokens",
+    ACTION_LIST_TOKENS,
     null,
     c.get("ip"),
     c.get("ua"),
@@ -102,7 +108,7 @@ tokens.openapi(registerRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "register_token",
+    ACTION_REGISTER_TOKEN,
     clientId,
     c.get("ip"),
     c.get("ua"),
@@ -141,7 +147,7 @@ tokens.openapi(revokeRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "revoke_token",
+    ACTION_REVOKE_TOKEN,
     clientId,
     c.get("ip"),
     c.get("ua"),

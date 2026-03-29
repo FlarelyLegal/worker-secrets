@@ -1,5 +1,20 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
+import {
+  ACTION_DELETE,
+  ACTION_GET,
+  ACTION_LIST,
+  ACTION_SET,
+  FLAG_HMAC_REQUIRED,
+  FLAG_MAX_SECRETS,
+  FLAG_MAX_VERSIONS,
+  FLAG_REQUIRE_DESCRIPTION,
+  FLAG_REQUIRE_TAGS,
+  FLAG_VERSIONING_ENABLED,
+  SCOPE_DELETE,
+  SCOPE_READ,
+  SCOPE_WRITE,
+} from "../constants.js";
 import { computeHmac, decrypt, encrypt, verifyHmac } from "../crypto.js";
 import { getFlagValue } from "../flags.js";
 import { ErrorSchema, PaginationQuery, R403, R500 } from "../schemas.js";
@@ -41,7 +56,7 @@ const listRoute = createRoute({
 
 secrets.openapi(listRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { limit, offset, search } = c.req.valid("query");
   let countSql = "SELECT COUNT(*) as total FROM secrets";
@@ -64,7 +79,7 @@ secrets.openapi(listRoute, async (c) => {
   const { results } = await c.env.DB.prepare(listSql)
     .bind(...binds, limit, offset)
     .all();
-  await audit(c.env, auth, "list", null, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_LIST, null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ secrets: results as z.infer<typeof SecretListItemSchema>[], total }, 200);
 });
 
@@ -88,7 +103,7 @@ const getRoute = createRoute({
 
 secrets.openapi(getRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const row = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")
@@ -103,7 +118,7 @@ secrets.openapi(getRoute, async (c) => {
     if (!valid)
       return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
   } else {
-    const hmacRequired = await getFlagValue(c.env.FLAGS, "hmac_required", false);
+    const hmacRequired = await getFlagValue(c.env.FLAGS, FLAG_HMAC_REQUIRED, false);
     if (hmacRequired)
       return c.json({ error: "Secret missing HMAC integrity tag — re-save to add one" }, 500);
   }
@@ -114,7 +129,7 @@ secrets.openapi(getRoute, async (c) => {
   } catch {
     return c.json({ error: "Decryption failed" }, 500);
   }
-  await audit(c.env, auth, "get", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_GET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   const { key: k, description, tags, created_by, updated_by, created_at, updated_at } = row;
   return c.json(
     { key: k, value: plaintext, description, tags, created_by, updated_by, created_at, updated_at },
@@ -146,18 +161,18 @@ const putRoute = createRoute({
 
 secrets.openapi(putRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "write")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const { value, description, tags } = c.req.valid("json");
 
   // Flag-driven input requirements
   if (!description) {
-    const reqDesc = await getFlagValue(c.env.FLAGS, "require_description", false);
+    const reqDesc = await getFlagValue(c.env.FLAGS, FLAG_REQUIRE_DESCRIPTION, false);
     if (reqDesc) return c.json({ error: "Description is required" }, 400);
   }
   if (!tags) {
-    const reqTags = await getFlagValue(c.env.FLAGS, "require_tags", false);
+    const reqTags = await getFlagValue(c.env.FLAGS, FLAG_REQUIRE_TAGS, false);
     if (reqTags) return c.json({ error: "Tags are required" }, 400);
   }
 
@@ -167,7 +182,7 @@ secrets.openapi(putRoute, async (c) => {
 
   // Enforce max_secrets limit on new keys
   if (!existing) {
-    const maxSecrets = await getFlagValue(c.env.FLAGS, "max_secrets", 0);
+    const maxSecrets = await getFlagValue(c.env.FLAGS, FLAG_MAX_SECRETS, 0);
     if (maxSecrets > 0) {
       const count = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
         total: number;
@@ -176,7 +191,7 @@ secrets.openapi(putRoute, async (c) => {
         return c.json({ error: `Vault limit reached (${maxSecrets} secrets)` }, 400);
     }
   }
-  const versioningEnabled = await getFlagValue(c.env.FLAGS, "versioning_enabled", true);
+  const versioningEnabled = await getFlagValue(c.env.FLAGS, FLAG_VERSIONING_ENABLED, true);
   if (versioningEnabled && existing) {
     await c.env.DB.prepare(
       "INSERT INTO secret_versions (secret_key, value, iv, hmac, description, changed_by) VALUES (?, ?, ?, ?, ?, ?)",
@@ -185,7 +200,7 @@ secrets.openapi(putRoute, async (c) => {
       .run();
 
     // Prune old versions if max_versions is set
-    const maxVersions = await getFlagValue(c.env.FLAGS, "max_versions", 0);
+    const maxVersions = await getFlagValue(c.env.FLAGS, FLAG_MAX_VERSIONS, 0);
     if (maxVersions > 0) {
       await c.env.DB.prepare(
         `DELETE FROM secret_versions WHERE secret_key = ? AND id NOT IN (
@@ -215,7 +230,7 @@ secrets.openapi(putRoute, async (c) => {
   )
     .bind(key, ciphertext, iv, hmac, description, tags, identity, identity)
     .run();
-  await audit(c.env, auth, "set", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_SET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, key }, 201);
 });
 
@@ -239,12 +254,12 @@ const deleteRoute = createRoute({
 
 secrets.openapi(deleteRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "delete")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_DELETE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const result = await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
   if (result.meta.changes === 0) return c.json({ error: "Secret not found" }, 404);
-  await audit(c.env, auth, "delete", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_DELETE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, deleted: key }, 200);
 });
 

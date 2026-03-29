@@ -1,5 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
+import {
+  ACTION_EXPORT,
+  ACTION_IMPORT,
+  AUTH_INTERACTIVE,
+  FLAG_DISABLE_EXPORT,
+  SCOPE_READ,
+  SCOPE_WRITE,
+} from "../constants.js";
 import { computeHmac, decrypt, encrypt } from "../crypto.js";
 import { getFlagValue } from "../flags.js";
 import { R403, R500 } from "../schemas.js";
@@ -33,10 +41,10 @@ const exportRoute = createRoute({
 
 bulk.openapi(exportRoute, async (c) => {
   const auth = c.get("auth");
-  if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (auth.method !== AUTH_INTERACTIVE) return c.json({ error: "Owner only" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
-  const exportDisabled = await getFlagValue(c.env.FLAGS, "disable_export", false);
+  const exportDisabled = await getFlagValue(c.env.FLAGS, FLAG_DISABLE_EXPORT, false);
   if (exportDisabled) return c.json({ error: "Bulk export is disabled" }, 403);
 
   const { results } = await c.env.DB.prepare("SELECT * FROM secrets ORDER BY key").all();
@@ -65,7 +73,7 @@ bulk.openapi(exportRoute, async (c) => {
       }
     }),
   );
-  await audit(c.env, auth, "export", null, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_EXPORT, null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ secrets: decrypted }, 200);
 });
 
@@ -91,8 +99,8 @@ const importRoute = createRoute({
 
 bulk.openapi(importRoute, async (c) => {
   const auth = c.get("auth");
-  if (auth.method !== "interactive") return c.json({ error: "Owner only" }, 403);
-  if (!hasScope(auth, "write")) return c.json({ error: "Insufficient scope" }, 403);
+  if (auth.method !== AUTH_INTERACTIVE) return c.json({ error: "Owner only" }, 403);
+  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { secrets: items, overwrite } = c.req.valid("json");
 
@@ -161,7 +169,7 @@ bulk.openapi(importRoute, async (c) => {
 
   const imported = toInsert.length;
 
-  await audit(c.env, auth, "import", null, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_IMPORT, null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, imported, skipped }, 200);
 });
 

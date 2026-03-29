@@ -1,5 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, hasScope } from "../auth.js";
+import {
+  ACTION_DELETE_FLAG,
+  ACTION_GET_FLAG,
+  ACTION_LIST_FLAGS,
+  ACTION_SET_FLAG,
+  SCOPE_READ,
+  SCOPE_WRITE,
+} from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
 
@@ -49,7 +57,7 @@ const listRoute = createRoute({
 
 flags.openapi(listRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const list = await c.env.FLAGS.list();
   const result: FlagData[] = [];
@@ -70,7 +78,7 @@ flags.openapi(listRoute, async (c) => {
       }
     }
   }
-  await audit(c.env, auth, "list_flags", null, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_LIST_FLAGS, null, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ flags: result }, 200);
 });
 
@@ -98,7 +106,7 @@ const getRoute = createRoute({
 
 flags.openapi(getRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "read")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const raw = await c.env.FLAGS.get(key);
@@ -111,7 +119,7 @@ flags.openapi(getRoute, async (c) => {
     flag = { key, value: raw, type: "string", description: "", updated_by: "", updated_at: "" };
   }
 
-  await audit(c.env, auth, "get_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_GET_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json(flag, 200);
 });
 
@@ -140,7 +148,7 @@ const setRoute = createRoute({
 
 flags.openapi(setRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "write")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   const { value, description } = c.req.valid("json");
@@ -150,7 +158,7 @@ flags.openapi(setRoute, async (c) => {
   const data = { value, type, description, updated_by: auth.identity, updated_at: now };
   await c.env.FLAGS.put(key, JSON.stringify(data));
 
-  await audit(c.env, auth, "set_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_SET_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ key, ...data }, 200);
 });
 
@@ -182,12 +190,12 @@ const deleteRoute = createRoute({
 
 flags.openapi(deleteRoute, async (c) => {
   const auth = c.get("auth");
-  if (!hasScope(auth, "write")) return c.json({ error: "Insufficient scope" }, 403);
+  if (!hasScope(auth, SCOPE_WRITE)) return c.json({ error: "Insufficient scope" }, 403);
 
   const { key } = c.req.valid("param");
   await c.env.FLAGS.delete(key);
 
-  await audit(c.env, auth, "delete_flag", key, c.get("ip"), c.get("ua"), c.get("requestId"));
+  await audit(c.env, auth, ACTION_DELETE_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, deleted: key }, 200);
 });
 

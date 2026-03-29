@@ -1,5 +1,13 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { audit, isAdmin } from "../auth.js";
+import {
+  ACTION_ADD_USER,
+  ACTION_DELETE_USER,
+  ACTION_LIST_USERS,
+  ACTION_UPDATE_USER,
+  AUTH_INTERACTIVE,
+  ROLE_ADMIN,
+} from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { EmailParam, UserCreateBody, UserSchema, UserUpdateBody } from "../schemas-rbac.js";
 import type { HonoEnv } from "../types.js";
@@ -16,7 +24,7 @@ async function adminCount(db: D1Database): Promise<number> {
 // Admin-only middleware
 users.use("*", async (c, next) => {
   const auth = c.get("auth");
-  if (auth.method !== "interactive" || !isAdmin(auth)) {
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
     return c.json({ error: "Admin only" }, 403);
   }
   return next();
@@ -45,7 +53,7 @@ users.openapi(listRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "list_users",
+    ACTION_LIST_USERS,
     null,
     c.get("ip"),
     c.get("ua"),
@@ -99,7 +107,7 @@ users.openapi(addRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "add_user",
+    ACTION_ADD_USER,
     email,
     c.get("ip"),
     c.get("ua"),
@@ -150,9 +158,9 @@ users.openapi(updateRoute, async (c) => {
   const current = await c.env.DB.prepare("SELECT role, enabled FROM users WHERE email = ?")
     .bind(email.toLowerCase())
     .first<{ role: string; enabled: number }>();
-  if (current?.role === "admin" && current.enabled) {
+  if (current?.role === ROLE_ADMIN && current.enabled) {
     const wouldLoseAdmin =
-      (body.role !== undefined && body.role !== "admin") || body.enabled === false;
+      (body.role !== undefined && body.role !== ROLE_ADMIN) || body.enabled === false;
     if (wouldLoseAdmin && (await adminCount(c.env.DB)) <= 1) {
       return c.json({ error: "Cannot remove the last admin" }, 400);
     }
@@ -184,7 +192,7 @@ users.openapi(updateRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "update_user",
+    ACTION_UPDATE_USER,
     email,
     c.get("ip"),
     c.get("ua"),
@@ -225,7 +233,7 @@ users.openapi(deleteRoute, async (c) => {
   const target = await c.env.DB.prepare("SELECT role, enabled FROM users WHERE email = ?")
     .bind(email.toLowerCase())
     .first<{ role: string; enabled: number }>();
-  if (target?.role === "admin" && target.enabled && (await adminCount(c.env.DB)) <= 1) {
+  if (target?.role === ROLE_ADMIN && target.enabled && (await adminCount(c.env.DB)) <= 1) {
     return c.json({ error: "Cannot delete the last admin" }, 400);
   }
 
@@ -237,7 +245,7 @@ users.openapi(deleteRoute, async (c) => {
   await audit(
     c.env,
     c.get("auth"),
-    "delete_user",
+    ACTION_DELETE_USER,
     email,
     c.get("ip"),
     c.get("ua"),
