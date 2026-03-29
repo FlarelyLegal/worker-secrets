@@ -64,7 +64,7 @@ hfs template <file> -o out Write rendered output to file
 
 ### End-to-end encryption
 ```
-hfs keygen                 Generate age identity (one-time setup)
+hfs keygen                 Generate age identity + bind ZT device (one-time setup)
 hfs pubkey                 Show your age public key (share with teammates)
 hfs set <key> <value> --e2e          Encrypt for all eligible team members (RBAC)
 hfs set <key> <value> --private      Encrypt for only yourself (not shared)

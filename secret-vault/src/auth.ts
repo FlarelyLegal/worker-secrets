@@ -80,7 +80,10 @@ async function resolveRole(
 type UserRow = { email: string; name: string; role: string; enabled: number };
 type TokenRow = { client_id: string; name: string; scopes: string; role: string | null };
 
-export async function authenticate(request: Request, env: Env): Promise<AuthUser | null> {
+export async function authenticate(
+  request: Request,
+  env: Env,
+): Promise<{ user: AuthUser; jwtPayload?: Record<string, unknown> } | null> {
   // Dev-only bypass for local testing (wrangler dev).
   // Safety: only activates when CF-Connecting-IP is absent (no real Cloudflare edge)
   // AND the request comes from localhost. This cannot trigger in production.
@@ -89,13 +92,15 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     if (isLocal) {
       return {
-        method: AUTH_INTERACTIVE,
-        identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
-        name: "dev",
-        role: ROLE_ADMIN,
-        scopes: [SCOPE_ALL],
-        allowedTags: [],
-        policies: [{ scopes: [SCOPE_ALL], tags: [] }],
+        user: {
+          method: AUTH_INTERACTIVE,
+          identity: env.ALLOWED_EMAILS?.split(",")[0]?.trim() || "dev@local",
+          name: "dev",
+          role: ROLE_ADMIN,
+          scopes: [SCOPE_ALL],
+          allowedTags: [],
+          policies: [{ scopes: [SCOPE_ALL], tags: [] }],
+        },
       };
     }
   }
@@ -149,13 +154,16 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     }
 
     return {
-      method: AUTH_SERVICE_TOKEN,
-      identity: registered.client_id,
-      name: registered.name,
-      role: registered.role || "custom",
-      scopes,
-      allowedTags,
-      policies,
+      user: {
+        method: AUTH_SERVICE_TOKEN,
+        identity: registered.client_id,
+        name: registered.name,
+        role: registered.role || "custom",
+        scopes,
+        allowedTags,
+        policies,
+      },
+      jwtPayload: payload,
     };
   }
 
@@ -176,11 +184,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
 
     const resolved = await resolveRole(env.DB, user.role);
     return {
-      method: AUTH_INTERACTIVE,
-      identity: email,
-      name: user.name || email.split("@")[0],
-      role: user.role,
-      ...resolved,
+      user: {
+        method: AUTH_INTERACTIVE,
+        identity: email,
+        name: user.name || email.split("@")[0],
+        role: user.role,
+        ...resolved,
+      },
+      jwtPayload: payload,
     };
   }
 
@@ -199,13 +210,16 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     // If we won the race, return admin. Otherwise, re-check if we were inserted by the winner.
     if (result.meta.changes > 0) {
       return {
-        method: AUTH_INTERACTIVE,
-        identity: email,
-        name: email.split("@")[0],
-        role: ROLE_ADMIN,
-        scopes: [SCOPE_ALL],
-        allowedTags: [],
-        policies: [{ scopes: [SCOPE_ALL], tags: [] }],
+        user: {
+          method: AUTH_INTERACTIVE,
+          identity: email,
+          name: email.split("@")[0],
+          role: ROLE_ADMIN,
+          scopes: [SCOPE_ALL],
+          allowedTags: [],
+          policies: [{ scopes: [SCOPE_ALL], tags: [] }],
+        },
+        jwtPayload: payload,
       };
     }
     // Lost the race — fall through to re-query the users table
@@ -217,11 +231,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     if (retryUser?.enabled) {
       const resolved = await resolveRole(env.DB, retryUser.role);
       return {
-        method: AUTH_INTERACTIVE,
-        identity: email,
-        name: retryUser.name || email.split("@")[0],
-        role: retryUser.role,
-        ...resolved,
+        user: {
+          method: AUTH_INTERACTIVE,
+          identity: email,
+          name: retryUser.name || email.split("@")[0],
+          role: retryUser.role,
+          ...resolved,
+        },
+        jwtPayload: payload,
       };
     }
   }
@@ -241,11 +258,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
         .run();
       const resolved = await resolveRole(env.DB, autoRole);
       return {
-        method: AUTH_INTERACTIVE,
-        identity: email,
-        name: email.split("@")[0],
-        role: autoRole,
-        ...resolved,
+        user: {
+          method: AUTH_INTERACTIVE,
+          identity: email,
+          name: email.split("@")[0],
+          role: autoRole,
+          ...resolved,
+        },
+        jwtPayload: payload,
       };
     }
   }
@@ -257,11 +277,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       const fallbackRole = await getFlagValue(env.FLAGS, FLAG_ALLOWED_EMAILS_ROLE, ROLE_READER);
       const resolved = await resolveRole(env.DB, fallbackRole);
       return {
-        method: AUTH_INTERACTIVE,
-        identity: email,
-        name: email.split("@")[0],
-        role: fallbackRole,
-        ...resolved,
+        user: {
+          method: AUTH_INTERACTIVE,
+          identity: email,
+          name: email.split("@")[0],
+          role: fallbackRole,
+          ...resolved,
+        },
+        jwtPayload: payload,
       };
     }
   }

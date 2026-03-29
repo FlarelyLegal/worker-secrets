@@ -148,6 +148,8 @@ export function landingPage(
         <tr><td>RBAC + tag restrictions</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
         <tr><td>Hash-chained audit log</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>Burn after reading</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Cloudflare WARP / Zero Trust</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Gateway-policeable CLI</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>Geo-fencing</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>Version history + restore</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
         <tr><td>Runtime feature flags</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
@@ -211,7 +213,7 @@ export function landingPage(
       </div>
       <div class="arch-arrow-down">&darr; JWT &darr;</div>
       <div class="arch-row">
-        <div class="arch-node active" style="min-width:380px">Worker &mdash; DEK encrypt &rarr; KEK wrap &rarr; HMAC sign &rarr; Audit</div>
+        <div class="arch-node active" style="min-width:380px">Worker &mdash; ZT verify &rarr; DEK encrypt &rarr; KEK wrap &rarr; HMAC sign &rarr; Audit</div>
       </div>
       <div class="arch-arrow-down">&darr; ciphertext only &darr;</div>
       <div class="arch-row">

@@ -195,6 +195,10 @@ users.openapi(updateRoute, async (c) => {
     sets.push("age_public_key = ?");
     binds.push(body.age_public_key);
   }
+  if (body.zt_fingerprint !== undefined) {
+    sets.push("zt_fingerprint = ?");
+    binds.push(body.zt_fingerprint);
+  }
   if (sets.length === 0) return c.json({ error: "No fields to update" }, 400);
 
   sets.push("updated_by = ?", "updated_at = datetime('now')");

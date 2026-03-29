@@ -40,6 +40,7 @@ Flag mutations require **admin** role. Reading flags requires **read** scope.
 | `webhook_filter` | string | `""` (all events) | Comma-separated actions to send (e.g., `set,delete,auth_failed`). Empty sends everything. |
 | `allowed_countries` | string | `""` (all countries) | Comma-separated country codes (e.g., `US,DE,GB`). Blocks requests from non-matching countries via `request.cf.country`. |
 | `auto_provision_role` | string | `""` (disabled) | Auto-create users on first login with this role. Trusts Cloudflare Access to control who can reach the vault. |
+| `require_warp` | boolean | `false` | Requires requests to come through Cloudflare WARP. Rejects non-WARP requests with 403. See [WARP docs](cloudflare-warp.md). |
 
 ## Behavior notes
 

@@ -26,6 +26,7 @@ export interface UserEntry {
   role: string;
   enabled: number;
   age_public_key: string | null;
+  zt_fingerprint: string;
   last_login_at: string | null;
   created_by: string;
   created_at: string;

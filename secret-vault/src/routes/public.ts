@@ -146,6 +146,7 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 - [CLI](${repo}/tree/main/hfs): hfs command-line tool for all operations
 - [Encryption architecture](${repo}/blob/main/docs/encryption.md): envelope encryption, HMAC, key rotation, audit chain
 - [E2E encryption](${repo}/blob/main/hfs/README.md): --private for personal, --e2e for team, --recipients for explicit keys
+- [WARP / Zero Trust](${repo}/blob/main/docs/cloudflare-warp.md): challenge-response device verification, ZT cert binding, Gateway-policeable CLI
 - [RBAC](${repo}/blob/main/SECURITY.md): roles with scoped permissions and tag-based access restrictions
 - [Feature flags](${repo}/blob/main/docs/feature-flags.md): runtime configuration stored in KV, no redeploy needed
 - [GitHub Action](${repo}/tree/main/action): fetch secrets into CI workflows
@@ -167,6 +168,7 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 - [Encryption architecture](${repo}/blob/main/docs/encryption.md): key hierarchy, envelope encryption, HMAC, rotation, audit chain
 - [CLI README](${repo}/blob/main/hfs/README.md): all commands and usage
 - [Security](${repo}/blob/main/SECURITY.md): threat model and hardening guide
+- [WARP / Zero Trust](${repo}/blob/main/docs/cloudflare-warp.md): device binding, challenge-response, Gateway policies
 - [Feature flags](${repo}/blob/main/docs/feature-flags.md): all runtime flags with defaults
 `);
 });

@@ -33,6 +33,7 @@ async function auditInsert(
   ip: string | null,
   userAgent: string | null,
   requestId: string | null,
+  warpConnected = false,
 ): Promise<void> {
   // Generate timestamp in code so it's available for hashing before INSERT
   const timestamp = new Date()
@@ -55,9 +56,20 @@ async function auditInsert(
 
   const result = await db
     .prepare(
-      "INSERT INTO audit_log (timestamp, method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO audit_log (timestamp, method, identity, action, secret_key, ip, user_agent, request_id, prev_hash, warp_connected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .bind(timestamp, method, identity, action, secretKey, ip, userAgent, requestId, prevHash)
+    .bind(
+      timestamp,
+      method,
+      identity,
+      action,
+      secretKey,
+      ip,
+      userAgent,
+      requestId,
+      prevHash,
+      warpConnected ? 1 : 0,
+    )
     .run();
 
   // Self-heal: if a concurrent insert landed between our SELECT and INSERT,
@@ -96,7 +108,17 @@ export async function audit(
   requestId: string | null = null,
 ): Promise<void> {
   const method = auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name;
-  await auditInsert(env.DB, method, auth.identity, action, secretKey, ip, userAgent, requestId);
+  await auditInsert(
+    env.DB,
+    method,
+    auth.identity,
+    action,
+    secretKey,
+    ip,
+    userAgent,
+    requestId,
+    auth.warp?.connected ?? false,
+  );
 }
 
 /** Audit logging for failed auth — no AuthUser available, uses raw method/identity strings. */
@@ -109,6 +131,17 @@ export async function auditRaw(
   ip: string | null,
   userAgent: string | null,
   requestId: string | null,
+  warpConnected = false,
 ): Promise<void> {
-  await auditInsert(db, method, identity, action, secretKey, ip, userAgent, requestId);
+  await auditInsert(
+    db,
+    method,
+    identity,
+    action,
+    secretKey,
+    ip,
+    userAgent,
+    requestId,
+    warpConnected,
+  );
 }

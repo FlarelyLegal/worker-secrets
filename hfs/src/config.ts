@@ -5,6 +5,7 @@ export interface HfsConfig {
   jwt?: string;
   jwtExpiry?: number; // unix timestamp
   e2eIdentity?: string; // path to age identity file
+  caCert?: string; // path to custom CA certificate (e.g. WARP)
 }
 
 const config = new Conf<HfsConfig>({
@@ -14,6 +15,7 @@ const config = new Conf<HfsConfig>({
     jwt: { type: "string" },
     jwtExpiry: { type: "number" },
     e2eIdentity: { type: "string" },
+    caCert: { type: "string" },
   },
 });
 
