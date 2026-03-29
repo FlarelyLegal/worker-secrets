@@ -78,9 +78,18 @@ secretWrite.openapi(putRoute, async (c) => {
   const versioningEnabled = getFlag(c.get("flags"), FLAG_VERSIONING_ENABLED, true);
   if (versioningEnabled && existing) {
     await c.env.DB.prepare(
-      "INSERT INTO secret_versions (secret_key, value, iv, hmac, description, changed_by) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO secret_versions (secret_key, value, iv, hmac, encrypted_dek, dek_iv, description, changed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     )
-      .bind(key, existing.value, existing.iv, existing.hmac, existing.description, auth.identity)
+      .bind(
+        key,
+        existing.value,
+        existing.iv,
+        existing.hmac,
+        existing.encrypted_dek,
+        existing.dek_iv,
+        existing.description,
+        auth.identity,
+      )
       .run();
 
     const maxVersions = getFlag(c.get("flags"), FLAG_MAX_VERSIONS, 0);

@@ -71,6 +71,8 @@ type VersionRow = {
   value: string;
   iv: string;
   hmac: string;
+  encrypted_dek: string | null;
+  dek_iv: string | null;
   description: string;
 };
 
@@ -103,7 +105,7 @@ versions.openapi(restoreRoute, async (c) => {
 
   // Fetch the version to restore
   const version = await c.env.DB.prepare(
-    "SELECT id, secret_key, value, iv, hmac, description FROM secret_versions WHERE id = ? AND secret_key = ?",
+    "SELECT id, secret_key, value, iv, hmac, encrypted_dek, dek_iv, description FROM secret_versions WHERE id = ? AND secret_key = ?",
   )
     .bind(id, key)
     .first<VersionRow>();
@@ -116,14 +118,32 @@ versions.openapi(restoreRoute, async (c) => {
   if (!current) return c.json({ error: "Secret not found" }, 404);
 
   await c.env.DB.batch([
-    // Archive current value
+    // Archive current value (including DEK columns)
     c.env.DB.prepare(
-      "INSERT INTO secret_versions (secret_key, value, iv, hmac, description, changed_by) VALUES (?, ?, ?, ?, ?, ?)",
-    ).bind(key, current.value, current.iv, current.hmac, current.description, auth.identity),
-    // Restore old version
+      "INSERT INTO secret_versions (secret_key, value, iv, hmac, encrypted_dek, dek_iv, description, changed_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    ).bind(
+      key,
+      current.value,
+      current.iv,
+      current.hmac,
+      current.encrypted_dek,
+      current.dek_iv,
+      current.description,
+      auth.identity,
+    ),
+    // Restore old version (including DEK columns)
     c.env.DB.prepare(
-      "UPDATE secrets SET value = ?, iv = ?, hmac = ?, description = ?, updated_by = ?, updated_at = datetime('now') WHERE key = ?",
-    ).bind(version.value, version.iv, version.hmac, version.description, auth.identity, key),
+      "UPDATE secrets SET value = ?, iv = ?, hmac = ?, encrypted_dek = ?, dek_iv = ?, description = ?, updated_by = ?, updated_at = datetime('now') WHERE key = ?",
+    ).bind(
+      version.value,
+      version.iv,
+      version.hmac,
+      version.encrypted_dek,
+      version.dek_iv,
+      version.description,
+      auth.identity,
+      key,
+    ),
   ]);
 
   await audit(c.env, auth, ACTION_RESTORE, key, c.get("ip"), c.get("ua"), c.get("requestId"));
