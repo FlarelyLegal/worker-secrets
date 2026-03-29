@@ -40,7 +40,7 @@ const listRoute = createRoute({
 
 roles.openapi(listRoute, async (c) => {
   const { results } = await c.env.DB.prepare(
-    "SELECT name, scopes, description, created_by, created_at, updated_by, updated_at FROM roles ORDER BY name",
+    "SELECT name, scopes, allowed_tags, description, created_by, created_at, updated_by, updated_at FROM roles ORDER BY name",
   ).all();
   await audit(
     c.env,
@@ -77,17 +77,18 @@ const createRoleRoute = createRoute({
 
 roles.openapi(createRoleRoute, async (c) => {
   const { name } = c.req.valid("param");
-  const { scopes, description } = c.req.valid("json");
+  const { scopes, allowed_tags, description } = c.req.valid("json");
   const identity = c.get("auth").identity;
 
   await c.env.DB.prepare(
-    `INSERT INTO roles (name, scopes, description, created_by, updated_by)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO roles (name, scopes, allowed_tags, description, created_by, updated_by)
+     VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(name) DO UPDATE SET
-       scopes = excluded.scopes, description = excluded.description,
+       scopes = excluded.scopes, allowed_tags = excluded.allowed_tags,
+       description = excluded.description,
        updated_by = excluded.updated_by, updated_at = datetime('now')`,
   )
-    .bind(name, scopes, description, identity, identity)
+    .bind(name, scopes, allowed_tags, description, identity, identity)
     .run();
 
   await audit(
@@ -138,6 +139,10 @@ roles.openapi(updateRoute, async (c) => {
   if (body.scopes !== undefined) {
     sets.push("scopes = ?");
     binds.push(body.scopes);
+  }
+  if (body.allowed_tags !== undefined) {
+    sets.push("allowed_tags = ?");
+    binds.push(body.allowed_tags);
   }
   if (body.description !== undefined) {
     sets.push("description = ?");

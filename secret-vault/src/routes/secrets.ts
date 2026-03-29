@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope } from "../auth.js";
+import { audit, hasScope, hasTagAccess } from "../auth.js";
 import {
   ACTION_DELETE,
   ACTION_GET,
@@ -75,12 +75,24 @@ secrets.openapi(listRoute, async (c) => {
   const { results: countResult } = await c.env.DB.prepare(countSql)
     .bind(...binds)
     .all();
-  const total = (countResult[0] as { total: number }).total;
+  const dbTotal = (countResult[0] as { total: number }).total;
   const { results } = await c.env.DB.prepare(listSql)
     .bind(...binds, limit, offset)
     .all();
+  // Filter by tag access
+  const filtered =
+    auth.allowedTags.length > 0
+      ? (results as { tags: string }[]).filter((s) => hasTagAccess(auth, s.tags))
+      : results;
+
   await audit(c.env, auth, ACTION_LIST, null, c.get("ip"), c.get("ua"), c.get("requestId"));
-  return c.json({ secrets: results as z.infer<typeof SecretListItemSchema>[], total }, 200);
+  return c.json(
+    {
+      secrets: filtered as z.infer<typeof SecretListItemSchema>[],
+      total: auth.allowedTags.length > 0 ? filtered.length : dbTotal,
+    },
+    200,
+  );
 });
 
 // --- Get ---
@@ -111,6 +123,10 @@ secrets.openapi(getRoute, async (c) => {
     .first<SecretRow>();
 
   if (!row) return c.json({ error: "Secret not found" }, 404);
+
+  // Tag-based access control
+  if (!hasTagAccess(auth, row.tags))
+    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Verify HMAC integrity
   if (row.hmac) {

@@ -25,15 +25,26 @@ function getJWKS(teamDomain: string) {
 
 // --- Scope resolution ---
 
-type RoleRow = { name: string; scopes: string };
+type RoleRow = { name: string; scopes: string; allowed_tags: string };
 
-async function resolveScopes(db: D1Database, role: string): Promise<string[]> {
+async function resolveRole(
+  db: D1Database,
+  role: string,
+): Promise<{ scopes: string[]; allowedTags: string[] }> {
   const row = await db
-    .prepare("SELECT scopes FROM roles WHERE name = ?")
+    .prepare("SELECT scopes, allowed_tags FROM roles WHERE name = ?")
     .bind(role)
     .first<RoleRow>();
-  if (!row) return [SCOPE_READ];
-  return row.scopes === SCOPE_ALL ? [SCOPE_ALL] : row.scopes.split(",").map((s) => s.trim());
+  if (!row) return { scopes: [SCOPE_READ], allowedTags: [] };
+  const scopes =
+    row.scopes === SCOPE_ALL ? [SCOPE_ALL] : row.scopes.split(",").map((s) => s.trim());
+  const allowedTags = row.allowed_tags
+    ? row.allowed_tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+  return { scopes, allowedTags };
 }
 
 // --- Auth ---
@@ -50,6 +61,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       name: "dev",
       role: ROLE_ADMIN,
       scopes: [SCOPE_ALL],
+      allowedTags: [],
     };
   }
 
@@ -85,11 +97,18 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(clientId)
       .run();
 
-    const scopes = registered.role
-      ? await resolveScopes(env.DB, registered.role)
-      : registered.scopes === SCOPE_ALL
-        ? [SCOPE_ALL]
-        : registered.scopes.split(",").map((s) => s.trim());
+    let scopes: string[];
+    let allowedTags: string[] = [];
+    if (registered.role) {
+      const resolved = await resolveRole(env.DB, registered.role);
+      scopes = resolved.scopes;
+      allowedTags = resolved.allowedTags;
+    } else {
+      scopes =
+        registered.scopes === SCOPE_ALL
+          ? [SCOPE_ALL]
+          : registered.scopes.split(",").map((s) => s.trim());
+    }
 
     return {
       method: AUTH_SERVICE_TOKEN,
@@ -97,6 +116,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       name: registered.name,
       role: registered.role || "custom",
       scopes,
+      allowedTags,
     };
   }
 
@@ -115,13 +135,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       .bind(email.toLowerCase())
       .run();
 
-    const scopes = await resolveScopes(env.DB, user.role);
+    const { scopes, allowedTags } = await resolveRole(env.DB, user.role);
     return {
       method: AUTH_INTERACTIVE,
       identity: email,
       name: user.name || email.split("@")[0],
       role: user.role,
       scopes,
+      allowedTags,
     };
   }
 
@@ -141,6 +162,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
       name: email.split("@")[0],
       role: ROLE_ADMIN,
       scopes: [SCOPE_ALL],
+      allowedTags: [],
     };
   }
 
@@ -149,13 +171,14 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
     const allowed = env.ALLOWED_EMAILS.split(",").map((e) => e.trim().toLowerCase());
     if (allowed.includes(email.toLowerCase())) {
       const fallbackRole = await getFlagValue(env.FLAGS, FLAG_ALLOWED_EMAILS_ROLE, ROLE_READER);
-      const scopes = await resolveScopes(env.DB, fallbackRole);
+      const { scopes, allowedTags } = await resolveRole(env.DB, fallbackRole);
       return {
         method: AUTH_INTERACTIVE,
         identity: email,
         name: email.split("@")[0],
         role: fallbackRole,
         scopes,
+        allowedTags,
       };
     }
   }
@@ -173,6 +196,15 @@ export function hasScope(auth: AuthUser, required: string): boolean {
 
 export function isAdmin(auth: AuthUser): boolean {
   return auth.role === ROLE_ADMIN;
+}
+
+// --- Tag-based access ---
+
+export function hasTagAccess(auth: AuthUser, secretTags: string): boolean {
+  if (auth.allowedTags.length === 0) return true; // no restriction
+  if (!secretTags) return false; // restricted role, untagged secret
+  const tags = secretTags.split(",").map((t) => t.trim());
+  return auth.allowedTags.some((allowed) => tags.includes(allowed));
 }
 
 // --- Audit logging ---

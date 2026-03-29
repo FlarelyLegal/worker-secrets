@@ -19,6 +19,7 @@ export type AuthUser = {
   name: string;
   role: string;
   scopes: string[];
+  allowedTags: string[]; // empty = all tags allowed
 };
 
 export type HonoEnv = {

@@ -42,6 +42,7 @@ export const RoleSchema = z
   .object({
     name: z.string().openapi({ example: "operator" }),
     scopes: z.string().openapi({ example: "read,write" }),
+    allowed_tags: z.string().openapi({ example: "ci,staging" }),
     description: z.string(),
     created_by: z.string(),
     created_at: z.string(),
@@ -72,6 +73,7 @@ export const RoleCreateBody = z.object({
         .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
     { message: "Valid scopes: *, read, write, delete (comma-separated)" },
   ),
+  allowed_tags: z.string().max(500, "allowed_tags exceeds 500 char limit").optional().default(""),
   description: z.string().max(500).optional().default(""),
 });
 
@@ -87,5 +89,6 @@ export const RoleUpdateBody = z.object({
       { message: "Valid scopes: *, read, write, delete (comma-separated)" },
     )
     .optional(),
+  allowed_tags: z.string().max(500).optional(),
   description: z.string().max(500).optional(),
 });

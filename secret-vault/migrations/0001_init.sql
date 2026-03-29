@@ -41,6 +41,7 @@ CREATE INDEX idx_secret_versions_key ON secret_versions(secret_key, changed_at);
 CREATE TABLE IF NOT EXISTS roles (
   name TEXT PRIMARY KEY,             -- e.g. 'admin', 'operator', 'reader'
   scopes TEXT NOT NULL,              -- comma-separated: 'read', 'write', 'delete', '*'
+  allowed_tags TEXT DEFAULT '',     -- comma-separated tag restriction (empty = all tags)
   description TEXT DEFAULT '',
   created_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
