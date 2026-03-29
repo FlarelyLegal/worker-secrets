@@ -9,6 +9,7 @@ export const UserSchema = z
     name: z.string().openapi({ example: "Tim Schneider" }),
     role: z.string().openapi({ example: "admin" }),
     enabled: z.number().openapi({ example: 1 }),
+    age_public_key: z.string().nullable().openapi({ example: "age1..." }),
     last_login_at: z.string().nullable(),
     created_by: z.string(),
     created_at: z.string(),
@@ -27,6 +28,7 @@ export const UserUpdateBody = z.object({
   name: z.string().max(256).optional(),
   role: z.string().max(64).optional(),
   enabled: z.boolean().optional(),
+  age_public_key: z.string().max(256).nullable().optional(),
 });
 
 export const EmailParam = z.object({

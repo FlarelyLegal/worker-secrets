@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 import { getConfig } from "../config.js";
-import { e2eDecrypt, isE2E } from "../e2e.js";
+import { e2eDecrypt, e2eEncrypt, ensureE2ETag, isE2E, loadRecipient } from "../e2e.js";
 import { client, confirm, die, errorMessage } from "../helpers.js";
 
 export function registerSecretOpsCommands(program: Command): void {
@@ -103,6 +103,80 @@ export function registerSecretOpsCommands(program: Command): void {
         console.log(
           `${chalk.green("✓")} Restored ${chalk.bold(result.key)} from version ${result.restored_from}`,
         );
+      } catch (e) {
+        die(errorMessage(e));
+      }
+    });
+
+  program
+    .command("rewrap [key]")
+    .description("Re-encrypt e2e secrets for current eligible recipients")
+    .option("--all", "Rewrap all e2e secrets")
+    .option("-f, --force", "Skip confirmation")
+    .action(async (key: string | undefined, opts: { all?: boolean; force?: boolean }) => {
+      try {
+        if (!key && !opts.all) die("Specify a key or use --all to rewrap all e2e secrets");
+
+        const c = client();
+        const e2eId = getConfig().e2eIdentity;
+        const ownKey = await loadRecipient(e2eId);
+
+        const keysToRewrap: string[] = [];
+        if (opts.all) {
+          const { secrets } = await c.list({ limit: 10000 });
+          for (const s of secrets) {
+            if (isE2E(s.tags)) keysToRewrap.push(s.key);
+          }
+          if (keysToRewrap.length === 0) {
+            console.log(chalk.dim("No e2e secrets found."));
+            return;
+          }
+          if (!opts.force) {
+            if (!(await confirm(`Rewrap ${keysToRewrap.length} e2e secret(s)?`))) return;
+          }
+        } else {
+          keysToRewrap.push(key as string);
+        }
+
+        let rewrapped = 0;
+        for (const k of keysToRewrap) {
+          const secret = await c.get(k);
+          if (!isE2E(secret.tags)) {
+            console.log(chalk.yellow(`⚠ ${k} is not e2e — skipping`));
+            continue;
+          }
+
+          // Decrypt with our identity
+          let plaintext: string;
+          try {
+            plaintext = await e2eDecrypt(secret.value || "", e2eId);
+          } catch (e) {
+            console.error(chalk.red(`✗ ${k}: decryption failed — ${errorMessage(e)}`));
+            continue;
+          }
+
+          // Fetch current eligible recipients from RBAC
+          const recipients: string[] = [];
+          try {
+            const serverRecipients = await c.listRecipients(secret.tags);
+            for (const r of serverRecipients) recipients.push(r.age_public_key);
+          } catch {
+            // Fallback
+          }
+          if (!recipients.includes(ownKey)) recipients.push(ownKey);
+
+          // Re-encrypt for current recipients
+          const ciphertext = await e2eEncrypt(plaintext, recipients);
+          await c.set(k, ciphertext, {
+            description: secret.description,
+            tags: ensureE2ETag(secret.tags),
+            expires_at: secret.expires_at,
+          });
+          console.log(`${chalk.green("✓")} ${chalk.bold(k)} → ${recipients.length} recipient(s)`);
+          rewrapped++;
+        }
+
+        console.log(chalk.dim(`\n${rewrapped} secret(s) rewrapped`));
       } catch (e) {
         die(errorMessage(e));
       }
