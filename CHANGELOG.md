@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.0] - 2026-03-29
+
+### Features
+
+- End-to-end encryption with age — zero-knowledge secrets
+- Update landing page with e2e encryption highlight
+- Landing page orange accents — headline, section headers, hover states, footer
+- End-to-end encryption with age (#5)
+
 ## [0.17.0] - 2026-03-29
 
 ### Bug Fixes
@@ -11,6 +20,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - 6 new feature flags — enforce_expiry, burn_after_reading, and more
+
+### Miscellaneous
+
+- Bump version to 0.17.0
 
 ## [0.16.1] - 2026-03-29
 
