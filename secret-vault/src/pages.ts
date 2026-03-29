@@ -9,11 +9,23 @@ const STYLES = `
     @media (prefers-color-scheme: dark) {
       :root { --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #ededed; --muted: #888; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; }
+    }
     body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
 `;
 
+/** Escape HTML special characters to prevent injection. */
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function favicon(initial: string): string {
-  return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${initial}</text></svg>" />`;
+  return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${esc(initial)}</text></svg>" />`;
 }
 
 export function landingPage(
@@ -24,17 +36,26 @@ export function landingPage(
 ): string {
   const repo = repoUrl || "https://github.com/FlarelyLegal/worker-secrets";
   const pkg = packageName || "@FlarelyLegal/hfs-cli";
-  const initial = brand.charAt(0).toUpperCase();
+  const b = esc(brand);
+  const initial = esc(brand.charAt(0).toUpperCase());
+  const o = esc(origin);
+  const r = esc(repo);
+  const p = esc(pkg);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${brand}</title>
+  <title>${b}</title>
+  <meta name="description" content="${b}: Self-hosted encrypted secret manager on Cloudflare Workers with end-to-end encryption, RBAC, and tamper-evident audit logs." />
+  <meta property="og:title" content="${b}" />
+  <meta property="og:description" content="Self-hosted secret manager with zero-knowledge encryption. Your secrets, your keys, your infrastructure." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${o}" />
   ${favicon(initial)}
   <style>${STYLES}
     .page { max-width: 720px; margin: 0 auto; padding: 5rem 2rem 3rem; }
-    .brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; }
+    header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; }
     .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
     .brand-name { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
     h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 1rem; }
@@ -69,23 +90,21 @@ export function landingPage(
     @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
     .links { display: flex; gap: 0.625rem; flex-wrap: wrap; margin-bottom: 3rem; }
     .link { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; text-decoration: none; color: var(--text); font-size: 0.75rem; font-weight: 500; transition: border-color 0.15s; }
-    .link:hover { border-color: var(--accent); }
+    .link:hover, .link:focus-visible { border-color: var(--accent); outline: none; }
     .link .arrow { color: var(--accent); }
-    .footer { padding: 1.25rem 0; border-top: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); }
-    .footer a { color: var(--muted); text-decoration: none; }
-    .footer a:hover { color: var(--accent); }
-    .status { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--green); }
-    .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    footer { padding: 1.25rem 0; border-top: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="brand">
+    <header>
       <div class="brand-icon">${initial}</div>
-      <span class="brand-name">${brand}</span>
-    </div>
+      <span class="brand-name">${b}</span>
+    </header>
 
+    <main>
     <h1>Your secrets. <span class="highlight">Your keys.</span> Your infrastructure.</h1>
     <p class="subtitle">A self-hosted secret manager on Cloudflare Workers. Store secrets only you can decrypt, share them with your team through roles, and revoke access with one command. No servers to run. No third parties to trust.</p>
 
@@ -94,7 +113,7 @@ export function landingPage(
       <div class="step-content">
         <div class="step-title">Deploy to your Cloudflare account</div>
         <div class="step-desc">One command creates the Worker, D1 database, KV namespace, and Access policies. Everything runs on your account.</div>
-        <div class="terminal"><code><span class="cmd">$</span> npm i -g ${pkg} --registry=https://npm.pkg.github.com<br/><span class="cmd">$</span> hfs deploy<br/><span class="output">  Deployed to ${origin}</span></code></div>
+        <div class="terminal"><code><span class="cmd">$</span> npm i -g ${p} --registry=https://npm.pkg.github.com<br/><span class="cmd">$</span> hfs deploy<br/><span class="output">  Deployed to ${o}</span></code></div>
       </div>
     </div>
 
@@ -103,7 +122,7 @@ export function landingPage(
       <div class="step-content">
         <div class="step-title">Connect, log in, generate your key</div>
         <div class="step-desc">Point the CLI to your vault, authenticate through your identity provider, and generate an age identity. The key pair lives on your machine and never touches the server.</div>
-        <div class="terminal"><code><span class="cmd">$</span> hfs config set --url ${origin}<br/><span class="cmd">$</span> hfs login<br/><span class="output">  Authenticated successfully</span><br/><span class="cmd">$</span> hfs keygen <span class="flag">--register</span><br/><span class="output">  public key: age196nua3eewwvud6k858la...</span></code></div>
+        <div class="terminal"><code><span class="cmd">$</span> hfs config set --url ${o}<br/><span class="cmd">$</span> hfs login<br/><span class="output">  Authenticated successfully</span><br/><span class="cmd">$</span> hfs keygen <span class="flag">--register</span><br/><span class="output">  public key: age196nua3eewwvud6k858la...</span></code></div>
       </div>
     </div>
 
@@ -121,7 +140,7 @@ export function landingPage(
       <div class="step-content">
         <div class="step-title">Use everywhere. Revoke instantly.</div>
         <div class="step-desc">Load secrets into your shell, CI pipelines, or config files. When someone leaves, remove them and rewrap. Their key is excluded from every secret.</div>
-        <div class="terminal"><code><span class="cmd">$</span> eval $(hfs env -e API_KEY DB_PASSWORD)<br/><span class="cmd">$</span> hfs template .env.tpl > .env<br/><br/><span class="comment"># Someone leaves</span><br/><span class="cmd">$</span> hfs user rm alice@co.com<br/><span class="cmd">$</span> hfs rewrap <span class="flag">--all</span><br/><span class="output">  12 secret(s) rewrapped</span></code></div>
+        <div class="terminal"><code><span class="cmd">$</span> eval $(hfs env <span class="flag">--export</span> API_KEY DB_PASSWORD)<br/><span class="cmd">$</span> hfs template .env.tpl &gt; .env<br/><br/><span class="comment"># Someone leaves</span><br/><span class="cmd">$</span> hfs user rm alice@co.com<br/><span class="cmd">$</span> hfs rewrap <span class="flag">--all</span><br/><span class="output">  12 secret(s) rewrapped</span></code></div>
       </div>
     </div>
 
@@ -132,7 +151,7 @@ export function landingPage(
       <div class="layer"><span class="layer-name">Envelope</span><span class="layer-desc">Each secret gets its own AES-256-GCM data encryption key, wrapped by a master key. Key rotation without re-encrypting data.</span></div>
       <div class="layer"><span class="layer-name">Integrity</span><span class="layer-desc">HMAC-SHA256 binds every secret to its key name and encryption keys. Tampering is detectable at rest.</span></div>
       <div class="layer"><span class="layer-name">Access</span><span class="layer-desc">Cloudflare Access at the edge. JWT validation in the Worker. RBAC with tag-level restrictions. Hardware keys supported.</span></div>
-      <div class="layer"><span class="layer-name">Audit</span><span class="layer-desc">Every operation logged. SHA-256 hash-chained. Verifiable with the CLI. Webhook support for Slack and SIEM.</span></div>
+      <div class="layer"><span class="layer-name">Audit</span><span class="layer-desc">Every operation logged. SHA-256 hash-chained. Verifiable with the CLI. Audit events posted to external URLs via webhooks.</span></div>
     </div>
 
     <div class="explanation">
@@ -145,26 +164,27 @@ export function landingPage(
     <div class="features">
       <div class="feat"><div class="feat-name">Burn after reading</div><div class="feat-desc">One-time secrets that delete after first read.</div></div>
       <div class="feat"><div class="feat-name">Geo-fencing</div><div class="feat-desc">Restrict access by country. Only on Cloudflare.</div></div>
-      <div class="feat"><div class="feat-name">23 feature flags</div><div class="feat-desc">Runtime control. No redeploy needed.</div></div>
+      <div class="feat"><div class="feat-name">Runtime feature flags</div><div class="feat-desc">Toggle behavior from KV. No redeploy needed.</div></div>
       <div class="feat"><div class="feat-name">Version history</div><div class="feat-desc">Diff, restore, and track every change.</div></div>
-      <div class="feat"><div class="feat-name">Config templates</div><div class="feat-desc">hfs template .env.tpl > .env</div></div>
+      <div class="feat"><div class="feat-name">Config templates</div><div class="feat-desc">hfs template .env.tpl &gt; .env</div></div>
       <div class="feat"><div class="feat-name">GitHub Action</div><div class="feat-desc">Fetch secrets into CI workflows. Masked in logs.</div></div>
       <div class="feat"><div class="feat-name">Auto-provisioning</div><div class="feat-desc">Pass Access, get a role. No admin needed.</div></div>
       <div class="feat"><div class="feat-name">Open source</div><div class="feat-desc">MIT license. Run it, fork it, audit it.</div></div>
     </div>
+    </main>
 
-    <div class="links">
+    <nav class="links" aria-label="Quick links">
       <a class="link" href="/doc">API Reference <span class="arrow">&#8594;</span></a>
       <a class="link" href="/doc/json">OpenAPI Spec <span class="arrow">&#8594;</span></a>
       <a class="link" href="/health">Health <span class="arrow">&#8594;</span></a>
-      <a class="link" href="${repo}" target="_blank" rel="noopener">GitHub <span class="arrow">&#8594;</span></a>
-      <a class="link" href="${repo}/releases/latest" target="_blank" rel="noopener">Install CLI <span class="arrow">&#8594;</span></a>
-    </div>
+      <a class="link" href="${r}" target="_blank" rel="noopener">GitHub <span class="arrow">&#8594;</span></a>
+      <a class="link" href="${r}/releases/latest" target="_blank" rel="noopener">Install CLI <span class="arrow">&#8594;</span></a>
+    </nav>
 
-    <div class="footer">
+    <footer>
       <span>by <a href="https://homeflare.dev">The HomeFlare Project</a> &middot; Powered by Cloudflare Workers</span>
-      <span class="status">Healthy</span>
-    </div>
+      <a href="/health" style="color:var(--muted);text-decoration:none">Status</a>
+    </footer>
   </div>
 </body>
 </html>`;
@@ -183,16 +203,18 @@ interface HealthData {
 
 export function healthPage(brand: string, data: HealthData): string {
   const allOk = data.database === "ok" && data.kv === "ok";
-  const initial = brand.charAt(0).toUpperCase();
+  const b = esc(brand);
+  const initial = esc(brand.charAt(0).toUpperCase());
   const ok = (v: string) => (v === "ok" ? "ok" : "fail");
   const flag = (v: boolean, label: string) =>
-    v ? `<span class="flag-on">${label}: on</span>` : "";
+    v ? `<span class="flag-on">${esc(label)}: on</span>` : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${brand} - Health</title>
+  <title>${b} - Health</title>
+  <meta name="description" content="${b} health check: database, KV, version, and operational status." />
   ${favicon(initial)}
   <style>${STYLES}
     body { display: flex; align-items: center; justify-content: center; padding: 2rem; }
@@ -213,12 +235,13 @@ export function healthPage(brand: string, data: HealthData): string {
     .flag-on { color: var(--accent); }
     .links { padding: 0.75rem 1.5rem; border-top: 1px solid #333; display: flex; gap: 1rem; }
     .links a { font-family: var(--mono); font-size: 0.6875rem; color: var(--accent); text-decoration: none; }
-    .links a:hover { text-decoration: underline; }
+    .links a:hover, .links a:focus-visible { text-decoration: underline; outline: none; }
   </style>
 </head>
 <body>
-  <div class="terminal">
-    <div class="terminal-bar">
+  <main>
+  <div class="terminal" role="status" aria-label="Health check results">
+    <div class="terminal-bar" aria-hidden="true">
       <div class="dot r"></div>
       <div class="dot y"></div>
       <div class="dot g"></div>
@@ -226,22 +249,23 @@ export function healthPage(brand: string, data: HealthData): string {
     </div>
     <div class="terminal-body">
       <span class="prompt">$</span> hfs health<br/>
-      <span class="${allOk ? "ok" : "fail"}">${allOk ? "\u2713" : "\u2717"}</span> <span class="accent">${brand}</span> ${allOk ? "is healthy" : "is degraded"}<br/>
+      <span class="${allOk ? "ok" : "fail"}">${allOk ? "\u2713" : "\u2717"}</span> <span class="accent">${b}</span> ${allOk ? "is healthy" : "is degraded"}<br/>
       <br/>
-      <span class="label">database</span><span class="${ok(data.database)}">${data.database}</span> <span class="dim">(D1)</span><br/>
-      <span class="label">kv</span><span class="${ok(data.kv)}">${data.kv}</span> <span class="dim">(flags)</span><br/>
+      <span class="label">database</span><span class="${ok(data.database)}">${esc(data.database)}</span> <span class="dim">(D1)</span><br/>
+      <span class="label">kv</span><span class="${ok(data.kv)}">${esc(data.kv)}</span> <span class="dim">(flags)</span><br/>
       ${flag(data.maintenance, "maintenance")}${data.maintenance ? "<br/>" : ""}${flag(data.read_only, "read-only")}${data.read_only ? "<br/>" : ""}
       <br/>
-      <span class="dim"><span class="label">version</span>${data.version}</span><br/>
-      <span class="dim"><span class="label">region</span>${data.region}</span><br/>
-      <span class="dim"><span class="label">checked</span>${data.timestamp}</span><br/>
+      <span class="dim"><span class="label">version</span>${esc(data.version)}</span><br/>
+      <span class="dim"><span class="label">region</span>${esc(data.region)}</span><br/>
+      <span class="dim"><span class="label">checked</span>${esc(data.timestamp)}</span><br/>
     </div>
-    <div class="links">
+    <nav class="links" aria-label="Navigation">
       <a href="/">home</a>
       <a href="/doc">docs</a>
       <a href="/doc/json">openapi</a>
-    </div>
+    </nav>
   </div>
+  </main>
 </body>
 </html>`;
 }
