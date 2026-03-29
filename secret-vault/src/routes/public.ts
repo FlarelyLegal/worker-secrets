@@ -110,8 +110,63 @@ pub.get("/robots.txt", (c) => {
       "Allow: /",
       "",
       `Sitemap: ${origin}/doc/json`,
+      `Sitemap: ${origin}/llms.txt`,
     ].join("\n"),
   );
+});
+
+// --- /llms.txt ---
+
+pub.get("/llms.txt", (c) => {
+  const repo = c.env.REPO_URL || "https://github.com/FlarelyLegal/worker-secrets";
+  const origin = new URL(c.req.url).origin;
+  const brand = c.env.BRAND_NAME || "Secret Vault";
+  return c.text(`# ${brand}
+
+> Self-hosted encrypted secret manager on Cloudflare Workers with end-to-end encryption. Store secrets only you can decrypt, share with your team through RBAC, and revoke access with one command. No servers to run. No third parties to trust.
+
+## What it is
+
+${brand} runs entirely on your Cloudflare account as a Worker with D1 (SQLite) and KV storage. It provides encrypted secret management with a CLI (hfs) and REST API. Secrets can be end-to-end encrypted with age so the server never sees plaintext.
+
+## How encryption works
+
+Three layers protect each secret:
+
+1. End-to-end: age encryption on the client. Private secrets are encrypted for one person. Team secrets are encrypted for all users whose RBAC role grants access. The server stores ciphertext it cannot decrypt.
+2. Envelope: each secret gets its own AES-256-GCM data encryption key (DEK), wrapped by a master key (KEK). Key rotation re-wraps DEKs without re-encrypting data.
+3. Integrity: HMAC-SHA256 binds each secret to its key name and encryption keys. Detects tampering at rest.
+
+## Authentication
+
+Two modes, no fallback. Interactive sessions authenticate through Cloudflare Access (IdP + optional hardware keys). Service tokens use registered client ID/secret pairs with scoped permissions.
+
+## Key features
+
+- [CLI](${repo}/tree/main/hfs): hfs command-line tool for all operations
+- [E2E encryption](${repo}/blob/main/hfs/README.md): --private for personal, --e2e for team, --recipients for explicit keys
+- [RBAC](${repo}/blob/main/SECURITY.md): roles with scoped permissions and tag-based access restrictions
+- [Feature flags](${repo}/blob/main/FEATURE-FLAGS.md): runtime configuration stored in KV, no redeploy needed
+- [GitHub Action](${repo}/tree/main/action): fetch secrets into CI workflows
+- [OpenAPI spec](${origin}/doc/json): auto-generated from Zod schemas
+- [API docs](${origin}/doc): interactive Scalar UI
+
+## CLI quick start
+
+    npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
+    hfs deploy
+    hfs config set --url ${origin}
+    hfs login
+    hfs keygen --register
+    hfs set DB_PASSWORD "value" --private
+
+## Documentation
+
+- [README](${repo}/blob/main/README.md): project overview and architecture
+- [CLI README](${repo}/blob/main/hfs/README.md): all commands and usage
+- [Security](${repo}/blob/main/SECURITY.md): threat model and hardening guide
+- [Feature flags](${repo}/blob/main/FEATURE-FLAGS.md): all runtime flags with defaults
+`);
 });
 
 // --- /.well-known/security.txt ---
