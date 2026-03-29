@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Features
+
+- Policy-based RBAC + separation of concerns (#11)
+
+## [0.21.2] - 2026-03-29
+
 ### Bug Fixes
 
 - Correct comparison table after competitor research
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Redesign landing page with comparison table, architecture diagram, and stats
+
+### Miscellaneous
+
+- Bump version to 0.21.2
 
 ## [0.21.1] - 2026-03-29
 
