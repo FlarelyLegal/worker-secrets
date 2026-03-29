@@ -35,7 +35,8 @@
     "age-encryption": "^0.3.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
-    "conf": "^15.1.0"
+    "conf": "^15.1.0",
+    "undici": "^7.24.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

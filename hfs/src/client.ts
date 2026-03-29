@@ -1,4 +1,9 @@
+import { readFileSync } from "node:fs";
 import type { AuthMode } from "./config.js";
+import { computeZtResponse } from "./tls.js";
+
+const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
+const USER_AGENT = `hfs-cli/${pkg.version} (${process.platform}; ${process.arch}) node/${process.versions.node}`;
 import type {
   AuditEntry,
   FlagEntry,
@@ -28,13 +33,19 @@ export class VaultClient {
   }
 
   private get headers(): Record<string, string> {
-    const h: Record<string, string> = { "Content-Type": "application/json" };
+    const h: Record<string, string> = { "Content-Type": "application/json", "User-Agent": USER_AGENT };
     if (this.auth.type === "service_token") {
       h["CF-Access-Client-Id"] = this.auth.clientId;
       h["CF-Access-Client-Secret"] = this.auth.clientSecret;
     } else {
       h.Cookie = `CF_Authorization=${this.auth.jwt}`;
       h["Cf-Access-Jwt-Assertion"] = this.auth.jwt;
+    }
+    // ZT challenge-response for WARP verification
+    const zt = computeZtResponse();
+    if (zt) {
+      h["X-ZT-Response"] = zt.response;
+      h["X-ZT-Timestamp"] = zt.timestamp;
     }
     return h;
   }
@@ -222,7 +233,13 @@ export class VaultClient {
 
   async updateUser(
     email: string,
-    updates: { name?: string; role?: string; enabled?: boolean; age_public_key?: string | null },
+    updates: {
+      name?: string;
+      role?: string;
+      enabled?: boolean;
+      age_public_key?: string | null;
+      zt_fingerprint?: string;
+    },
   ): Promise<{ ok: boolean; email: string }> {
     return this.request("PATCH", `/users/${encodeURIComponent(email)}`, updates);
   }

@@ -52,6 +52,7 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 - [ ] Enable `require_description` and `require_tags` flags for organizational discipline
 - [ ] Set `max_secrets` to prevent unbounded growth
 - [ ] Set `disable_export` in production to prevent bulk exfiltration
+- [ ] Enable `require_warp` flag to enforce Cloudflare WARP enrollment ([docs](docs/cloudflare-warp.md))
 - [ ] Configure Access policy to require hardware keys (`hwk`) for interactive sessions
 - [ ] Use tag-based RBAC: create roles with `allowed_tags` to limit access by team/environment
 - [ ] Use `hfs set --private` for personal secrets (only your key can decrypt)

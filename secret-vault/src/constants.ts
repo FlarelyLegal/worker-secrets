@@ -65,3 +65,6 @@ export const FLAG_WEBHOOK_URL = "webhook_url";
 export const FLAG_WEBHOOK_FILTER = "webhook_filter";
 export const FLAG_ALLOWED_COUNTRIES = "allowed_countries";
 export const FLAG_AUTO_PROVISION_ROLE = "auto_provision_role";
+export const FLAG_REQUIRE_WARP = "require_warp";
+
+export const ACTION_WARP_REJECTED = "warp_rejected";

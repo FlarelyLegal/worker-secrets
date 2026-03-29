@@ -4,6 +4,7 @@ import type { Command } from "commander";
 import { getConfig } from "../config.js";
 import { generateKeypair, identityFilePath, loadRecipient } from "../e2e.js";
 import { client, confirm, die, errorMessage } from "../helpers.js";
+import { computeCaFingerprint } from "../tls.js";
 
 export function registerKeygenCommands(program: Command): void {
   program
@@ -74,7 +75,10 @@ async function registerKey(pubkey: string): Promise<void> {
   try {
     const c = client();
     const whoami = await c.whoami();
-    await c.updateUser(whoami.identity, { age_public_key: pubkey });
+    await c.updateUser(whoami.identity, {
+      age_public_key: pubkey,
+      zt_fingerprint: computeCaFingerprint() || "",
+    });
     console.log(`${chalk.green("✓")} Public key registered for ${chalk.bold(whoami.identity)}`);
   } catch (e) {
     console.error(chalk.yellow(`⚠ Could not register key: ${errorMessage(e)}`));

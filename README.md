@@ -24,12 +24,13 @@ Store API keys, tokens, certificates, and credentials with a CLI or REST API. Ev
 | **E2E encryption** | Optional zero-knowledge mode with [age](https://age-encryption.org/). Secrets encrypted on your machine before they reach the server. Multi-recipient support. |
 | **Envelope encryption** | AES-256-GCM — each secret gets its own DEK, wrapped by a master KEK. Key rotation via DEK re-wrapping. |
 | **Integrity** | HMAC-SHA256 binds each secret to its key name. Separate `INTEGRITY_KEY` for key separation. Tamper-evident at rest. |
+| **Zero Trust** | Native Cloudflare WARP integration with challenge-response device verification, ZT cert binding, and Gateway-policeable CLI. |
 | **Auth** | Dual-path via Cloudflare Access: interactive (IdP + optional hardware keys) or registered service tokens. |
 | **RBAC** | Users and tokens assigned to roles (admin, operator, reader, custom). Tag-based restrictions limit which secrets a role can access. |
 | **Audit** | Every operation logged with identity, IP, user agent, request ID. SHA-256 hash-chained for tamper detection. |
 | **Lifecycle** | Version history with restore, expiry enforcement, burn-after-reading, 19 feature flags for runtime control. |
 
-Deep dive: [Encryption Architecture](docs/encryption.md) | [Threat Model](SECURITY.md) | [Feature Flags](docs/feature-flags.md)
+Deep dive: [Encryption Architecture](docs/encryption.md) | [Threat Model](SECURITY.md) | [Feature Flags](docs/feature-flags.md) | [WARP / Zero Trust](docs/cloudflare-warp.md)
 
 ## Architecture
 

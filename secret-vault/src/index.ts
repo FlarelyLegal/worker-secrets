@@ -2,6 +2,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { auditRaw, authenticate } from "./auth.js";
 import {
   ACTION_AUTH_FAILED,
+  ACTION_WARP_REJECTED,
   AUTH_REJECTED,
   FLAG_ALLOWED_COUNTRIES,
   FLAG_AUDIT_CLEANUP_PROBABILITY,
@@ -9,8 +10,7 @@ import {
   FLAG_MAINTENANCE,
   FLAG_PUBLIC_PAGES_ENABLED,
   FLAG_READ_ONLY,
-  FLAG_WEBHOOK_FILTER,
-  FLAG_WEBHOOK_URL,
+  FLAG_REQUIRE_WARP,
 } from "./constants.js";
 import { getFlag, getFlagValue, loadAllFlags } from "./flags.js";
 import admin from "./routes/admin.js";
@@ -29,27 +29,11 @@ import users from "./routes/users.js";
 import versions from "./routes/versions.js";
 import type { HonoEnv } from "./types.js";
 import { VERSION } from "./version.js";
+import { checkWarpRequired, extractWarpInfo } from "./warp.js";
 
-/** Reject webhook URLs pointing to private/reserved IP ranges or localhost. */
-export function isSafeWebhookUrl(urlStr: string): boolean {
-  try {
-    const { hostname } = new URL(urlStr);
-    const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-    if (h === "localhost" || h === "127.0.0.1" || h === "::1" || h === "0.0.0.0") return false;
-    if (!h.includes(".") && !h.includes(":")) return false; // bare hostnames
-    // Block private IPv4 ranges
-    const parts = h.split(".").map(Number);
-    if (parts.length === 4 && parts.every((n) => !Number.isNaN(n))) {
-      if (parts[0] === 10) return false;
-      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
-      if (parts[0] === 192 && parts[1] === 168) return false;
-      if (parts[0] === 169 && parts[1] === 254) return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
+export { isSafeWebhookUrl } from "./webhook.js";
+
+import { fireWebhook } from "./webhook.js";
 
 const app = new OpenAPIHono<HonoEnv>({
   defaultHook: (result, c) => {
@@ -213,8 +197,8 @@ app.use("*", async (c, next) => {
     }
   }
 
-  const user = await authenticate(c.req.raw, c.env);
-  if (!user) {
+  const authResult = await authenticate(c.req.raw, c.env);
+  if (!authResult) {
     try {
       await auditRaw(
         c.env.DB,
@@ -231,36 +215,55 @@ app.use("*", async (c, next) => {
     }
     return c.json({ error: "Unauthorized" }, 401);
   }
+  const { user, jwtPayload } = authResult;
+  // WARP enforcement (pass JWT payload for device_sessions detection)
+  const warpInfo = extractWarpInfo(c.req.raw, jwtPayload);
+  const warpRequired = getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean;
+  const ztResponse = c.req.header("X-ZT-Response");
+  const ztTimestamp = c.req.header("X-ZT-Timestamp");
+  // Query user's registered ZT fingerprint for device binding
+  let userZtFingerprint: string | undefined;
+  if (user.method === "interactive") {
+    const userZt = await c.env.DB.prepare("SELECT zt_fingerprint FROM users WHERE email = ?")
+      .bind(user.identity.toLowerCase())
+      .first<{ zt_fingerprint: string }>();
+    userZtFingerprint = userZt?.zt_fingerprint || undefined;
+  }
+  const warpCheck = await checkWarpRequired(
+    warpInfo,
+    warpRequired,
+    ztResponse ?? undefined,
+    ztTimestamp ?? undefined,
+    c.env.ZT_CA_FINGERPRINT,
+    userZtFingerprint,
+  );
+  if (!warpCheck.allowed) {
+    try {
+      await auditRaw(
+        c.env.DB,
+        user.method === "interactive" ? "interactive" : user.name,
+        user.identity,
+        ACTION_WARP_REJECTED,
+        null,
+        c.req.header("CF-Connecting-IP") ?? null,
+        c.req.header("User-Agent") ?? null,
+        c.get("requestId"),
+        warpInfo.connected,
+      );
+    } catch {
+      // Don't fail the 403 if audit logging fails
+    }
+    return c.json({ error: warpCheck.reason }, 403);
+  }
+  user.warp = { connected: warpInfo.connected, deviceId: warpInfo.deviceId };
+
   c.set("auth", user);
   c.set("ip", c.req.header("CF-Connecting-IP") ?? null);
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Webhook — fire latest audit entry for this request to external URL (HTTPS only, no private IPs)
-  const webhookUrl = getFlag(flagCache, FLAG_WEBHOOK_URL, "") as string;
-  if (webhookUrl?.startsWith("https://") && isSafeWebhookUrl(webhookUrl)) {
-    const filter = (getFlag(flagCache, FLAG_WEBHOOK_FILTER, "") as string)
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const requestId = c.get("requestId");
-    c.executionCtx.waitUntil(
-      c.env.DB.prepare("SELECT * FROM audit_log WHERE request_id = ? ORDER BY id DESC LIMIT 1")
-        .bind(requestId)
-        .first()
-        .then((entry) => {
-          if (!entry) return;
-          if (filter.length > 0 && !filter.includes(entry.action as string)) return;
-          return fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(entry),
-            signal: AbortSignal.timeout(5000),
-          });
-        })
-        .catch(() => {}),
-    );
-  }
+  // Webhook — fire latest audit entry for this request to external URL
+  fireWebhook(c.env.DB, c.get("requestId"), (p) => c.executionCtx.waitUntil(p), flagCache);
 
   // Background audit cleanup
   const cleanupProbability = getFlag(flagCache, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);

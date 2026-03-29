@@ -10,6 +10,7 @@ export interface Env {
   BRAND_NAME?: string; // display name in UI (default: "Secret Vault")
   REPO_URL?: string; // GitHub repo URL for landing page links
   CORS_ORIGINS?: string; // comma-separated allowed origins (empty = no CORS)
+  ZT_CA_FINGERPRINT?: string; // SHA-256 fingerprint of org's Zero Trust CA (hex, no colons)
   DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only — never set in production
 }
 
@@ -26,6 +27,7 @@ export type AuthUser = {
   scopes: string[];
   allowedTags: string[]; // empty = all tags allowed (legacy, derived from policies)
   policies: PolicyRule[];
+  warp?: { connected: boolean; deviceId?: string };
 };
 
 export type HonoEnv = {

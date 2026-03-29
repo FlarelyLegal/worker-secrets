@@ -1,9 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { clearConfig, getConfig, getConfigPath, resolveAuth, setConfig } from "../config.js";
 import { identityFilePath } from "../e2e.js";
 import { confirm, errorMessage } from "../helpers.js";
+import { getCaCertStatus } from "../tls.js";
 
 function validateUrl(input: string): string {
   try {
@@ -25,14 +28,31 @@ export function registerConfigCommands(program: Command): void {
     .description("Set vault URL")
     .option("--url <url>", "Vault URL (e.g. https://vault.example.com)")
     .option("--e2e-identity <path>", "Path to age identity file for e2e encryption")
-    .action(async (opts: { url?: string; e2eIdentity?: string }) => {
+    .option("--ca-cert <path>", "Path to custom CA certificate (e.g. Cloudflare WARP)")
+    .action(async (opts: { url?: string; e2eIdentity?: string; caCert?: string }) => {
+      if (opts.caCert) {
+        const resolvedPath = resolve(opts.caCert);
+        if (!existsSync(resolvedPath)) {
+          console.error(chalk.red(`File not found: ${resolvedPath}`));
+          process.exitCode = 1;
+          return;
+        }
+        const content = readFileSync(resolvedPath, "utf-8");
+        if (!content.includes("-----BEGIN CERTIFICATE-----")) {
+          console.error(chalk.red("File does not contain a PEM certificate"));
+          process.exitCode = 1;
+          return;
+        }
+        setConfig("caCert", resolvedPath);
+        console.log(`${chalk.green("✓")} CA certificate set to ${resolvedPath}`);
+      }
       if (opts.e2eIdentity) {
         setConfig("e2eIdentity", opts.e2eIdentity);
         console.log(`${chalk.green("✓")} e2e identity set to ${opts.e2eIdentity}`);
       }
       if (opts.url) {
         setConfig("url", validateUrl(opts.url));
-      } else if (!opts.e2eIdentity) {
+      } else if (!opts.e2eIdentity && !opts.caCert) {
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const ask = (q: string): Promise<string> => new Promise((r) => rl.question(q, r));
 
@@ -99,6 +119,16 @@ export function registerConfigCommands(program: Command): void {
         console.log(chalk.dim("  public key:") + ` ${chalk.cyan(pubkey)}`);
       } catch {
         console.log(chalk.dim("  identity:  ") + chalk.dim("not set (run hfs keygen)"));
+      }
+
+      console.log("");
+      console.log(chalk.underline("TLS"));
+      const tlsStatus = getCaCertStatus();
+      if (tlsStatus.active) {
+        console.log(chalk.dim("  ca cert:   ") + chalk.dim(tlsStatus.path));
+        console.log(chalk.dim("  source:    ") + chalk.green(tlsStatus.source));
+      } else {
+        console.log(chalk.dim("  ca cert:   ") + chalk.dim("system defaults"));
       }
 
       console.log("");

@@ -227,7 +227,7 @@ graph LR
 
 Each entry's hash includes:
 ```
-SHA-256(prev_id ‖ prev_hash ‖ method ‖ identity ‖ action ‖ secret_key)
+SHA-256(prev_id ‖ prev_hash ‖ timestamp ‖ method ‖ identity ‖ action ‖ secret_key)
 ```
 
 Modifying or deleting any entry breaks the chain. Verify with `hfs audit-verify`.
@@ -241,8 +241,11 @@ Under concurrent inserts, the chain self-heals: if a race condition causes an en
 | Secret encryption | AES-256-GCM | 256-bit DEK | Per-secret random IV (96-bit) |
 | DEK wrapping | AES-256-GCM | 256-bit KEK | Per-wrap random IV |
 | Integrity binding | HMAC-SHA256 | 256-bit | Separate INTEGRITY_KEY recommended |
-| Audit chain | SHA-256 | — | Hash-linked, self-healing |
+| ZT challenge-response | HMAC-SHA256 | ZT CA fingerprint | Time-based, replay-protected |
+| Audit chain | SHA-256 | — | Hash-linked, self-healing, includes timestamp |
 | E2E encryption | X25519 + ChaCha20-Poly1305 | via [age](https://age-encryption.org/) | Client-side only |
 | Auth tokens | ES256 (P-256) | via Cloudflare Access JWKS | Edge + Worker validation |
 
 All server-side crypto uses the Web Crypto API (`crypto.subtle`), built into the Cloudflare Workers runtime. No third-party crypto libraries.
+
+See [Cloudflare WARP Integration](cloudflare-warp.md) for ZT device binding and challenge-response details.

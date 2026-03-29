@@ -29,6 +29,7 @@ export const UserUpdateBody = z.object({
   role: z.string().max(64).optional(),
   enabled: z.boolean().optional(),
   age_public_key: z.string().max(256).nullable().optional(),
+  zt_fingerprint: z.string().max(128).optional(),
 });
 
 export const EmailParam = z.object({

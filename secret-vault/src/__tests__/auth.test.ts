@@ -12,12 +12,12 @@ describe("authenticate", () => {
     const request = new Request("http://localhost/secrets", {
       headers: { "Content-Type": "application/json" },
     });
-    const user = await authenticate(request, env);
-    expect(user).not.toBeNull();
-    expect(user?.name).toBe("dev");
-    expect(user?.method).toBe("interactive");
-    expect(user?.identity).toBe("test@example.com");
-    expect(user?.scopes).toEqual(["*"]);
+    const result = await authenticate(request, env);
+    expect(result).not.toBeNull();
+    expect(result?.user.name).toBe("dev");
+    expect(result?.user.method).toBe("interactive");
+    expect(result?.user.identity).toBe("test@example.com");
+    expect(result?.user.scopes).toEqual(["*"]);
   });
 
   it("DEV_AUTH_BYPASS=true WITH CF-Connecting-IP returns null (production safeguard)", async () => {

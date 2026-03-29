@@ -17,10 +17,13 @@ import { registerSecretOpsCommands } from "./commands/secrets-ops.js";
 import { registerTemplateCommands } from "./commands/template.js";
 import { registerTokenCommands } from "./commands/tokens.js";
 import { registerUserCommands } from "./commands/users.js";
+import { initTls } from "./tls.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const VERSION: string = pkg.version;
 const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/, "") || "";
+
+initTls();
 
 registerAuthCommands(program);
 registerSecretCommands(program);
