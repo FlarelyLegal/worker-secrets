@@ -124,5 +124,6 @@ export const AuditEntrySchema = z
     ip: z.string().nullable(),
     user_agent: z.string().nullable(),
     request_id: z.string().nullable(),
+    prev_hash: z.string().nullable(),
   })
   .openapi("AuditEntry");

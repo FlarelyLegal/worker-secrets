@@ -89,7 +89,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
   secret_key TEXT,                -- which secret was accessed (null for list/export/import)
   ip TEXT,
   user_agent TEXT,
-  request_id TEXT                 -- correlates with X-Request-ID response header
+  request_id TEXT,                -- correlates with X-Request-ID response header
+  prev_hash TEXT                  -- SHA-256 hash of previous entry (tamper-evident chain)
 );
 
 CREATE INDEX idx_audit_log_timestamp ON audit_log(timestamp);

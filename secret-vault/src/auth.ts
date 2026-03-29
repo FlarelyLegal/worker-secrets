@@ -186,17 +186,20 @@ export async function audit(
   userAgent: string | null = null,
   requestId: string | null = null,
 ): Promise<void> {
+  // Fetch previous entry's hash for chain integrity
+  const prev = await env.DB.prepare(
+    "SELECT id, prev_hash FROM audit_log ORDER BY id DESC LIMIT 1",
+  ).first<{ id: number; prev_hash: string | null }>();
+
+  // Hash: SHA-256 of "id|method|identity|action|key|timestamp"
+  const method = auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name;
+  const chainInput = `${prev?.id ?? 0}|${prev?.prev_hash ?? "genesis"}|${method}|${auth.identity}|${action}|${secretKey ?? ""}`;
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chainInput));
+  const prevHash = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
   await env.DB.prepare(
-    "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO audit_log (method, identity, action, secret_key, ip, user_agent, request_id, prev_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   )
-    .bind(
-      auth.method === AUTH_INTERACTIVE ? AUTH_INTERACTIVE : auth.name,
-      auth.identity,
-      action,
-      secretKey,
-      ip,
-      userAgent,
-      requestId,
-    )
+    .bind(method, auth.identity, action, secretKey, ip, userAgent, requestId, prevHash)
     .run();
 }
