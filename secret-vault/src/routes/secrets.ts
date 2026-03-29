@@ -15,7 +15,7 @@ import {
   SCOPE_READ,
   SCOPE_WRITE,
 } from "../constants.js";
-import { computeHmac, decrypt, encrypt, verifyHmac } from "../crypto.js";
+import { computeHmac, decrypt, envelopeDecrypt, envelopeEncrypt, verifyHmac } from "../crypto.js";
 import { getFlag } from "../flags.js";
 import { ErrorSchema, PaginationQuery, R403, R500 } from "../schemas.js";
 import {
@@ -114,7 +114,14 @@ secrets.openapi(getRoute, async (c) => {
 
   // Verify HMAC integrity
   if (row.hmac) {
-    const valid = await verifyHmac(key, row.value, row.iv, row.hmac, c.env.ENCRYPTION_KEY);
+    const valid = await verifyHmac(
+      key,
+      row.value,
+      row.iv,
+      row.hmac,
+      c.env.ENCRYPTION_KEY,
+      c.env.INTEGRITY_KEY,
+    );
     if (!valid)
       return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
   } else {
@@ -123,9 +130,20 @@ secrets.openapi(getRoute, async (c) => {
       return c.json({ error: "Secret missing HMAC integrity tag — re-save to add one" }, 500);
   }
 
+  // Decrypt: envelope (DEK) or legacy (direct)
   let plaintext: string;
   try {
-    plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY);
+    if (row.encrypted_dek && row.dek_iv) {
+      plaintext = await envelopeDecrypt(
+        row.value,
+        row.iv,
+        row.encrypted_dek,
+        row.dek_iv,
+        c.env.ENCRYPTION_KEY,
+      );
+    } else {
+      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY);
+    }
   } catch {
     return c.json({ error: "Decryption failed" }, 500);
   }
@@ -232,23 +250,41 @@ secrets.openapi(putRoute, async (c) => {
   }
   let ciphertext: string;
   let iv: string;
+  let encrypted_dek: string;
+  let dek_iv: string;
   try {
-    ({ ciphertext, iv } = await encrypt(value, c.env.ENCRYPTION_KEY));
+    ({ ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+      value,
+      c.env.ENCRYPTION_KEY,
+    ));
   } catch {
     return c.json({ error: "Encryption failed" }, 500);
   }
-  const hmac = await computeHmac(key, ciphertext, iv, c.env.ENCRYPTION_KEY);
+  const hmac = await computeHmac(key, ciphertext, iv, c.env.ENCRYPTION_KEY, c.env.INTEGRITY_KEY);
   const identity = auth.identity;
   await c.env.DB.prepare(
-    `INSERT INTO secrets (key, value, iv, hmac, description, tags, expires_at, created_by, updated_by, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `INSERT INTO secrets (key, value, iv, hmac, encrypted_dek, dek_iv, description, tags, expires_at, created_by, updated_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
      ON CONFLICT(key) DO UPDATE SET
        value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
+       encrypted_dek = excluded.encrypted_dek, dek_iv = excluded.dek_iv,
        description = excluded.description, tags = excluded.tags,
        expires_at = excluded.expires_at,
        updated_by = excluded.updated_by, updated_at = datetime('now')`,
   )
-    .bind(key, ciphertext, iv, hmac, description, tags, expires_at, identity, identity)
+    .bind(
+      key,
+      ciphertext,
+      iv,
+      hmac,
+      encrypted_dek,
+      dek_iv,
+      description,
+      tags,
+      expires_at,
+      identity,
+      identity,
+    )
     .run();
   await audit(c.env, auth, ACTION_SET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
   return c.json({ ok: true, key }, 201);

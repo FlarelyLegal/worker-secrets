@@ -1,7 +1,8 @@
 export interface Env {
   DB: D1Database;
   FLAGS: KVNamespace;
-  ENCRYPTION_KEY: string; // 64-char hex string (32 bytes)
+  ENCRYPTION_KEY: string; // 64-char hex string (32 bytes) — master KEK
+  INTEGRITY_KEY?: string; // optional separate HMAC key (64-char hex, falls back to HKDF derivation)
   ALLOWED_EMAILS?: string; // fallback if users table is empty (comma-separated)
   TEAM_DOMAIN: string; // https://<team>.cloudflareaccess.com
   POLICY_AUD: string; // Access application AUD tag

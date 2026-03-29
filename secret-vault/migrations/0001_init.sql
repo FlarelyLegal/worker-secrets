@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS secrets (
   value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64url encoded
   iv TEXT NOT NULL,               -- initialization vector, base64url encoded
   hmac TEXT NOT NULL DEFAULT '',  -- HMAC-SHA256 integrity binding (key + ciphertext + iv)
+  encrypted_dek TEXT,            -- envelope encryption: DEK encrypted with master KEK
+  dek_iv TEXT,                   -- IV used to encrypt the DEK
   description TEXT DEFAULT '',
   tags TEXT DEFAULT '',            -- comma-separated tags for organization
   expires_at TEXT,                 -- optional expiry date (UTC text, null = no expiry)
@@ -25,6 +27,8 @@ CREATE TABLE IF NOT EXISTS secret_versions (
   value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64url encoded (previous value)
   iv TEXT NOT NULL,
   hmac TEXT NOT NULL DEFAULT '',
+  encrypted_dek TEXT,
+  dek_iv TEXT,
   description TEXT DEFAULT '',
   changed_by TEXT DEFAULT '',
   changed_at TEXT DEFAULT (datetime('now')),

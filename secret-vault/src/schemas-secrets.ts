@@ -7,6 +7,8 @@ export type SecretRow = {
   value: string;
   iv: string;
   hmac: string;
+  encrypted_dek: string | null;
+  dek_iv: string | null;
   description: string;
   tags: string;
   expires_at: string | null;

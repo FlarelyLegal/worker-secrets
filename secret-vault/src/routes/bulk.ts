@@ -8,7 +8,7 @@ import {
   SCOPE_READ,
   SCOPE_WRITE,
 } from "../constants.js";
-import { computeHmac, decrypt, encrypt } from "../crypto.js";
+import { computeHmac, decrypt, envelopeDecrypt, envelopeEncrypt } from "../crypto.js";
 import { getFlag } from "../flags.js";
 import { R403, R500 } from "../schemas.js";
 import {
@@ -54,7 +54,16 @@ bulk.openapi(exportRoute, async (c) => {
       try {
         return {
           key: row.key,
-          value: await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY),
+          value:
+            row.encrypted_dek && row.dek_iv
+              ? await envelopeDecrypt(
+                  row.value,
+                  row.iv,
+                  row.encrypted_dek,
+                  row.dek_iv,
+                  c.env.ENCRYPTION_KEY,
+                )
+              : await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY),
           description: row.description,
           tags: row.tags,
           expires_at: row.expires_at,
@@ -112,6 +121,8 @@ bulk.openapi(importRoute, async (c) => {
     ciphertext: string;
     iv: string;
     hmac: string;
+    encrypted_dek: string;
+    dek_iv: string;
     description: string;
     tags: string;
   }[] = [];
@@ -129,17 +140,30 @@ bulk.openapi(importRoute, async (c) => {
     }
     let ciphertext: string;
     let iv: string;
+    let encrypted_dek: string;
+    let dek_iv: string;
     try {
-      ({ ciphertext, iv } = await encrypt(item.value, c.env.ENCRYPTION_KEY));
+      ({ ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+        item.value,
+        c.env.ENCRYPTION_KEY,
+      ));
     } catch {
       return c.json({ error: `Encryption failed for key: ${item.key}` }, 500);
     }
-    const hmac = await computeHmac(item.key, ciphertext, iv, c.env.ENCRYPTION_KEY);
+    const hmac = await computeHmac(
+      item.key,
+      ciphertext,
+      iv,
+      c.env.ENCRYPTION_KEY,
+      c.env.INTEGRITY_KEY,
+    );
     toInsert.push({
       key: item.key,
       ciphertext,
       iv,
       hmac,
+      encrypted_dek,
+      dek_iv,
       description: item.description,
       tags: item.tags ?? "",
     });
@@ -149,10 +173,11 @@ bulk.openapi(importRoute, async (c) => {
   if (toInsert.length > 0) {
     const stmts = toInsert.map((item) =>
       c.env.DB.prepare(
-        `INSERT INTO secrets (key, value, iv, hmac, description, tags, created_by, updated_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `INSERT INTO secrets (key, value, iv, hmac, encrypted_dek, dek_iv, description, tags, created_by, updated_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          ON CONFLICT(key) DO UPDATE SET
            value = excluded.value, iv = excluded.iv, hmac = excluded.hmac,
+           encrypted_dek = excluded.encrypted_dek, dek_iv = excluded.dek_iv,
            description = excluded.description, tags = excluded.tags,
            updated_by = excluded.updated_by, updated_at = datetime('now')`,
       ).bind(
@@ -160,6 +185,8 @@ bulk.openapi(importRoute, async (c) => {
         item.ciphertext,
         item.iv,
         item.hmac,
+        item.encrypted_dek,
+        item.dek_iv,
         item.description,
         item.tags,
         auth.identity,

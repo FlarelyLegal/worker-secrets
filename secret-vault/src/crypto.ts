@@ -3,6 +3,7 @@
 let _cachedKey: CryptoKey | null = null;
 let _cachedKeyHex = "";
 let _cachedHmacKey: CryptoKey | null = null;
+let _cachedHmacKeySource = "";
 
 async function getKey(hexKey: string): Promise<CryptoKey> {
   if (_cachedKey && _cachedKeyHex === hexKey) return _cachedKey;
@@ -15,29 +16,48 @@ async function getKey(hexKey: string): Promise<CryptoKey> {
     "decrypt",
   ]);
   _cachedKeyHex = hexKey;
-  _cachedHmacKey = null; // invalidate HMAC key when encryption key changes
+  _cachedHmacKey = null;
   return _cachedKey;
 }
 
-async function getHmacKey(hexKey: string): Promise<CryptoKey> {
-  if (_cachedHmacKey && _cachedKeyHex === hexKey) return _cachedHmacKey;
-  // Derive a separate HMAC key from the encryption key using HKDF
-  const raw = hexToBytes(hexKey);
-  const baseKey = await crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, "HKDF", false, [
-    "deriveKey",
-  ]);
-  _cachedHmacKey = await crypto.subtle.deriveKey(
-    {
-      name: "HKDF",
-      hash: "SHA-256",
-      salt: new Uint8Array(0),
-      info: new TextEncoder().encode("hmac-integrity"),
-    },
-    baseKey,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
+/**
+ * Get HMAC key. If a separate INTEGRITY_KEY is provided, use it directly.
+ * Otherwise, derive from ENCRYPTION_KEY via HKDF (backwards compatible).
+ */
+async function getHmacKey(encryptionKey: string, integrityKey?: string): Promise<CryptoKey> {
+  const source = integrityKey || encryptionKey;
+  if (_cachedHmacKey && _cachedHmacKeySource === source) return _cachedHmacKey;
+
+  if (integrityKey) {
+    // Separate integrity key — use directly
+    const raw = hexToBytes(integrityKey);
+    _cachedHmacKey = await crypto.subtle.importKey(
+      "raw",
+      raw.buffer as ArrayBuffer,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+  } else {
+    // Derive from encryption key via HKDF
+    const raw = hexToBytes(encryptionKey);
+    const baseKey = await crypto.subtle.importKey("raw", raw.buffer as ArrayBuffer, "HKDF", false, [
+      "deriveKey",
+    ]);
+    _cachedHmacKey = await crypto.subtle.deriveKey(
+      {
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: new Uint8Array(0),
+        info: new TextEncoder().encode("hmac-integrity"),
+      },
+      baseKey,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+  }
+  _cachedHmacKeySource = source;
   return _cachedHmacKey;
 }
 
@@ -61,12 +81,76 @@ function toBase64url(buf: ArrayBuffer | Uint8Array): string {
 }
 
 function fromBase64url(b64: string): Uint8Array {
-  // Accepts both base64url and standard base64 (backwards compatible)
   const standard = b64.replace(/-/g, "+").replace(/_/g, "/");
   return Uint8Array.from(atob(standard), (c) => c.charCodeAt(0));
 }
 
-// --- Encrypt / Decrypt ---
+// --- Envelope encryption ---
+// Generates a random DEK, encrypts data with DEK, encrypts DEK with master KEK.
+
+export async function envelopeEncrypt(
+  plaintext: string,
+  hexKey: string,
+): Promise<{ ciphertext: string; iv: string; encrypted_dek: string; dek_iv: string }> {
+  const kek = await getKey(hexKey);
+
+  // Generate random DEK
+  const dekRaw = crypto.getRandomValues(new Uint8Array(32));
+
+  // Encrypt plaintext with DEK
+  const dekCryptoKey = await crypto.subtle.importKey(
+    "raw",
+    dekRaw.buffer as ArrayBuffer,
+    "AES-GCM",
+    false,
+    ["encrypt"],
+  );
+  const dataIv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: dataIv },
+    dekCryptoKey,
+    new TextEncoder().encode(plaintext),
+  );
+
+  // Encrypt DEK with KEK
+  const dekIv = crypto.getRandomValues(new Uint8Array(12));
+  const encryptedDek = await crypto.subtle.encrypt({ name: "AES-GCM", iv: dekIv }, kek, dekRaw);
+
+  return {
+    ciphertext: toBase64url(encrypted),
+    iv: toBase64url(dataIv),
+    encrypted_dek: toBase64url(encryptedDek),
+    dek_iv: toBase64url(dekIv),
+  };
+}
+
+export async function envelopeDecrypt(
+  ciphertext: string,
+  ivB64: string,
+  encryptedDekB64: string,
+  dekIvB64: string,
+  hexKey: string,
+): Promise<string> {
+  const kek = await getKey(hexKey);
+
+  // Decrypt DEK with KEK
+  const dekRaw = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64url(dekIvB64) },
+    kek,
+    fromBase64url(encryptedDekB64),
+  );
+
+  // Decrypt data with DEK
+  const dekCryptoKey = await crypto.subtle.importKey("raw", dekRaw, "AES-GCM", false, ["decrypt"]);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64url(ivB64) },
+    dekCryptoKey,
+    fromBase64url(ciphertext),
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+// --- Legacy direct encryption (backwards compatible) ---
 
 export async function encrypt(
   plaintext: string,
@@ -88,15 +172,15 @@ export async function decrypt(ciphertext: string, ivB64: string, hexKey: string)
 }
 
 // --- HMAC integrity ---
-// Binds ciphertext to its key name, preventing swap attacks on D1.
 
 export async function computeHmac(
   secretKey: string,
   ciphertext: string,
   iv: string,
   hexKey: string,
+  integrityKey?: string,
 ): Promise<string> {
-  const hmacKey = await getHmacKey(hexKey);
+  const hmacKey = await getHmacKey(hexKey, integrityKey);
   const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
   const sig = await crypto.subtle.sign("HMAC", hmacKey, data);
   return toBase64url(sig);
@@ -108,8 +192,9 @@ export async function verifyHmac(
   iv: string,
   hmac: string,
   hexKey: string,
+  integrityKey?: string,
 ): Promise<boolean> {
-  const hmacKey = await getHmacKey(hexKey);
+  const hmacKey = await getHmacKey(hexKey, integrityKey);
   const data = new TextEncoder().encode(`${secretKey}:${ciphertext}:${iv}`);
   const sig = fromBase64url(hmac);
   return crypto.subtle.verify("HMAC", hmacKey, sig, data);
