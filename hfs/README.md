@@ -36,6 +36,7 @@ hfs get <key> -j           Output as JSON
 hfs set <key> <value>      Store a secret
 hfs set <key> --from-file  Read value from a file
 hfs set <key> -t <tags>    Set with comma-separated tags
+hfs set <key> --expires <date>  Set with expiry (ISO 8601 date or duration)
 hfs rm <key>               Delete a secret (confirms first)
 hfs ls                     List all secret keys
 hfs versions <key>         List version history
@@ -70,8 +71,8 @@ hfs user role <email> <role>  Change a user's role
 
 ### Roles (admin only)
 ```
-hfs role ls                List all roles with scopes
-hfs role set <name> <scopes> [-d <desc>]  Create or update a role
+hfs role ls                List all roles with scopes and allowed_tags
+hfs role set <name> <scopes> [-d <desc>] [--allowed-tags <tags>]  Create or update a role
 hfs role rm <name>         Delete a role (must have no users)
 ```
 

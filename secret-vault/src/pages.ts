@@ -73,28 +73,24 @@ export function landingPage(
       <h2>Security</h2>
       <div class="features">
         <div class="feature">
-          <div class="feature-title">Encryption at rest</div>
-          <div class="feature-desc">AES-256-GCM with a unique random IV per secret. Encryption key stored as a Worker secret, never in the database.</div>
+          <div class="feature-title">Envelope encryption</div>
+          <div class="feature-desc">Each secret gets its own data encryption key (DEK), wrapped by a master key. AES-256-GCM with unique IVs. Enables key rotation without re-encrypting all data.</div>
         </div>
         <div class="feature">
           <div class="feature-title">HMAC integrity</div>
-          <div class="feature-desc">Every secret bound to its key name via HMAC-SHA256 with a derived key (HKDF). Detects tampering or ciphertext swaps at rest.</div>
+          <div class="feature-desc">Every secret bound to its key name via HMAC-SHA256. Optional separate integrity key. Detects tampering or ciphertext swaps at rest.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Dual authentication</div>
-          <div class="feature-desc">Interactive sessions via your IdP, with optional hardware key enforcement (passkeys, YubiKeys) via Access policy. Service tokens with named identities for CI and other Workers.</div>
+          <div class="feature-title">Dual auth with RBAC</div>
+          <div class="feature-desc">Interactive sessions via your IdP with optional hardware keys. Service tokens with named identities. Role-based access control with tag-level restrictions.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Role-based access control</div>
-          <div class="feature-desc">Users and tokens assigned to roles (admin, operator, reader) with scoped permissions. Custom roles supported. Disable users instantly without deleting.</div>
+          <div class="feature-title">Tamper-evident audit trail</div>
+          <div class="feature-desc">Every operation logged with identity, IP, user agent, and request ID. Hash-chained entries make modifications detectable.</div>
         </div>
         <div class="feature">
-          <div class="feature-title">Audit trail with request tracing</div>
-          <div class="feature-desc">Every operation logged with identity, action, IP, user agent, and a unique request ID correlated with the X-Request-ID response header.</div>
-        </div>
-        <div class="feature">
-          <div class="feature-title">Token registration</div>
-          <div class="feature-desc">Service tokens must be registered with a name, role, and permissions before access is granted. Unregistered tokens are rejected even with a valid Access JWT.</div>
+          <div class="feature-title">Secret lifecycle</div>
+          <div class="feature-desc">Version history with restore, expiry tracking, tag-based organization. 13 runtime feature flags for operational control without redeploying.</div>
         </div>
       </div>
     </div>

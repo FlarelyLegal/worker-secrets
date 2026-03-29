@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`secret-vault/`) + CLI (`hfs/`). Dual auth via Cloudflare Access (interactive IdP, optionally with hardware keys) or registered service tokens. RBAC with roles (admin, operator, reader, custom). AES-256-GCM at rest with HMAC-SHA256 integrity.
+Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`secret-vault/`) + CLI (`hfs/`). Dual auth via Cloudflare Access (interactive IdP, optionally with hardware keys) or registered service tokens. RBAC with roles (admin, operator, reader, custom). Envelope encryption (per-secret DEKs, master KEK) with AES-256-GCM at rest, HMAC-SHA256 integrity, and hash-chained audit logs.
 
 ## WHERE TO LOOK
 
@@ -11,7 +11,8 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Worker entry | `secret-vault/src/index.ts` | OpenAPIHono app, security headers, middleware, route mounting |
 | Worker schemas | `secret-vault/src/schemas*.ts` | Split by domain: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts` |
 | Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, isAdmin, audit, JWKS cache, RBAC scope resolution |
-| Worker crypto | `secret-vault/src/crypto.ts` | AES-256-GCM encrypt/decrypt, hex validation, key cache |
+| Worker crypto | `secret-vault/src/crypto.ts` | Envelope encryption (per-secret DEK, master KEK), AES-256-GCM encrypt/decrypt, hex validation, key cache |
+| Worker constants | `secret-vault/src/constants.ts` | Typed constants replacing magic strings (actions, scopes, headers, defaults) |
 | Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `bulk.ts`, `admin.ts`, `public.ts`, `flags.ts` |
 | Worker flags | `secret-vault/src/flags.ts` | `getFlagValue()` helper for reading typed flags from KV |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
@@ -33,11 +34,17 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 
 - **ONLY `crypto.subtle`** for encryption — no third-party crypto libraries
 - **ONLY AES-256-GCM** with random 12-byte IV per operation
-- **NEVER** log decrypted values, encryption keys, or tokens (`console.log` goes to `wrangler tail`)
-- **NEVER** expose `ENCRYPTION_KEY` outside `encrypt()`/`decrypt()` helpers
+- **Envelope encryption** — each secret gets a random DEK; DEK is wrapped by the master KEK (`ENCRYPTION_KEY`). Legacy single-key secrets are transparently supported (backwards compatible)
+- **Optional `INTEGRITY_KEY`** env var provides a separate HMAC key; falls back to HKDF-derived key from `ENCRYPTION_KEY` if unset
+- **NEVER** log decrypted values, encryption keys, DEKs, or tokens (`console.log` goes to `wrangler tail`)
+- **NEVER** expose `ENCRYPTION_KEY` or DEKs outside `encrypt()`/`decrypt()` helpers
 - **ALWAYS** wrap `encrypt()`/`decrypt()` in try-catch → return `{ error }` JSON, not stack traces
 - **ALWAYS** compute and store HMAC on write, verify on read — integrity binds key + ciphertext + IV
-- HKDF-derived HMAC key for integrity binding — derived from `ENCRYPTION_KEY` via `crypto.subtle.deriveKey()`
+- HMAC key for integrity binding — from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` via `crypto.subtle.deriveKey()`
+- **Audit log hash chaining** — each audit entry includes `prev_hash` linking to the previous entry, making the log tamper-evident
+- **Tag-based access control** — roles have `allowed_tags` restricting which secrets they can access
+- **Secret expiry** — optional `expires_at` field per secret for rotation tracking
+- **Typed constants** — use `constants.ts` for actions, scopes, headers, and defaults; no magic strings
 - CryptoKey and JWKS set are cached at module level — do not recreate per request
 
 ### Auth (CRITICAL)
@@ -106,7 +113,8 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Third-party crypto | Unnecessary dependency | `crypto.subtle` (Workers built-in) |
 | `new URL()` / `importKey()` in handler | Per-request overhead | Cache at module level |
 | Storing ciphertext without HMAC | No tamper detection | Compute HMAC on write, verify on read |
-| Using `ENCRYPTION_KEY` directly as HMAC key | Key separation violation | Derive HMAC key via HKDF |
+| Using `ENCRYPTION_KEY` directly as HMAC key | Key separation violation | Use `INTEGRITY_KEY` or derive HMAC key via HKDF |
+| Magic strings for actions/scopes/headers | Typo-prone, inconsistent | Import from `constants.ts` |
 
 ## SKILLS
 
@@ -157,4 +165,4 @@ hfs flag rm <key>               # Delete a flag
 ## KNOWN GAPS
 
 - No rate limiting — relying on Cloudflare edge protection
-- No encryption key rotation — changing `ENCRYPTION_KEY` breaks all secrets (export first, rotate, re-import)
+- Key rotation is now possible via DEK re-encryption (envelope encryption), but no automated rotation CLI command yet

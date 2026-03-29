@@ -93,11 +93,14 @@ Flags are stored in a `FLAGS` KV namespace as plaintext key-value pairs (not enc
 
 ## Security
 
+- **Envelope encryption**: per-secret DEK wrapped by a master KEK, enabling key rotation via DEK re-encryption (backwards compatible with legacy single-key secrets)
 - **Encryption at rest**: AES-256-GCM with per-secret random IV (PQC-safe symmetric)
-- **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key, detecting tampering or ciphertext swaps at rest
+- **HMAC integrity**: HMAC-SHA256 binds each secret to its key name via HKDF-derived key (or optional `INTEGRITY_KEY`), detecting tampering or ciphertext swaps at rest
+- **Tag-based access control**: roles can restrict access to secrets matching specific tags via `allowed_tags`
+- **Secret expiry tracking**: optional `expires_at` per secret, settable via `--expires` flag
 - **Dual auth**: Access validates at edge, Worker validates again as defense-in-depth
 - **RBAC**: Users and service tokens assigned to roles (admin, operator, reader) with scoped permissions
 - **Hardware key support**: Access policy can require `hwk` (FIDO2/passkey/YubiKey) for interactive sessions
 - **Registered tokens only**: Valid Access token is rejected until registered with name + scopes
-- **Full audit log**: Every operation logged with identity, action, key, IP, user agent
+- **Full audit log**: Every operation logged with identity, action, key, IP, user agent; hash-chained (`prev_hash`) for tamper-evident history
 - **Zod validation**: All inputs validated via OpenAPI schemas with size limits

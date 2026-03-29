@@ -17,6 +17,7 @@ AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual au
 
 ## Security
 
+- **Envelope encryption** — per-secret DEK wrapped by a master KEK, enabling key rotation without re-encrypting every secret (backwards compatible with legacy single-key secrets)
 - **AES-256-GCM** encryption with unique random IV per secret
 - **HMAC-SHA256** integrity binding — every secret cryptographically bound to its key name, tamper-evident at rest
 - **RBAC** — users and service tokens assigned to roles with scoped permissions (admin, operator, reader, custom)
@@ -25,7 +26,7 @@ AES-256-GCM encryption at rest with HMAC-SHA256 integrity binding in D1. Dual au
 - **Registered tokens only** — valid Access tokens are rejected until registered with name and scopes
 - **User management** — add, disable, or reassign roles without redeploying
 - **Auto-seed** — first login on a fresh deploy becomes admin automatically
-- **Full audit trail** — every operation logged with identity, IP, user agent, and request ID
+- **Full audit trail** — every operation logged with identity, IP, user agent, and request ID; hash-chained (`prev_hash`) for tamper-evident history
 - **Zod validation** — all inputs validated via OpenAPI schemas with size limits
 
 ## Packages
