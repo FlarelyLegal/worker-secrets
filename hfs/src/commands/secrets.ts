@@ -105,11 +105,24 @@ export function registerSecretCommands(program: Command): void {
 
           // E2E encryption: encrypt client-side before sending to server
           if (opts.e2e || opts.recipients) {
+            const c = client();
             const recipients: string[] = [];
             if (opts.recipients) {
               recipients.push(...loadRecipients(opts.recipients));
             } else {
-              recipients.push(await loadRecipient(getConfig().e2eIdentity));
+              // Auto-fetch recipients from RBAC: all users who can read secrets with these tags
+              try {
+                const serverRecipients = await c.listRecipients(opts.tags);
+                for (const r of serverRecipients) recipients.push(r.age_public_key);
+              } catch {
+                // Fallback: server may not support /recipients yet
+              }
+              // Always include own key
+              const ownKey = await loadRecipient(getConfig().e2eIdentity);
+              if (!recipients.includes(ownKey)) recipients.push(ownKey);
+            }
+            if (recipients.length > 1) {
+              console.error(chalk.dim(`  encrypting for ${recipients.length} recipients`));
             }
             secretValue = await e2eEncrypt(secretValue, recipients);
             opts.tags = ensureE2ETag(opts.tags || "");

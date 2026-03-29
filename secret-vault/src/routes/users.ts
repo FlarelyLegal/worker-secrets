@@ -48,7 +48,7 @@ const listRoute = createRoute({
 
 users.openapi(listRoute, async (c) => {
   const { results } = await c.env.DB.prepare(
-    "SELECT email, name, role, enabled, last_login_at, created_by, created_at, updated_by, updated_at FROM users ORDER BY email",
+    "SELECT email, name, role, enabled, age_public_key, last_login_at, created_by, created_at, updated_by, updated_at FROM users ORDER BY email",
   ).all();
   await audit(
     c.env,
@@ -179,6 +179,12 @@ users.openapi(updateRoute, async (c) => {
   if (body.enabled !== undefined) {
     sets.push("enabled = ?");
     binds.push(body.enabled ? 1 : 0);
+  }
+  if (body.age_public_key !== undefined) {
+    if (body.age_public_key && !body.age_public_key.startsWith("age1"))
+      return c.json({ error: "Public key must start with age1" }, 400);
+    sets.push("age_public_key = ?");
+    binds.push(body.age_public_key);
   }
   if (sets.length === 0) return c.json({ error: "No fields to update" }, 400);
 

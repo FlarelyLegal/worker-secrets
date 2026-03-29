@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL,                -- references roles.name
   enabled INTEGER NOT NULL DEFAULT 1, -- 0 = disabled (auth rejected without deletion)
+  age_public_key TEXT,               -- age recipient (age1...) for e2e team encryption
   last_login_at TEXT,
   created_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
