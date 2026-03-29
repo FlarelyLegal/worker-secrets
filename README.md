@@ -35,6 +35,7 @@ Store API keys, tokens, certificates, and credentials with a CLI or REST API. Ev
 graph TB
     subgraph Client
         CLI[hfs CLI]
+        E2E[age encrypt/decrypt<br/>--e2e flag]
         API[REST API client]
         Browser[Browser]
     end
@@ -57,7 +58,9 @@ graph TB
         KV[(KV<br/>feature flags)]
     end
 
-    CLI --> Edge
+    CLI -->|"--e2e"| E2E
+    E2E -->|age ciphertext| Edge
+    CLI -->|plaintext| Edge
     API --> Edge
     Browser --> Edge
     Edge --> Access
@@ -68,14 +71,20 @@ graph TB
     HMAC --> D1
     Audit --> D1
     Flags --> KV
+
+    style E2E fill:#f97316,stroke:#f97316,color:#fff
 ```
 
 ```
-Request flow:
+Request flow (standard):
   Client → Edge (DDoS/TLS) → Access (IdP/JWT) → Worker (RBAC/tags) → Encrypt (DEK) → HMAC → D1
 
+Request flow (e2e):
+  Client → [age encrypt] → age ciphertext → Edge → Access → Worker → Encrypt (DEK wraps age blob) → HMAC → D1
+  Server never sees plaintext. Decryption requires the client's age private key.
+
 Encryption layers:
-  Plaintext → [DEK: AES-256-GCM] → Ciphertext + [KEK: AES-256-GCM] → Encrypted DEK → D1
+  Plaintext → [age: client-side, optional] → [DEK: AES-256-GCM] → [KEK: AES-256-GCM] → D1
   Secret key + ciphertext + IV + encrypted DEK + DEK IV → [HMAC-SHA256] → Integrity tag → D1
 ```
 
