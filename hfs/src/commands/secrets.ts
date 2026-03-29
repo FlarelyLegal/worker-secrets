@@ -74,7 +74,8 @@ export function registerSecretCommands(program: Command): void {
     .option("--expires <date>", "Expiry date (YYYY-MM-DD or datetime)")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
-    .option("--e2e", "Encrypt client-side with age (zero-knowledge)")
+    .option("--e2e", "Encrypt client-side with age (for all eligible team members)")
+    .option("--private", "Encrypt client-side for only yourself (not shared)")
     .option("--recipients <file>", "Encrypt for recipients in file (one age1... per line)")
     .action(
       async (
@@ -87,6 +88,7 @@ export function registerSecretCommands(program: Command): void {
           fromStdin?: boolean;
           fromFile?: string;
           e2e?: boolean;
+          private?: boolean;
           recipients?: string;
         },
       ) => {
@@ -104,13 +106,16 @@ export function registerSecretCommands(program: Command): void {
           }
 
           // E2E encryption: encrypt client-side before sending to server
-          if (opts.e2e || opts.recipients) {
-            const c = client();
+          if (opts.e2e || opts.private || opts.recipients) {
             const recipients: string[] = [];
             if (opts.recipients) {
               recipients.push(...loadRecipients(opts.recipients));
+            } else if (opts.private) {
+              // Private: encrypt only for yourself
+              recipients.push(await loadRecipient(getConfig().e2eIdentity));
             } else {
-              // Auto-fetch recipients from RBAC: all users who can read secrets with these tags
+              // Team: auto-fetch recipients from RBAC
+              const c = client();
               try {
                 const serverRecipients = await c.listRecipients(opts.tags);
                 for (const r of serverRecipients) recipients.push(r.age_public_key);
@@ -134,7 +139,7 @@ export function registerSecretCommands(program: Command): void {
             expires_at: opts.expires || null,
           });
           console.log(
-            `${chalk.green("✓")} Stored ${chalk.bold(key)}${opts.e2e || opts.recipients ? chalk.cyan(" (e2e)") : ""}`,
+            `${chalk.green("✓")} Stored ${chalk.bold(key)}${opts.private ? chalk.cyan(" (e2e private)") : opts.e2e || opts.recipients ? chalk.cyan(" (e2e)") : ""}`,
           );
         } catch (e) {
           die(errorMessage(e));
