@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.0] - 2026-03-29
+
+### Bug Fixes
+
+- Landing page review feedback — XSS escape, a11y, SEO, accuracy
+- Update health test for new response fields
+
+### Features
+
+- Add --private flag for self-only e2e encryption
+- Auto_provision_role flag — zero-touch onboarding via Cloudflare Access
+- Redesign landing page with step-by-step journey + security layers
+- Unified health check across CLI, API, and browser
+- Add robots.txt and /.well-known/security.txt
+- Robots.txt welcomes AI crawlers to index docs and landing page
+- Serve /llms.txt for AI model discovery
+- Redesigned landing page, health check, robots.txt, security.txt, llms.txt (#8)
+
 ## [0.20.0] - 2026-03-29
 
 ### Bug Fixes
@@ -12,6 +30,10 @@ All notable changes to this project will be documented in this file.
 
 - RBAC-integrated e2e team sharing — recipients, rewrap, auto-encrypt
 - RBAC-integrated e2e team sharing (#7)
+
+### Miscellaneous
+
+- Bump version to 0.20.0
 
 ## [0.19.0] - 2026-03-29
 
