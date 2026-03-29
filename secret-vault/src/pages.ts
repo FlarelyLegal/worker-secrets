@@ -88,7 +88,8 @@ export function landingPage(
     .explanation strong { color: var(--text); font-weight: 600; }
     .explanation .accent { color: var(--accent); font-weight: 600; }
     .compare-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: 0.8125rem; background: var(--surface); border-radius: 0.75rem; overflow: hidden; border: 1px solid var(--border); }
-    .compare-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); border-bottom: 1px solid var(--border); font-weight: 600; }
+    .compare-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+    .compare-table th.ours { color: var(--accent); }
     .compare-table td { padding: 0.625rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); }
     .compare-table tr:last-child td { border-bottom: none; }
     .compare-table .check { color: var(--muted); }
@@ -140,7 +141,7 @@ export function landingPage(
         <tr><td>Self-hosted</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>Zero-knowledge E2E</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>No servers to run</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Per-secret encryption keys</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Per-secret encryption keys</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
         <tr><td>Key rotation without re-encrypting</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
         <tr><td>RBAC + tag restrictions</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
         <tr><td>Hash-chained audit log</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
@@ -148,11 +149,11 @@ export function landingPage(
         <tr><td>Geo-fencing</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
         <tr><td>Version history + restore</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
         <tr><td>Runtime feature flags</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Config templates</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Config templates</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
         <tr><td>GitHub Action</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Auto-provisioning</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Auto-provisioning</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
         <tr><td>Free at any scale</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Open source</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Open source</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
       </tbody>
     </table>
 
