@@ -74,4 +74,43 @@ pub.openapi(healthRoute, async (c): Promise<any> => {
   return c.json(data, healthy ? 200 : 503);
 });
 
+// --- robots.txt ---
+
+pub.get("/robots.txt", (c) => {
+  const origin = new URL(c.req.url).origin;
+  return c.text(
+    [
+      "User-agent: *",
+      "Allow: /",
+      "Allow: /doc",
+      "Allow: /health",
+      "Disallow: /secrets",
+      "Disallow: /users",
+      "Disallow: /roles",
+      "Disallow: /tokens",
+      "Disallow: /audit",
+      "Disallow: /admin",
+      "Disallow: /flags",
+      "Disallow: /recipients",
+      "",
+      `Sitemap: ${origin}/doc/json`,
+    ].join("\n"),
+  );
+});
+
+// --- /.well-known/security.txt ---
+
+pub.get("/.well-known/security.txt", (c) => {
+  const repo = c.env.REPO_URL || "https://github.com/FlarelyLegal/worker-secrets";
+  return c.text(
+    [
+      `Contact: ${repo}/security/advisories/new`,
+      `Policy: ${repo}/blob/main/SECURITY.md`,
+      "Preferred-Languages: en",
+      "Canonical: /.well-known/security.txt",
+      "Expires: 2027-12-31T23:59:59.000Z",
+    ].join("\n"),
+  );
+});
+
 export default pub;
