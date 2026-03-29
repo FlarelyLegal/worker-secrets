@@ -79,7 +79,7 @@ export function landingPage(
       <div class="features">
         <div class="feature" style="border-color:var(--accent)">
           <div class="feature-title" style="color:var(--accent)">End-to-end encryption</div>
-          <div class="feature-desc">Optional zero-knowledge mode with <a href="https://age-encryption.org" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">age</a>. Secrets are encrypted on your machine before they reach the server. Even a compromised Worker only sees ciphertext. Multi-recipient support for team sharing.</div>
+          <div class="feature-desc">Optional zero-knowledge mode with <a href="https://age-encryption.org" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">age</a>. Secrets are encrypted on your machine before they reach the server. Even a compromised Worker only sees ciphertext. Recipients follow RBAC automatically — revoke a user and rewrap to exclude their key.</div>
         </div>
         <div class="feature">
           <div class="feature-title">Envelope encryption</div>
