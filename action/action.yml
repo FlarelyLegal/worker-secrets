@@ -1,5 +1,5 @@
 name: "HFS Secrets"
-description: "Fetch secrets from your HFS vault and set them as environment variables or outputs"
+description: "Fetch secrets from your encrypted HFS vault into GitHub Actions environment variables"
 branding:
   icon: lock
   color: orange
@@ -9,82 +9,115 @@ inputs:
     description: "Vault URL (e.g. https://secrets.example.com)"
     required: true
   client-id:
-    description: "Service token client ID"
+    description: "Service token client ID (from hfs token register)"
     required: true
   client-secret:
     description: "Service token client secret"
     required: true
   secrets:
-    description: "Newline-separated list of secret keys to fetch"
+    description: |
+      Newline-separated list of secret keys to fetch.
+      Lines starting with # are ignored.
+      Use KEY_NAME:ENV_NAME to map to a different env var name.
     required: true
   export:
-    description: "Set secrets as environment variables (default: true)"
+    description: "Export secrets as environment variables (default: true)"
     required: false
     default: "true"
   mask:
-    description: "Mask secret values in logs (default: true)"
+    description: "Mask secret values in GitHub Actions logs (default: true)"
     required: false
     default: "true"
 
 outputs:
-  secrets:
-    description: "JSON object of fetched secrets (key → value)"
-    value: ${{ steps.fetch.outputs.secrets }}
+  json:
+    description: "JSON object of fetched secrets ({ key: value, ... })"
+    value: ${{ steps.fetch.outputs.json }}
+  count:
+    description: "Number of secrets fetched"
+    value: ${{ steps.fetch.outputs.count }}
 
 runs:
   using: composite
   steps:
-    - id: fetch
+    - name: Fetch secrets from vault
+      id: fetch
       shell: bash
-      env:
-        HFS_URL: ${{ inputs.url }}
-        HFS_CLIENT_ID: ${{ inputs.client-id }}
-        HFS_CLIENT_SECRET: ${{ inputs.client-secret }}
-        HFS_SECRETS: ${{ inputs.secrets }}
-        HFS_EXPORT: ${{ inputs.export }}
-        HFS_MASK: ${{ inputs.mask }}
       run: |
-        # Fetch secrets from HFS vault
-        json_output="{}"
+        set -euo pipefail
 
-        while IFS= read -r key; do
-          key=$(echo "$key" | xargs)  # trim whitespace
-          [ -z "$key" ] && continue
-          [ "${key:0:1}" = "#" ] && continue
+        # Validate inputs
+        if [[ -z "${{ inputs.url }}" ]]; then
+          echo "::error::Vault URL is required"
+          exit 1
+        fi
 
-          # Fetch secret value via API
-          response=$(curl -sf --max-time 10 \
-            -H "CF-Access-Client-Id: $HFS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $HFS_CLIENT_SECRET" \
+        VAULT_URL="${{ inputs.url }}"
+        VAULT_URL="${VAULT_URL%/}"  # strip trailing slash
+        COUNT=0
+        JSON_RESULT="{}"
+
+        # Process each secret key
+        while IFS= read -r line; do
+          line="${line#"${line%%[![:space:]]*}"}"  # trim leading whitespace
+          line="${line%"${line##*[![:space:]]}"}"  # trim trailing whitespace
+          [[ -z "$line" || "$line" == \#* ]] && continue
+
+          # Support KEY:ENV_NAME mapping
+          SECRET_KEY="${line%%:*}"
+          if [[ "$line" == *:* ]]; then
+            ENV_NAME="${line#*:}"
+          else
+            # Default: uppercase, replace dashes/dots with underscores
+            ENV_NAME=$(echo "$SECRET_KEY" | tr '[:lower:]' '[:upper:]' | tr '-.' '__')
+          fi
+
+          # Fetch secret via authenticated API call
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/hfs_response.json \
+            --max-time 15 \
+            --fail-with-body \
+            -H "CF-Access-Client-Id: ${{ inputs.client-id }}" \
+            -H "CF-Access-Client-Secret: ${{ inputs.client-secret }}" \
             -H "Content-Type: application/json" \
-            "$HFS_URL/secrets/$(python3 -c "import urllib.parse; print(urllib.parse.quote('$key', safe=''))")" \
-            2>&1) || {
-            echo "::error::Failed to fetch secret '$key'"
+            "${VAULT_URL}/secrets/${SECRET_KEY}" 2>/dev/null) || true
+
+          if [[ "$HTTP_CODE" != "200" ]]; then
+            ERROR=$(jq -r '.error // "Unknown error"' /tmp/hfs_response.json 2>/dev/null || echo "HTTP $HTTP_CODE")
+            echo "::error::Failed to fetch '${SECRET_KEY}': ${ERROR}"
+            rm -f /tmp/hfs_response.json
             exit 1
-          }
+          fi
 
-          value=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('value',''),end='')")
+          # Extract value using jq (available on all GitHub runners)
+          VALUE=$(jq -r '.value // empty' /tmp/hfs_response.json)
+          rm -f /tmp/hfs_response.json
 
-          # Mask value in logs
-          if [ "$HFS_MASK" = "true" ]; then
-            echo "::add-mask::$value"
+          if [[ -z "$VALUE" ]]; then
+            echo "::error::Secret '${SECRET_KEY}' returned empty value"
+            exit 1
+          fi
+
+          # Mask the value in all subsequent log output
+          if [[ "${{ inputs.mask }}" == "true" ]]; then
+            echo "::add-mask::${VALUE}"
           fi
 
           # Export as environment variable
-          if [ "$HFS_EXPORT" = "true" ]; then
-            shell_key=$(echo "$key" | tr '[:lower:]-.' '[:upper:]__')
+          if [[ "${{ inputs.export }}" == "true" ]]; then
             {
-              echo "${shell_key}<<HFSEOF"
-              echo "$value"
-              echo "HFSEOF"
+              echo "${ENV_NAME}<<__HFS_EOF__"
+              echo "${VALUE}"
+              echo "__HFS_EOF__"
             } >> "$GITHUB_ENV"
           fi
 
-          # Build JSON output
-          escaped_value=$(echo "$value" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
-          json_output=$(echo "$json_output" | python3 -c "import sys,json; d=json.load(sys.stdin); d['$key']=$escaped_value; print(json.dumps(d))")
+          # Accumulate JSON output (using jq for safe escaping)
+          JSON_RESULT=$(echo "$JSON_RESULT" | jq --arg k "$SECRET_KEY" --arg v "$VALUE" '. + {($k): $v}')
+          COUNT=$((COUNT + 1))
 
-        done <<< "$HFS_SECRETS"
+        done <<< "${{ inputs.secrets }}"
 
-        echo "secrets=$json_output" >> "$GITHUB_OUTPUT"
-        echo "::notice::Fetched $(echo "$HFS_SECRETS" | grep -c '[^ ]') secret(s) from vault"
+        # Set outputs
+        echo "json=${JSON_RESULT}" >> "$GITHUB_OUTPUT"
+        echo "count=${COUNT}" >> "$GITHUB_OUTPUT"
+        echo "::notice::Fetched ${COUNT} secret(s) from vault"
