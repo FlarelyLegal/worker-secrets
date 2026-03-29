@@ -40,7 +40,7 @@ Copy the **Application Audience (AUD) Tag** into `POLICY_AUD`.
 
 ## Endpoints
 
-Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSON at [`/doc/json`](https://vault.example.com/doc/json).
+Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI JSON at [`/doc/json`](https://secrets.homeflare.dev/doc/json).
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
