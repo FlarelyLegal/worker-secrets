@@ -202,9 +202,6 @@ The export file contains decrypted values. Store it securely and delete after us
 
 ## Security
 
-- **RBAC**: role-based access control — admin, operator, reader (custom roles supported)
-- **No fallback**: expired JWT or partial env vars = hard error
-- **No credentials on disk**: config holds URL + short-lived JWT only
-- **All access audited**: every operation logged with identity, IP, user agent, and request ID
-- **Unregistered tokens rejected**: Access token alone is not enough
-- **HMAC integrity**: every secret cryptographically bound to its key name, tamper-evident at rest
+RBAC with custom roles, no credentials stored on disk (URL + short-lived JWT only), hard errors on expired auth, and every operation audit-logged.
+
+See [Encryption Architecture](../docs/encryption.md) for detailed diagrams and [Threat Model](../SECURITY.md) for the hardening guide.
