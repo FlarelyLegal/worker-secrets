@@ -20,11 +20,12 @@ export function registerRoleCommands(program: Command) {
           console.log(chalk.dim("No roles."));
           return;
         }
-        const header = `${"NAME".padEnd(16)} ${"SCOPES".padEnd(24)} DESCRIPTION`;
+        const header = `${"NAME".padEnd(16)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(18)} DESCRIPTION`;
         console.log(header);
         for (const r of roles) {
+          const tags = r.allowed_tags || chalk.dim("all");
           console.log(
-            `${r.name.padEnd(16)} ${r.scopes.padEnd(24)} ${r.description || chalk.dim("—")}`,
+            `${r.name.padEnd(16)} ${r.scopes.padEnd(18)} ${tags.toString().padEnd(18)} ${r.description || chalk.dim("—")}`,
           );
         }
         console.log(chalk.dim(`\n${roles.length} role(s)`));
@@ -37,14 +38,21 @@ export function registerRoleCommands(program: Command) {
     .command("set <name> <scopes>")
     .description("Create or update a role (scopes: read,write,delete or *)")
     .option("-d, --description <desc>", "Role description")
-    .action(async (name: string, scopes: string, opts: { description?: string }) => {
-      try {
-        await client().setRole(name, scopes, opts.description);
-        console.log(`${chalk.green("✓")} Role ${chalk.bold(name)} → ${chalk.bold(scopes)}`);
-      } catch (e) {
-        die(errorMessage(e));
-      }
-    });
+    .option("--allowed-tags <tags>", "Restrict access to secrets with these tags (comma-separated)")
+    .action(
+      async (
+        name: string,
+        scopes: string,
+        opts: { description?: string; allowedTags?: string },
+      ) => {
+        try {
+          await client().setRole(name, scopes, opts.description, opts.allowedTags);
+          console.log(`${chalk.green("✓")} Role ${chalk.bold(name)} → ${chalk.bold(scopes)}`);
+        } catch (e) {
+          die(errorMessage(e));
+        }
+      },
+    );
 
   role
     .command("rm <name>")

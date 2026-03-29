@@ -37,6 +37,7 @@ export interface UserEntry {
 export interface RoleEntry {
   name: string;
   scopes: string;
+  allowed_tags: string;
   description: string;
   created_by: string;
   created_at: string;
@@ -321,10 +322,12 @@ export class VaultClient {
     name: string,
     scopes: string,
     description?: string,
+    allowedTags?: string,
   ): Promise<{ ok: boolean; name: string }> {
     return this.request("PUT", `/roles/${encodeURIComponent(name)}`, {
       name,
       scopes,
+      allowed_tags: allowedTags || "",
       description: description || "",
     });
   }
