@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secret Vault - Mockup 3: The Journey</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>S</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fafafa; --surface: #fff; --border: #e5e5e5;
+      --text: #171717; --muted: #737373; --accent: #f97316; --green: #22c55e;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #ededed; --muted: #888; }
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .page { max-width: 720px; margin: 0 auto; padding: 6rem 2rem 3rem; }
+    .brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; }
+    .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
+    .brand-name { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+    h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1rem; }
+    h1 .highlight { color: var(--accent); }
+    .subtitle { font-size: 1.125rem; color: var(--muted); line-height: 1.7; margin-bottom: 3rem; }
+
+    .step { display: grid; grid-template-columns: 48px 1fr; gap: 1rem; margin-bottom: 2rem; position: relative; }
+    .step::before { content: ''; position: absolute; left: 23px; top: 48px; bottom: -2rem; width: 2px; background: var(--border); }
+    .step:last-of-type::before { display: none; }
+    .step-number { width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 1.125rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-content { padding-top: 0.25rem; }
+    .step-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.375rem; }
+    .step-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.75rem; }
+    .step-code { background: #1a1a1a; border-radius: 0.5rem; padding: 0.75rem 1rem; font-family: var(--mono); font-size: 0.8125rem; color: #e0e0e0; line-height: 1.7; overflow-x: auto; border: 1px solid #333; }
+    .step-code .comment { color: #666; }
+    .step-code .flag { color: #f97316; }
+    .step-code .output { color: #888; }
+
+    .divider { height: 1px; background: var(--border); margin: 3rem 0; }
+
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 3rem; }
+    .feat { background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1rem 1.25rem; }
+    .feat-name { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .feat-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+    @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
+
+    .links { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 3rem; }
+    .link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; text-decoration: none; color: var(--text); font-size: 0.8125rem; font-weight: 500; transition: border-color 0.15s; }
+    .link:hover { border-color: var(--accent); }
+    .link .arrow { color: var(--accent); }
+
+    .footer { padding: 1.5rem 0; border-top: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--accent); }
+    .status { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--green); }
+    .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand">
+      <div class="brand-icon">S</div>
+      <span class="brand-name">Secret Vault</span>
+    </div>
+
+    <h1>From zero to <span class="highlight">zero-knowledge</span> in four steps.</h1>
+
+    <p class="subtitle">Deploy an encrypted secret vault to your Cloudflare account, store secrets the server cannot read, and share them with your team. No external dependencies. No third-party trust.</p>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <div class="step-title">Deploy</div>
+        <div class="step-desc">One command scaffolds a Cloudflare Worker, D1 database, KV namespace, and Access policies. The vault runs on your account.</div>
+        <div class="step-code">
+          $ npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com<br/>
+          $ hfs deploy<br/>
+          <span class="output">  Deployed to https://secrets.yourcompany.com</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <div class="step-title">Authenticate</div>
+        <div class="step-desc">Log in through your identity provider via Cloudflare Access. Hardware keys supported. Your session is a short-lived JWT, never stored on the server.</div>
+        <div class="step-code">
+          $ hfs login<br/>
+          <span class="output">  Authenticated successfully</span><br/>
+          <span class="output">  Session expires: 3/30/2026, 2:25 PM</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <div class="step-title">Store</div>
+        <div class="step-desc">Generate your age identity and store secrets. Use <strong>--private</strong> for secrets only you can decrypt, or <strong>--e2e</strong> to share with teammates whose roles match.</div>
+        <div class="step-code">
+          $ hfs keygen <span class="flag">--register</span><br/>
+          <span class="output">  public key: age196nua3eeww...</span><br/><br/>
+          $ hfs set API_KEY "sk-ant-..." <span class="flag">--private</span><br/>
+          <span class="output">  Stored API_KEY (e2e private)</span><br/><br/>
+          $ hfs set DEPLOY_TOKEN "ghp_..." <span class="flag">--e2e</span> -t ci<br/>
+          <span class="output">  encrypting for 4 recipients</span><br/>
+          <span class="output">  Stored DEPLOY_TOKEN (e2e)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <div class="step-title">Use everywhere</div>
+        <div class="step-desc">Load secrets into your shell, CI pipelines, config files, or any tool that reads environment variables. E2E secrets are decrypted locally, never on the server.</div>
+        <div class="step-code">
+          <span class="comment"># Shell</span><br/>
+          $ eval $(hfs env -e API_KEY DB_PASSWORD)<br/><br/>
+          <span class="comment"># Config files</span><br/>
+          $ hfs template .env.tpl > .env<br/><br/>
+          <span class="comment"># GitHub Actions</span><br/>
+          - uses: FlarelyLegal/worker-secrets/action@v0.20.0
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="features">
+      <div class="feat">
+        <div class="feat-name">End-to-end encryption</div>
+        <div class="feat-desc">Private or team-shared. age encryption. Server never sees plaintext.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">RBAC with tags</div>
+        <div class="feat-desc">Roles control scopes. Tags control which secrets. Recipients follow automatically.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">Burn after reading</div>
+        <div class="feat-desc">One-time secrets that self-destruct after first read.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">Geo-fencing</div>
+        <div class="feat-desc">Restrict access by country. Only possible on Cloudflare Workers.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">Webhooks</div>
+        <div class="feat-desc">Audit events to Slack, PagerDuty, or your SIEM. Zero latency impact.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">23 feature flags</div>
+        <div class="feat-desc">Runtime control without redeploying. Maintenance mode, read-only, expiry enforcement.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">Version history</div>
+        <div class="feat-desc">Every change archived. Diff against versions. Restore with one command.</div>
+      </div>
+      <div class="feat">
+        <div class="feat-name">Tamper-evident audit</div>
+        <div class="feat-desc">SHA-256 hash-chained log. Verifiable with the CLI.</div>
+      </div>
+    </div>
+
+    <div class="links">
+      <a class="link" href="/doc">API Reference <span class="arrow">&#8594;</span></a>
+      <a class="link" href="/doc/json">OpenAPI Spec <span class="arrow">&#8594;</span></a>
+      <a class="link" href="/health">Health <span class="arrow">&#8594;</span></a>
+      <a class="link" href="https://github.com/FlarelyLegal/worker-secrets" target="_blank" rel="noopener">GitHub <span class="arrow">&#8594;</span></a>
+    </div>
+
+    <div class="footer">
+      <span>by <a href="https://homeflare.dev">The HomeFlare Project</a> &middot; Powered by Cloudflare Workers</span>
+      <span class="status">Healthy</span>
+    </div>
+  </div>
+</body>
+</html>
