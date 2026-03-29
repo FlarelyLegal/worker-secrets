@@ -40,6 +40,8 @@ Source: `secret-vault/src/routes/`
 | `PUT` | `/roles/{name}` | admin | Create or update a role |
 | `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description) |
 | `DELETE` | `/roles/{name}` | admin | Delete a role (rejects if users/tokens assigned) |
+| `POST` | `/admin/re-encrypt` | admin | Migrate legacy secrets to envelope encryption |
+| `POST` | `/admin/rotate-key` | admin | Re-wrap all DEKs with a new master key |
 
 ## Request/response patterns
 

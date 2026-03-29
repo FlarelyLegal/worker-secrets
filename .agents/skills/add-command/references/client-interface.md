@@ -81,6 +81,10 @@ class VaultClient {
   exportAll(): Promise<SecretEntry[]>
   importAll(secrets: { key: string; value: string; description?: string }[], overwrite?: boolean): Promise<{ ok: boolean; imported: number; skipped: number }>
 
+  // Admin operations
+  reEncrypt(): Promise<{ ok: boolean; migrated: number; skipped: number }>
+  rotateKey(newKey: string): Promise<{ ok: boolean; rotated: number; versions_rotated: number; legacy: number }>
+
   // Versions
   listVersions(key: string): Promise<{ id: number; changed_by: string; changed_at: string }[]>
   restoreVersion(key: string, id: number): Promise<{ ok: boolean; key: string; restored_from: number }>

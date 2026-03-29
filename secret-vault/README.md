@@ -56,6 +56,8 @@ Interactive API docs at [`/doc`](https://vault.example.com/doc). Raw OpenAPI JSO
 | `POST` | `/secrets/import` | interactive | Bulk import from JSON |
 | `PUT` | `/secrets/{key}` | write | Create or update |
 | `DELETE` | `/secrets/{key}` | delete | Delete |
+| `POST` | `/admin/re-encrypt` | admin | Migrate legacy secrets to envelope encryption |
+| `POST` | `/admin/rotate-key` | admin | Re-wrap all DEKs with a new master key |
 | `GET` | `/audit` | interactive | Audit log |
 | `GET` | `/tokens` | interactive | List service tokens |
 | `PUT` | `/tokens/{clientId}` | interactive | Register token |

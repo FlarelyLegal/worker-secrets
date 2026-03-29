@@ -13,7 +13,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, isAdmin, audit, JWKS cache, RBAC scope resolution |
 | Worker crypto | `secret-vault/src/crypto.ts` | Envelope encryption (per-secret DEK, master KEK), AES-256-GCM encrypt/decrypt, hex validation, key cache |
 | Worker constants | `secret-vault/src/constants.ts` | Typed constants replacing magic strings (actions, scopes, headers, defaults) |
-| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `bulk.ts`, `admin.ts`, `public.ts`, `flags.ts` |
+| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `secret-write.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `bulk.ts`, `admin.ts`, `admin-ops.ts`, `rotate-key.ts`, `public.ts`, `flags.ts` |
 | Worker flags | `secret-vault/src/flags.ts` | `getFlagValue()` helper for reading typed flags from KV |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
 | Worker pages | `secret-vault/src/pages.ts` | Landing page and health page HTML templates |
