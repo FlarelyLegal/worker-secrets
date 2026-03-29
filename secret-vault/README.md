@@ -51,6 +51,7 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `GET` | `/secrets` | read | List keys (no values) |
 | `GET` | `/secrets/{key}` | read | Get decrypted secret |
 | `GET` | `/secrets/{key}/versions` | read | Version history |
+| `GET` | `/secrets/{key}/versions/{id}` | read | Get decrypted version value |
 | `POST` | `/secrets/{key}/versions/{id}/restore` | write | Restore a previous version |
 | `GET` | `/secrets/export` | interactive | Export all decrypted |
 | `POST` | `/secrets/import` | interactive | Bulk import from JSON |

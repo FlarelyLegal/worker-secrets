@@ -47,6 +47,9 @@ hfs export                 Export all as JSON (includes tags)
 hfs import <file>          Import from JSON
 hfs cp <src> <dest>        Copy a secret to a new key
 hfs cp <src> <dest> -m     Move (copy + delete source, confirms first)
+hfs diff <key> <id>        Compare current value with a version
+hfs template <file>        Render {{SECRET_KEY}} placeholders from vault
+hfs template <file> -o out Write rendered output to file
 ```
 
 ### End-to-end encryption
