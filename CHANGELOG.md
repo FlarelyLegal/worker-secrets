@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0] - 2026-03-29
+
+### Bug Fixes
+
+- Rewrite GitHub Action — jq instead of python, key mapping, proper security docs
+
+### Features
+
+- RBAC-integrated e2e team sharing — recipients, rewrap, auto-encrypt
+- RBAC-integrated e2e team sharing (#7)
+
 ## [0.19.0] - 2026-03-29
 
 ### Features
 
 - Webhooks, geo-fencing, template, diff, GitHub Action + split secrets commands
 - Webhooks, geo-fencing, template, diff, GitHub Action (#6)
+
+### Miscellaneous
+
+- Bump version to 0.19.0
 
 ## [0.18.0] - 2026-03-29
 
