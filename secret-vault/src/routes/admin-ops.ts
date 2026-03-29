@@ -220,6 +220,50 @@ adminOps.openapi(rotateKeyRoute, async (c) => {
     rotated++;
   }
 
+  // Also rotate DEKs in version history
+  let versionsRotated = 0;
+  const { results: versionResults } = await c.env.DB.prepare(
+    "SELECT id, secret_key, value, iv, encrypted_dek, dek_iv FROM secret_versions WHERE encrypted_dek IS NOT NULL",
+  ).all();
+
+  for (const ver of versionResults as {
+    id: number;
+    secret_key: string;
+    value: string;
+    iv: string;
+    encrypted_dek: string;
+    dek_iv: string;
+  }[]) {
+    const vDekRaw = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: fromBase64url(ver.dek_iv) },
+      oldKek,
+      fromBase64url(ver.encrypted_dek),
+    );
+    const vNewDekIv = crypto.getRandomValues(new Uint8Array(12));
+    const vNewEncDek = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: vNewDekIv },
+      newKek,
+      vDekRaw,
+    );
+    const vDekB64 = toBase64url(vNewEncDek);
+    const vDekIvB64 = toBase64url(vNewDekIv);
+    const vHmac = await computeHmac(
+      ver.secret_key,
+      ver.value,
+      ver.iv,
+      new_key,
+      c.env.INTEGRITY_KEY,
+      vDekB64,
+      vDekIvB64,
+    );
+    await c.env.DB.prepare(
+      "UPDATE secret_versions SET encrypted_dek = ?, dek_iv = ?, hmac = ? WHERE id = ?",
+    )
+      .bind(vDekB64, vDekIvB64, vHmac, ver.id)
+      .run();
+    versionsRotated++;
+  }
+
   await audit(
     c.env,
     c.get("auth"),
@@ -230,7 +274,7 @@ adminOps.openapi(rotateKeyRoute, async (c) => {
     c.get("requestId"),
   );
 
-  return c.json({ ok: true, rotated, legacy }, 200);
+  return c.json({ ok: true, rotated, versions_rotated: versionsRotated, legacy }, 200);
 });
 
 export default adminOps;
