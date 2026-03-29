@@ -64,3 +64,4 @@ export const FLAG_MAX_TAGS_PER_SECRET = "max_tags_per_secret";
 export const FLAG_WEBHOOK_URL = "webhook_url";
 export const FLAG_WEBHOOK_FILTER = "webhook_filter";
 export const FLAG_ALLOWED_COUNTRIES = "allowed_countries";
+export const FLAG_AUTO_PROVISION_ROLE = "auto_provision_role";

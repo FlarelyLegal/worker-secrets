@@ -3,6 +3,7 @@ import {
   AUTH_INTERACTIVE,
   AUTH_SERVICE_TOKEN,
   FLAG_ALLOWED_EMAILS_ROLE,
+  FLAG_AUTO_PROVISION_ROLE,
   ROLE_ADMIN,
   ROLE_READER,
   SCOPE_ALL,
@@ -188,6 +189,31 @@ export async function authenticate(request: Request, env: Env): Promise<AuthUser
         identity: email,
         name: retryUser.name || email.split("@")[0],
         role: retryUser.role,
+        scopes,
+        allowedTags,
+      };
+    }
+  }
+
+  // Auto-provision: if flag is set, create user with that role on first login.
+  // Trusts Cloudflare Access to control who can reach the vault.
+  const autoRole = await getFlagValue(env.FLAGS, FLAG_AUTO_PROVISION_ROLE, "");
+  if (autoRole) {
+    const roleExists = await env.DB.prepare("SELECT name FROM roles WHERE name = ?")
+      .bind(autoRole)
+      .first();
+    if (roleExists) {
+      await env.DB.prepare(
+        "INSERT OR IGNORE INTO users (email, name, role, created_by) VALUES (?, ?, ?, 'auto-provision')",
+      )
+        .bind(email.toLowerCase(), email.split("@")[0], autoRole)
+        .run();
+      const { scopes, allowedTags } = await resolveRole(env.DB, autoRole);
+      return {
+        method: AUTH_INTERACTIVE,
+        identity: email,
+        name: email.split("@")[0],
+        role: autoRole,
         scopes,
         allowedTags,
       };

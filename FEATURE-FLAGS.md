@@ -39,6 +39,7 @@ Flag mutations require **admin** role. Reading flags requires **read** scope.
 | `webhook_url` | string | `""` (disabled) | POST audit events as JSON to this URL after every operation. Uses `waitUntil` — zero latency impact. |
 | `webhook_filter` | string | `""` (all events) | Comma-separated actions to send (e.g., `set,delete,auth_failed`). Empty sends everything. |
 | `allowed_countries` | string | `""` (all countries) | Comma-separated country codes (e.g., `US,DE,GB`). Blocks requests from non-matching countries via `request.cf.country`. |
+| `auto_provision_role` | string | `""` (disabled) | Auto-create users on first login with this role. Trusts Cloudflare Access to control who can reach the vault. |
 
 ## Behavior notes
 
@@ -54,6 +55,7 @@ Flag mutations require **admin** role. Reading flags requires **read** scope.
 - **`secret_name_pattern`** — if the regex is invalid, enforcement is silently skipped (won't break writes). Test your pattern before deploying.
 - **`webhook_url`** — fires via `waitUntil` after every request, so it adds zero latency. The payload is the full audit entry JSON. If the webhook endpoint is down, the request still succeeds.
 - **`allowed_countries`** — uses `request.cf.country` (Cloudflare-provided, ISO 3166-1 alpha-2). Checked before authentication — blocked users don't even get a 401. This feature is unique to Cloudflare Workers.
+- **`auto_provision_role`** — when set, any user who passes Cloudflare Access but isn't in the users table is auto-created with this role. The role must exist. Combined with an Access policy (e.g., allow `@company.com`), this enables zero-touch onboarding.
 
 ## Examples
 
@@ -99,4 +101,7 @@ hfs flag set webhook_filter "set,delete,auth_failed"
 
 # Geo-fencing — restrict access by country (Cloudflare-only)
 hfs flag set allowed_countries "US,DE,GB"
+
+# Auto-provision — anyone passing Access gets operator role
+hfs flag set auto_provision_role "operator"
 ```
