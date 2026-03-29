@@ -15,7 +15,7 @@ Store API keys, tokens, certificates, and credentials with a CLI or REST API. Ev
 - **Zero trust in third parties** — your secrets never leave your Cloudflare account
 - **Defense in depth** — Cloudflare Access at the edge, Worker-level JWT validation, registered token enforcement, RBAC with per-secret tag restrictions
 - **Encryption done right** — envelope encryption (per-secret DEK + master KEK), HMAC integrity binding, optional separate integrity key
-- **Operational control** — 13 runtime feature flags, version history with restore, secret expiry tracking, user management — all without redeploying
+- **Operational control** — 19 runtime feature flags, version history with restore, secret expiry tracking, user management — all without redeploying
 
 ## Security
 

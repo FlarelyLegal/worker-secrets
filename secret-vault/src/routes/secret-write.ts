@@ -2,10 +2,13 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { audit, hasScope, hasTagAccess } from "../auth.js";
 import {
   ACTION_SET,
+  FLAG_MAX_SECRET_SIZE_KB,
   FLAG_MAX_SECRETS,
+  FLAG_MAX_TAGS_PER_SECRET,
   FLAG_MAX_VERSIONS,
   FLAG_REQUIRE_DESCRIPTION,
   FLAG_REQUIRE_TAGS,
+  FLAG_SECRET_NAME_PATTERN,
   FLAG_VERSIONING_ENABLED,
   SCOPE_WRITE,
 } from "../constants.js";
@@ -57,6 +60,30 @@ secretWrite.openapi(putRoute, async (c) => {
   if (!tags) {
     const reqTags = getFlag(c.get("flags"), FLAG_REQUIRE_TAGS, false);
     if (reqTags) return c.json({ error: "Tags are required" }, 400);
+  }
+
+  // Secret name pattern enforcement
+  const namePattern = getFlag(c.get("flags"), FLAG_SECRET_NAME_PATTERN, "");
+  if (namePattern) {
+    try {
+      if (!new RegExp(namePattern as string).test(key))
+        return c.json({ error: `Key does not match required pattern: ${namePattern}` }, 400);
+    } catch {
+      // Invalid regex in flag — skip enforcement, don't block writes
+    }
+  }
+
+  // Value size limit
+  const maxSizeKb = getFlag(c.get("flags"), FLAG_MAX_SECRET_SIZE_KB, 0);
+  if (maxSizeKb > 0 && value.length > (maxSizeKb as number) * 1024)
+    return c.json({ error: `Value exceeds ${maxSizeKb}KB limit` }, 400);
+
+  // Tag count limit
+  if (tags) {
+    const maxTags = getFlag(c.get("flags"), FLAG_MAX_TAGS_PER_SECRET, 0);
+    const tagCount = tags.split(",").filter((t) => t.trim()).length;
+    if (maxTags > 0 && tagCount > (maxTags as number))
+      return c.json({ error: `Too many tags (${tagCount}) — maximum is ${maxTags}` }, 400);
   }
 
   const existing = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")

@@ -90,7 +90,7 @@ export function landingPage(
         </div>
         <div class="feature">
           <div class="feature-title">Secret lifecycle</div>
-          <div class="feature-desc">Version history with restore, expiry tracking, tag-based organization. 13 runtime feature flags for operational control without redeploying.</div>
+          <div class="feature-desc">Version history with restore, expiry tracking, tag-based organization. 19 runtime feature flags for operational control without redeploying.</div>
         </div>
       </div>
     </div>

@@ -4,7 +4,10 @@ import {
   ACTION_DELETE,
   ACTION_GET,
   ACTION_LIST,
+  FLAG_BURN_AFTER_READING,
+  FLAG_ENFORCE_EXPIRY,
   FLAG_HMAC_REQUIRED,
+  FLAG_REQUIRE_ENVELOPE_ENCRYPTION,
   SCOPE_DELETE,
   SCOPE_READ,
 } from "../constants.js";
@@ -121,6 +124,23 @@ secrets.openapi(getRoute, async (c) => {
   if (!hasTagAccess(auth, row.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
+  // Enforce expiry
+  if (row.expires_at) {
+    const enforceExpiry = getFlag(c.get("flags"), FLAG_ENFORCE_EXPIRY, false);
+    if (enforceExpiry && new Date(row.expires_at).getTime() < Date.now())
+      return c.json({ error: `Secret expired at ${row.expires_at} — rotate or re-set it` }, 403);
+  }
+
+  // Require envelope encryption
+  if (!row.encrypted_dek || !row.dek_iv) {
+    const requireEnvelope = getFlag(c.get("flags"), FLAG_REQUIRE_ENVELOPE_ENCRYPTION, false);
+    if (requireEnvelope)
+      return c.json(
+        { error: "Secret uses legacy encryption — run `hfs re-encrypt` to migrate" },
+        403,
+      );
+  }
+
   // Verify HMAC integrity
   if (row.hmac) {
     const valid = await verifyHmac(
@@ -159,6 +179,13 @@ secrets.openapi(getRoute, async (c) => {
     return c.json({ error: "Decryption failed" }, 500);
   }
   await audit(c.env, auth, ACTION_GET, key, c.get("ip"), c.get("ua"), c.get("requestId"));
+
+  // Burn after reading: delete secret after successful read if tagged "burn" and flag enabled
+  const burnEnabled = getFlag(c.get("flags"), FLAG_BURN_AFTER_READING, false);
+  if (burnEnabled && row.tags?.split(",").some((t) => t.trim() === "burn")) {
+    await c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key).run();
+  }
+
   const {
     key: k,
     description,
