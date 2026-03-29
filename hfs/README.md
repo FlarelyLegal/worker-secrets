@@ -102,7 +102,8 @@ hfs audit --key <key>      Filter by secret key
 hfs audit --from/--to <date> Filter by date range
 hfs audit-verify [-n 1000] Verify audit log hash chain integrity
 hfs re-encrypt             Migrate legacy secrets to envelope encryption
-hfs rotate-key <new-key>   Re-wrap all DEKs with a new master key
+hfs rotate-key --stdin     Re-wrap all DEKs with a new master key (reads from stdin)
+hfs rotate-key <new-key>   Same, but key on command line (leaks to shell history)
 hfs deploy                 Deploy the Worker to Cloudflare
 hfs completion bash|zsh    Generate shell completions
 ```

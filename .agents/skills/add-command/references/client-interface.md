@@ -83,7 +83,7 @@ class VaultClient {
   set(key: string, value: string, opts?: { description?: string; tags?: string; expires_at?: string | null }): Promise<{ ok: boolean; key: string }>
   delete(key: string): Promise<{ ok: boolean; deleted: string }>
   exportAll(): Promise<SecretEntry[]>
-  importAll(secrets: { key: string; value: string; description?: string }[], overwrite?: boolean): Promise<{ ok: boolean; imported: number; skipped: number }>
+  importAll(secrets: { key: string; value: string; description?: string; tags?: string; expires_at?: string | null }[], overwrite?: boolean): Promise<{ ok: boolean; imported: number; skipped: number }>
 
   // Admin operations
   reEncrypt(): Promise<{ ok: boolean; migrated: number; skipped: number }>

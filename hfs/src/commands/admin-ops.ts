@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import type { Command } from "commander";
-import { client, confirm, die, errorMessage } from "../helpers.js";
+import { client, confirm, die, errorMessage, readStdin } from "../helpers.js";
 
 export function registerAdminOpsCommands(program: Command): void {
   program
@@ -25,11 +25,22 @@ export function registerAdminOpsCommands(program: Command): void {
     });
 
   program
-    .command("rotate-key <new-key>")
+    .command("rotate-key [new-key]")
     .description("Re-wrap all DEKs with a new master key (admin only)")
     .option("-f, --force", "Skip confirmation")
-    .action(async (newKey: string, opts: { force?: boolean }) => {
+    .option("--stdin", "Read new key from stdin (avoids shell history)")
+    .action(async (newKeyArg: string | undefined, opts: { force?: boolean; stdin?: boolean }) => {
       try {
+        let newKey: string;
+        if (opts.stdin || (!newKeyArg && !process.stdin.isTTY)) {
+          newKey = (await readStdin()).trim();
+        } else if (newKeyArg) {
+          newKey = newKeyArg;
+        } else {
+          die(
+            "Provide a new key via --stdin or as an argument.\n  echo $NEW_KEY | hfs rotate-key --stdin",
+          );
+        }
         if (!/^[0-9a-fA-F]{64}$/.test(newKey)) {
           die("New key must be 64 hex characters (32 bytes). Generate with: npm run generate-keys");
         }

@@ -198,7 +198,13 @@ export class VaultClient {
   }
 
   async importAll(
-    secrets: { key: string; value: string; description?: string }[],
+    secrets: {
+      key: string;
+      value: string;
+      description?: string;
+      tags?: string;
+      expires_at?: string | null;
+    }[],
     overwrite = false,
   ): Promise<{ ok: boolean; imported: number; skipped: number }> {
     return this.request("POST", "/secrets/import", { secrets, overwrite });

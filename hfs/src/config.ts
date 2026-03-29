@@ -74,8 +74,13 @@ export function storeJwt(jwt: string): void {
   if (parts.length !== 3) {
     throw new Error("Invalid JWT format");
   }
-  const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
-  const exp = payload.exp as number | undefined;
+  let exp: number | undefined;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+    exp = payload.exp as number | undefined;
+  } catch {
+    throw new Error("Invalid JWT payload — could not decode token");
+  }
 
   config.set("jwt", jwt);
   if (exp) {

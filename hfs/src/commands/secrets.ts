@@ -224,7 +224,11 @@ export function registerSecretCommands(program: Command): void {
               skipped++;
               continue;
             }
-            await c.set(entry.key, entry.value, { description: entry.description });
+            await c.set(entry.key, entry.value, {
+              description: entry.description,
+              tags: entry.tags,
+              expires_at: entry.expires_at,
+            });
             console.log(`${chalk.green("✓")} Imported ${chalk.bold(entry.key)}`);
             imported++;
           }
@@ -304,18 +308,33 @@ export function registerSecretCommands(program: Command): void {
     .command("cp <source> <destination>")
     .description("Copy a secret to a new key")
     .option("-m, --move", "Move instead of copy (deletes source)")
-    .action(async (source: string, destination: string, opts: { move?: boolean }) => {
-      try {
-        const c = client();
-        const secret = await c.get(source);
-        await c.set(destination, secret.value || "", { description: secret.description });
-        if (opts.move) await c.delete(source);
-        const verb = opts.move ? "Moved" : "Copied";
-        console.log(
-          `${chalk.green("\u2713")} ${verb} ${chalk.bold(source)} \u2192 ${chalk.bold(destination)}`,
-        );
-      } catch (e) {
-        die(errorMessage(e));
-      }
-    });
+    .option("-f, --force", "Skip confirmation for --move")
+    .action(
+      async (source: string, destination: string, opts: { move?: boolean; force?: boolean }) => {
+        try {
+          const c = client();
+          if (opts.move && !opts.force) {
+            if (
+              !(await confirm(
+                `Move ${chalk.bold(source)} → ${chalk.bold(destination)}? Source will be deleted.`,
+              ))
+            )
+              return;
+          }
+          const secret = await c.get(source);
+          await c.set(destination, secret.value || "", {
+            description: secret.description,
+            tags: secret.tags,
+            expires_at: secret.expires_at,
+          });
+          if (opts.move) await c.delete(source);
+          const verb = opts.move ? "Moved" : "Copied";
+          console.log(
+            `${chalk.green("\u2713")} ${verb} ${chalk.bold(source)} \u2192 ${chalk.bold(destination)}`,
+          );
+        } catch (e) {
+          die(errorMessage(e));
+        }
+      },
+    );
 }
