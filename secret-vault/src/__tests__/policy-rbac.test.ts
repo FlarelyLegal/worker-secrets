@@ -112,7 +112,7 @@ describe("accessibleTags", () => {
     ]);
     const tags = accessibleTags(user, "read");
     expect(tags).not.toBeNull();
-    expect(tags!.sort()).toEqual(["a", "b", "c"]);
+    expect(tags?.sort()).toEqual(["a", "b", "c"]);
   });
 
   it("only includes tags from policies that grant the requested scope", () => {

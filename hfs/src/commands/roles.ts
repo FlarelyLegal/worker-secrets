@@ -110,11 +110,7 @@ export function registerRoleCommands(program: Command) {
     .option("-t, --tags <tags>", "Restrict to these tags (comma-separated)")
     .option("-d, --description <desc>", "Policy description")
     .action(
-      async (
-        roleName: string,
-        scopes: string,
-        opts: { tags?: string; description?: string },
-      ) => {
+      async (roleName: string, scopes: string, opts: { tags?: string; description?: string }) => {
         try {
           // Fetch existing policies, append new one
           const existing = await client().listPolicies(roleName);
@@ -147,7 +143,7 @@ export function registerRoleCommands(program: Command) {
         if (!target) die(`Policy #${id} not found on role ${roleName}`);
         if (!opts.force) {
           const ok = await confirm(
-            `Remove policy #${id} (${target!.scopes} on ${target!.tags || "all tags"})?`,
+            `Remove policy #${id} (${target?.scopes} on ${target?.tags || "all tags"})?`,
           );
           if (!ok) return;
         }
