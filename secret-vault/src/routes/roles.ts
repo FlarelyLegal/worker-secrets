@@ -6,6 +6,7 @@ import {
   ACTION_SET_ROLE,
   ACTION_UPDATE_ROLE,
   AUTH_INTERACTIVE,
+  ROLE_ADMIN,
 } from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { RoleCreateBody, RoleNameParam, RoleSchema, RoleUpdateBody } from "../schemas-rbac.js";
@@ -192,6 +193,9 @@ const deleteRoute = createRoute({
 
 roles.openapi(deleteRoute, async (c) => {
   const { name } = c.req.valid("param");
+
+  // Protect built-in admin role
+  if (name === ROLE_ADMIN) return c.json({ error: "Cannot delete the built-in admin role" }, 400);
 
   // Prevent deleting roles that have users assigned
   const usersWithRole = await c.env.DB.prepare("SELECT COUNT(*) as total FROM users WHERE role = ?")

@@ -93,6 +93,15 @@ users.openapi(addRoute, async (c) => {
     .first();
   if (!roleExists) return c.json({ error: `Role '${role}' does not exist` }, 400);
 
+  // Prevent demoting the last admin via upsert
+  const existing = await c.env.DB.prepare("SELECT role, enabled FROM users WHERE email = ?")
+    .bind(email.toLowerCase())
+    .first<{ role: string; enabled: number }>();
+  if (existing?.role === ROLE_ADMIN && existing.enabled && role !== ROLE_ADMIN) {
+    if ((await adminCount(c.env.DB)) <= 1)
+      return c.json({ error: "Cannot remove the last admin" }, 400);
+  }
+
   const identity = c.get("auth").identity;
   await c.env.DB.prepare(
     `INSERT INTO users (email, name, role, created_by, updated_by)
