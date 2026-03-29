@@ -71,6 +71,8 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `PUT` | `/roles/{name}` | admin | Create or update a role |
 | `PATCH` | `/roles/{name}` | admin | Partial update (scopes, description, allowed_tags) |
 | `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
+| `GET` | `/roles/{name}/policies` | admin | List policies for a role |
+| `PUT` | `/roles/{name}/policies` | admin | Replace all policies for a role |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |
 | `PUT` | `/flags/{key}` | admin | Set a flag (auto-detects type) |
