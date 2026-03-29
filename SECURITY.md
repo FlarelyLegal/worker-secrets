@@ -17,7 +17,7 @@ We aim to acknowledge reports within 48 hours and provide a fix or mitigation pl
 | **Privilege escalation** | RBAC with last-admin protection. Users can be disabled without deletion. ALLOWED_EMAILS fallback grants reader (not admin). Self-deletion blocked. |
 | **Audit tampering** | SHA-256 hash-chained audit log. Each entry links to the previous. Modifying or deleting entries breaks the chain. Verifiable with `hfs audit-verify`. |
 | **Insider bulk exfiltration** | `disable_export` feature flag blocks bulk export. Tag-based RBAC limits scope. All access logged with identity and request ID. |
-| **Compromised server** | E2E secrets encrypted client-side with [age](https://age-encryption.org/) before reaching the Worker. A compromised Worker or database sees only age ciphertext. Use `--e2e` for your most sensitive secrets. |
+| **Compromised server** | E2E secrets encrypted client-side with [age](https://age-encryption.org/) before reaching the Worker. A compromised Worker or database sees only age ciphertext. Use `--private` for personal secrets or `--e2e` for team-shared secrets. |
 
 ### What we explicitly do not protect against
 
@@ -54,8 +54,10 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 - [ ] Set `disable_export` in production to prevent bulk exfiltration
 - [ ] Configure Access policy to require hardware keys (`hwk`) for interactive sessions
 - [ ] Use tag-based RBAC: create roles with `allowed_tags` to limit access by team/environment
-- [ ] Use `hfs set --e2e` for your most sensitive secrets (zero-knowledge — server can't decrypt)
-- [ ] Run `hfs keygen` and back up your identity file securely (losing it = losing access to e2e secrets)
+- [ ] Use `hfs set --private` for personal secrets (only your key can decrypt)
+- [ ] Use `hfs set --e2e` for team secrets (RBAC-based recipients, revocable via `rewrap`)
+- [ ] Run `hfs keygen --register` and back up your identity file securely (losing it = losing access to e2e secrets)
+- [ ] After revoking a user, run `hfs rewrap --all` to re-encrypt without their key
 - [ ] Periodically run `hfs audit-verify` to check hash chain integrity
 - [ ] Set `audit_retention_days` appropriate to your compliance requirements
 

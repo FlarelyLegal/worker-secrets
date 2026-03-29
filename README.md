@@ -114,9 +114,11 @@ hfs ls                                      # list keys
 eval $(hfs env -e API_KEY DB_PASSWORD)      # load into shell
 
 # Zero-knowledge mode — server can't read these
-hfs keygen                                  # one-time: generate age key pair
-hfs set db-password "hunter2" --e2e         # encrypted on your machine
+hfs keygen --register                       # one-time: generate + register age key
+hfs set db-password "hunter2" --private     # encrypted for only you
+hfs set shared-key "val" --e2e -t prod      # encrypted for all eligible team members
 hfs get db-password -q                      # decrypted on your machine
+hfs rewrap --all                            # re-encrypt after team changes
 
 # Admin
 hfs user add ops@company.com -r operator    # add a user

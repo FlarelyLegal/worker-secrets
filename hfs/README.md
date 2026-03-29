@@ -56,8 +56,11 @@ hfs template <file> -o out Write rendered output to file
 ```
 hfs keygen                 Generate age identity (one-time setup)
 hfs pubkey                 Show your age public key (share with teammates)
-hfs set <key> <value> --e2e          Encrypt client-side before sending
-hfs set <key> <value> --recipients <file>  Encrypt for multiple recipients
+hfs set <key> <value> --e2e          Encrypt for all eligible team members (RBAC)
+hfs set <key> <value> --private      Encrypt for only yourself (not shared)
+hfs set <key> <value> --recipients <file>  Encrypt for explicit recipient list
+hfs rewrap <key>               Re-encrypt for current eligible recipients
+hfs rewrap --all               Re-encrypt all e2e secrets (after user changes)
 hfs get <key>              Auto-decrypts e2e secrets with your identity
 hfs get <key> --raw        Show age ciphertext (what the server stores)
 hfs config set --e2e-identity <path>  Use a custom identity file
