@@ -45,7 +45,22 @@ hfs env <key> [key...]     Output as KEY=value (dashes → underscores)
 hfs env -e <key> [key...]  Same with export prefix
 hfs export                 Export all as JSON (includes tags)
 hfs import <file>          Import from JSON
+hfs cp <src> <dest>        Copy a secret to a new key
+hfs cp <src> <dest> -m     Move (copy + delete source, confirms first)
 ```
+
+### End-to-end encryption
+```
+hfs keygen                 Generate age identity (one-time setup)
+hfs pubkey                 Show your age public key (share with teammates)
+hfs set <key> <value> --e2e          Encrypt client-side before sending
+hfs set <key> <value> --recipients <file>  Encrypt for multiple recipients
+hfs get <key>              Auto-decrypts e2e secrets with your identity
+hfs get <key> --raw        Show age ciphertext (what the server stores)
+hfs config set --e2e-identity <path>  Use a custom identity file
+```
+
+The server never sees plaintext for `--e2e` secrets. Uses [age](https://age-encryption.org/) encryption.
 
 ### Auth & config
 ```

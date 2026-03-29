@@ -21,12 +21,13 @@ Store API keys, tokens, certificates, and credentials with a CLI or REST API. Ev
 
 | Layer | What |
 |-------|------|
-| **Encryption** | AES-256-GCM envelope encryption — each secret gets its own DEK, wrapped by a master KEK. Key rotation via DEK re-encryption. |
+| **E2E encryption** | Optional zero-knowledge mode with [age](https://age-encryption.org/). Secrets encrypted on your machine before they reach the server. Multi-recipient support. |
+| **Envelope encryption** | AES-256-GCM — each secret gets its own DEK, wrapped by a master KEK. Key rotation via DEK re-wrapping. |
 | **Integrity** | HMAC-SHA256 binds each secret to its key name. Optional separate `INTEGRITY_KEY`. Tamper-evident at rest. |
 | **Auth** | Dual-path via Cloudflare Access: interactive (IdP + optional hardware keys) or registered service tokens. |
 | **RBAC** | Users and tokens assigned to roles (admin, operator, reader, custom). Tag-based restrictions limit which secrets a role can access. |
 | **Audit** | Every operation logged with identity, IP, user agent, request ID. SHA-256 hash-chained for tamper detection. |
-| **Lifecycle** | Version history with restore, expiry tracking, 13 feature flags for runtime control. |
+| **Lifecycle** | Version history with restore, expiry enforcement, burn-after-reading, 19 feature flags for runtime control. |
 
 ## Architecture
 
@@ -102,10 +103,16 @@ hfs set api-key sk-ant-... -t production    # store with tags
 hfs get api-key -q                          # retrieve (pipe-friendly)
 hfs ls                                      # list keys
 eval $(hfs env -e API_KEY DB_PASSWORD)      # load into shell
+
+# Zero-knowledge mode — server can't read these
+hfs keygen                                  # one-time: generate age key pair
+hfs set db-password "hunter2" --e2e         # encrypted on your machine
+hfs get db-password -q                      # decrypted on your machine
+
+# Admin
 hfs user add ops@company.com -r operator    # add a user
 hfs role set ci-reader read --allowed-tags ci  # tag-restricted role
 hfs token register abc.access -n ci -r ci-reader  # scoped service token
-hfs versions api-key                        # view history
 hfs audit --action set --from 2026-03-01    # filtered audit log
 ```
 

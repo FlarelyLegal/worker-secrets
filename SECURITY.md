@@ -17,13 +17,14 @@ We aim to acknowledge reports within 48 hours and provide a fix or mitigation pl
 | **Privilege escalation** | RBAC with last-admin protection. Users can be disabled without deletion. ALLOWED_EMAILS fallback grants reader (not admin). Self-deletion blocked. |
 | **Audit tampering** | SHA-256 hash-chained audit log. Each entry links to the previous. Modifying or deleting entries breaks the chain. Verifiable with `hfs audit-verify`. |
 | **Insider bulk exfiltration** | `disable_export` feature flag blocks bulk export. Tag-based RBAC limits scope. All access logged with identity and request ID. |
+| **Compromised server** | E2E secrets encrypted client-side with [age](https://age-encryption.org/) before reaching the Worker. A compromised Worker or database sees only age ciphertext. Use `--e2e` for your most sensitive secrets. |
 
 ### What we explicitly do not protect against
 
 | Threat | Why |
 |--------|-----|
-| **Compromised Cloudflare account** | Dashboard access can read Wrangler secrets (the master key). Same trust boundary as any cloud-hosted vault. |
-| **Malicious Worker deployment** | A modified Worker can read the master key at runtime. Mitigate with CI/CD controls, branch protection, and Access policies on the deploy pipeline. |
+| **Compromised Cloudflare account** | Dashboard access can read Wrangler secrets (the master key). Same trust boundary as any cloud-hosted vault. E2E secrets remain protected — age decryption requires the client's private key. |
+| **Malicious Worker deployment** | A modified Worker can read the master key at runtime. Mitigate with CI/CD controls, branch protection, and Access policies. E2E secrets remain protected. |
 | **DDoS** | No application-level rate limiting. Relies on Cloudflare's edge DDoS protection. |
 | **Side-channel timing attacks** | Not specifically mitigated. AES-GCM via `crypto.subtle` is constant-time in the Workers runtime. |
 
@@ -53,6 +54,8 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 - [ ] Set `disable_export` in production to prevent bulk exfiltration
 - [ ] Configure Access policy to require hardware keys (`hwk`) for interactive sessions
 - [ ] Use tag-based RBAC: create roles with `allowed_tags` to limit access by team/environment
+- [ ] Use `hfs set --e2e` for your most sensitive secrets (zero-knowledge — server can't decrypt)
+- [ ] Run `hfs keygen` and back up your identity file securely (losing it = losing access to e2e secrets)
 - [ ] Periodically run `hfs audit-verify` to check hash chain integrity
 - [ ] Set `audit_retention_days` appropriate to your compliance requirements
 
