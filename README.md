@@ -75,7 +75,7 @@ Request flow:
 
 Encryption layers:
   Plaintext → [DEK: AES-256-GCM] → Ciphertext + [KEK: AES-256-GCM] → Encrypted DEK → D1
-  Secret key + ciphertext + IV → [HMAC-SHA256] → Integrity tag → D1
+  Secret key + ciphertext + IV + encrypted DEK + DEK IV → [HMAC-SHA256] → Integrity tag → D1
 ```
 
 ## Packages
@@ -113,7 +113,7 @@ hfs audit --action set --from 2026-03-01    # filtered audit log
 
 ```bash
 npm run lint                    # Biome check
-cd secret-vault && npm test     # 36 Worker tests
+cd secret-vault && npm test     # 42 Worker tests
 cd hfs && npm test              # CLI tests
 ```
 
