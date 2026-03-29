@@ -1,9 +1,10 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { FLAG_PUBLIC_PAGES_ENABLED } from "../constants.js";
+import { FLAG_MAINTENANCE, FLAG_PUBLIC_PAGES_ENABLED, FLAG_READ_ONLY } from "../constants.js";
 import { getFlagValue } from "../flags.js";
 import { healthPage, landingPage } from "../pages.js";
 import { HealthSchema } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
+import { VERSION } from "../version.js";
 
 const pub = new OpenAPIHono<HonoEnv>();
 
@@ -49,19 +50,28 @@ pub.openapi(healthRoute, async (c): Promise<any> => {
   }
 
   const healthy = dbOk && kvOk;
+  const region = (c.req.raw as unknown as { cf?: { colo?: string } }).cf?.colo || "local";
+  const maintenance = await getFlagValue(c.env.FLAGS, FLAG_MAINTENANCE, false);
+  const readOnly = await getFlagValue(c.env.FLAGS, FLAG_READ_ONLY, false);
+  const timestamp = new Date().toISOString();
+
+  const data = {
+    status: healthy ? "ok" : "degraded",
+    database: dbOk ? "ok" : "unreachable",
+    kv: kvOk ? "ok" : "unreachable",
+    version: VERSION,
+    region,
+    maintenance: Boolean(maintenance),
+    read_only: Boolean(readOnly),
+    timestamp,
+  };
+
   const accept = c.req.header("Accept") || "";
   if (accept.includes("text/html")) {
     const brand = c.env.BRAND_NAME || "Secret Vault";
-    return c.html(healthPage(brand, dbOk, kvOk));
+    return c.html(healthPage(brand, data));
   }
-  return c.json(
-    {
-      status: healthy ? "ok" : "degraded",
-      database: dbOk ? "ok" : "unreachable",
-      kv: kvOk ? "ok" : "unreachable",
-    },
-    healthy ? 200 : 503,
-  );
+  return c.json(data, healthy ? 200 : 503);
 });
 
 export default pub;
