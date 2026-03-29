@@ -15,7 +15,7 @@ pub.get("/", async (c) => {
   const brand = c.env.BRAND_NAME || "Secret Vault";
   const repoUrl = c.env.REPO_URL;
   const pkg = c.env.PROJECT_NAME ? `${c.env.PROJECT_NAME}-cli` : undefined;
-  return c.html(landingPage(brand, origin, repoUrl, pkg));
+  return c.html(landingPage(brand, origin, VERSION, repoUrl, pkg));
 });
 
 const healthRoute = createRoute({

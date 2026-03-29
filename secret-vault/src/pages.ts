@@ -32,6 +32,7 @@ export function favicon(initial: string): string {
 export function landingPage(
   brand: string,
   origin: string,
+  version: string,
   repoUrl?: string,
   packageName?: string,
 ): string {
@@ -231,7 +232,7 @@ export function landingPage(
 
     <footer>
       <span>by <a href="https://homeflare.dev">The HomeFlare Project</a> &middot; Powered by Cloudflare Workers</span>
-      <a href="/health" style="color:var(--muted);text-decoration:none">Status</a>
+      <a href="/health" style="color:var(--muted);text-decoration:none">Healthy &middot; v${esc(version)}</a>
     </footer>
   </div>
 </body>
