@@ -10,6 +10,7 @@ function makeUser(allowedTags: string[]): AuthUser {
     role: "reader",
     scopes: ["read"],
     allowedTags,
+    policies: [{ scopes: ["read"], tags: allowedTags }],
   };
 }
 

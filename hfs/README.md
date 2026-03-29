@@ -105,6 +105,9 @@ hfs user role <email> <role>  Change a user's role
 hfs role ls                List all roles with scopes and allowed_tags
 hfs role set <name> <scopes> [-d <desc>] [--allowed-tags <tags>]  Create or update a role
 hfs role rm <name>         Delete a role (must have no users)
+hfs role policy ls <role>                      List policies for a role
+hfs role policy add <role> <scopes> [-t tags]  Add a policy rule
+hfs role policy rm <role> <id>                 Remove a policy rule by ID
 ```
 
 ### Service tokens (interactive only)

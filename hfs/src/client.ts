@@ -261,6 +261,25 @@ export class VaultClient {
     return this.request("DELETE", `/roles/${encodeURIComponent(name)}`);
   }
 
+  // --- Policies ---
+
+  async listPolicies(
+    role: string,
+  ): Promise<{ id: number; scopes: string; tags: string; description: string }[]> {
+    return (
+      await this.request<{
+        policies: { id: number; scopes: string; tags: string; description: string }[];
+      }>("GET", `/roles/${encodeURIComponent(role)}/policies`)
+    ).policies;
+  }
+
+  async setPolicies(
+    role: string,
+    policies: { scopes: string; tags?: string; description?: string }[],
+  ): Promise<{ ok: boolean; count: number }> {
+    return this.request("PUT", `/roles/${encodeURIComponent(role)}/policies`, { policies });
+  }
+
   // --- Flags ---
 
   async listFlags(): Promise<FlagEntry[]> {

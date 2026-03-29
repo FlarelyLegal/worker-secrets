@@ -3,13 +3,16 @@ import { hasScope, isAdmin } from "../auth.js";
 import type { AuthUser } from "../types.js";
 
 function makeUser(overrides: Partial<AuthUser> = {}): AuthUser {
+  const scopes = overrides.scopes ?? ["read"];
+  const allowedTags = overrides.allowedTags ?? [];
   return {
     method: "interactive",
     identity: "test@example.com",
     name: "test",
     role: "reader",
-    scopes: ["read"],
-    allowedTags: [],
+    scopes,
+    allowedTags,
+    policies: [{ scopes, tags: allowedTags }],
     ...overrides,
   };
 }

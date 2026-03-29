@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope, hasTagAccess } from "../auth.js";
+import { accessibleTags, audit, hasAccess, hasScope } from "../auth.js";
 import {
   ACTION_DELETE,
   ACTION_GET,
@@ -63,11 +63,16 @@ secrets.openapi(listRoute, async (c) => {
     binds.push(`%${escaped}%`);
   }
 
-  // Tag-based access control: filter in SQL for correct pagination
-  if (auth.allowedTags.length > 0) {
-    const tagConditions = auth.allowedTags.map(() => "',' || tags || ',' LIKE ?").join(" OR ");
+  // Policy-based tag filtering for correct pagination
+  const readable = accessibleTags(auth, SCOPE_READ);
+  if (readable !== null && readable.length === 0) {
+    // No tags accessible — return empty results
+    return c.json({ secrets: [], total: 0 }, 200);
+  }
+  if (readable !== null && readable.length > 0) {
+    const tagConditions = readable.map(() => "',' || tags || ',' LIKE ?").join(" OR ");
     conditions.push(`(${tagConditions})`);
-    for (const tag of auth.allowedTags) {
+    for (const tag of readable) {
       binds.push(`%,${tag},%`);
     }
   }
@@ -123,8 +128,8 @@ secrets.openapi(getRoute, async (c) => {
 
   if (!row) return c.json({ error: "Secret not found" }, 404);
 
-  // Tag-based access control
-  if (!hasTagAccess(auth, row.tags))
+  // Policy-based access control
+  if (!hasAccess(auth, SCOPE_READ, row.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Enforce expiry
@@ -248,7 +253,7 @@ secrets.openapi(deleteRoute, async (c) => {
     .bind(key)
     .first<{ tags: string }>();
   if (!row) return c.json({ error: "Secret not found" }, 404);
-  if (!hasTagAccess(auth, row.tags))
+  if (!hasAccess(auth, SCOPE_DELETE, row.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Delete versions first (explicit cleanup — FK CASCADE may not be enforced in D1)

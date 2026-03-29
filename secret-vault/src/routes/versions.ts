@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope, hasTagAccess } from "../auth.js";
+import { audit, hasAccess, hasScope } from "../auth.js";
 import {
   ACTION_GET,
   ACTION_RESTORE,
@@ -51,7 +51,7 @@ versions.openapi(versionsRoute, async (c) => {
     .bind(key)
     .first<{ tags: string }>();
   if (!secret) return c.json({ error: "Secret not found" }, 404);
-  if (!hasTagAccess(auth, secret.tags))
+  if (!hasAccess(auth, SCOPE_READ, secret.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   const { results } = await c.env.DB.prepare(
@@ -116,7 +116,7 @@ versions.openapi(getVersionRoute, async (c) => {
     .bind(key)
     .first<{ tags: string }>();
   if (!secret) return c.json({ error: "Secret not found" }, 404);
-  if (!hasTagAccess(auth, secret.tags))
+  if (!hasAccess(auth, SCOPE_READ, secret.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   const version = await c.env.DB.prepare(
@@ -235,7 +235,7 @@ versions.openapi(restoreRoute, async (c) => {
   const secret = await c.env.DB.prepare("SELECT tags FROM secrets WHERE key = ?")
     .bind(key)
     .first<{ tags: string }>();
-  if (secret && !hasTagAccess(auth, secret.tags))
+  if (secret && !hasAccess(auth, SCOPE_WRITE, secret.tags))
     return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
 
   // Fetch the version to restore

@@ -10,13 +10,15 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 |------|----------|-------|
 | Worker entry | `secret-vault/src/index.ts` | OpenAPIHono app, security headers, middleware, route mounting |
 | Worker schemas | `secret-vault/src/schemas*.ts` | Split by domain: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts` |
-| Worker auth | `secret-vault/src/auth.ts` | authenticate, hasScope, isAdmin, audit, JWKS cache, RBAC scope resolution |
+| Worker auth | `secret-vault/src/auth.ts` | authenticate, JWKS cache, resolveRole (re-exports access + audit) |
+| Worker access | `secret-vault/src/access.ts` | hasScope, hasAccess, accessibleTags, isAdmin, hasTagAccess (policy-based RBAC) |
+| Worker audit | `secret-vault/src/audit.ts` | Hash-chained audit logging with timestamp in chain hash |
 | Worker crypto | `secret-vault/src/crypto.ts` | Envelope encryption (per-secret DEK, master KEK), AES-256-GCM encrypt/decrypt, hex validation, key cache |
 | Worker constants | `secret-vault/src/constants.ts` | Typed constants replacing magic strings (actions, scopes, headers, defaults) |
-| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `secret-write.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `bulk.ts`, `admin.ts`, `admin-ops.ts`, `rotate-key.ts`, `public.ts`, `flags.ts` |
+| Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `secret-write.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `policies.ts`, `bulk.ts` (mounts `bulk-export.ts` + `bulk-import.ts`), `admin.ts`, `admin-ops.ts`, `rotate-key.ts`, `public.ts`, `flags.ts` |
 | Worker flags | `secret-vault/src/flags.ts` | `getFlagValue()` helper for reading typed flags from KV |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
-| Worker pages | `secret-vault/src/pages.ts` | Landing page and health page HTML templates |
+| Worker pages | `secret-vault/src/pages.ts` | Landing page HTML + shared styles (re-exports `health-page.ts`) |
 | Worker version | `secret-vault/src/version.ts` | Auto-synced from VERSION file during build |
 | CLI entry | `hfs/src/cli.ts` | Program setup, command registration |
 | CLI commands | `hfs/src/commands/` | `auth.ts`, `secrets.ts`, `secrets-bulk.ts`, `secrets-ops.ts`, `template.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`, `keygen.ts` |
@@ -43,7 +45,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 - **ALWAYS** compute and store HMAC on write, verify on read — integrity binds key + ciphertext + IV
 - HMAC key for integrity binding — from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` via `crypto.subtle.deriveKey()`
 - **Audit log hash chaining** — each audit entry includes `prev_hash` linking to the previous entry, making the log tamper-evident
-- **Tag-based access control** — roles have `allowed_tags` restricting which secrets they can access
+- **Policy-based RBAC** — roles have multiple policies, each binding scopes to specific tags. `hasAccess(auth, scope, tags)` is the primary access check. Legacy `allowed_tags` on roles still works as fallback.
 - **Secret expiry** — optional `expires_at` field per secret for rotation tracking
 - **Typed constants** — use `constants.ts` for actions, scopes, headers, and defaults; no magic strings
 - CryptoKey and JWKS set are cached at module level — do not recreate per request
