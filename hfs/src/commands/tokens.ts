@@ -82,6 +82,7 @@ export function registerTokenCommands(program: Command): void {
 
   tokenCmd
     .command("ls")
+    .alias("list")
     .description("List registered service tokens")
     .option("-j, --json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {

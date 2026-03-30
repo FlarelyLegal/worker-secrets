@@ -7,6 +7,7 @@ export function registerRoleCommands(program: Command) {
 
   role
     .command("ls")
+    .alias("list")
     .description("List all roles")
     .option("-j, --json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
@@ -20,8 +21,9 @@ export function registerRoleCommands(program: Command) {
           console.log(chalk.dim("No roles."));
           return;
         }
-        const header = `${"NAME".padEnd(16)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(18)} DESCRIPTION`;
-        console.log(header);
+        console.log(
+          chalk.dim(`${"NAME".padEnd(16)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(18)} DESCRIPTION`),
+        );
         for (const r of roles) {
           const tags = r.allowed_tags || chalk.dim("all");
           console.log(
@@ -90,8 +92,9 @@ export function registerRoleCommands(program: Command) {
           console.log(chalk.dim("No policies (using role-level scopes/tags)."));
           return;
         }
-        const header = `${"ID".padEnd(6)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(20)} DESCRIPTION`;
-        console.log(header);
+        console.log(
+          chalk.dim(`${"ID".padEnd(6)} ${"SCOPES".padEnd(18)} ${"TAGS".padEnd(20)} DESCRIPTION`),
+        );
         for (const p of policies) {
           const tags = p.tags || chalk.dim("all");
           console.log(

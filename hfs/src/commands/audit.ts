@@ -56,6 +56,11 @@ export function registerAuditCommands(program: Command): void {
           }
 
           const maxAction = Math.max(...entries.map((e) => e.action.length), 6);
+          console.log(
+            chalk.dim(
+              `${"TIMESTAMP".padEnd(21)} ${"METHOD".padEnd(25)}${"ACTION".padEnd(maxAction + 2)}  KEY`,
+            ),
+          );
 
           for (const e of entries) {
             const action = e.action.padEnd(maxAction + 2);

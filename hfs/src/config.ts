@@ -104,7 +104,12 @@ export function setConfig(key: keyof HfsConfig, value: string | number): void {
 }
 
 export function getConfig(): HfsConfig {
-  return config.store;
+  const store = config.store;
+  // Allow HFS_E2E_IDENTITY env var to override config (useful in CI)
+  if (process.env.HFS_E2E_IDENTITY && !store.e2eIdentity) {
+    store.e2eIdentity = process.env.HFS_E2E_IDENTITY;
+  }
+  return store;
 }
 
 export function getConfigPath(): string {

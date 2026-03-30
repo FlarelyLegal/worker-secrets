@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFileSync } from "node:fs";
+import chalk from "chalk";
 import { program } from "commander";
 import { registerAdminOpsCommands } from "./commands/admin-ops.js";
 import { registerAuditCommands } from "./commands/audit.js";
@@ -28,6 +29,18 @@ const REPO: string = pkg.repository?.url?.replace(/^git\+/, "").replace(/\.git$/
 
 initTls();
 
+// --no-color support (strip before Commander parses; chalk also respects NO_COLOR env)
+const noColorIdx = process.argv.indexOf("--no-color");
+if (noColorIdx !== -1) {
+  chalk.level = 0;
+  process.argv.splice(noColorIdx, 1);
+}
+
+program
+  .name("hfs")
+  .description("Encrypted secret management for Cloudflare Workers")
+  .version(VERSION);
+
 registerAuthCommands(program);
 registerSecretCommands(program);
 registerSecretBulkCommands(program);
@@ -46,11 +59,6 @@ registerDeployCommands(program);
 registerProfileCommands(program);
 registerScanCommands(program);
 registerCompletionCommands(program);
-
-program
-  .name("hfs")
-  .description("Encrypted secret management for Cloudflare Workers")
-  .version(VERSION);
 
 program.parse();
 

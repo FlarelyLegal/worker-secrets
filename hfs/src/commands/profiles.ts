@@ -139,7 +139,8 @@ export function registerProfileCommands(program: Command): void {
   profileCmd
     .command("diff <a> <b>")
     .description("Compare secrets between two profiles")
-    .action(async (a: string, b: string) => {
+    .option("-j, --json", "Output as JSON")
+    .action(async (a: string, b: string, opts: { json?: boolean }) => {
       try {
         const all = await fetchAllSecrets(client());
         const aSecrets = new Map(filterByProfile(all, a).map((s) => [s.key, s]));
@@ -148,6 +149,11 @@ export function registerProfileCommands(program: Command): void {
         const onlyA = [...aSecrets.keys()].filter((k) => !bSecrets.has(k)).sort();
         const onlyB = [...bSecrets.keys()].filter((k) => !aSecrets.has(k)).sort();
         const inBoth = [...aSecrets.keys()].filter((k) => bSecrets.has(k)).sort();
+
+        if (opts.json) {
+          console.log(JSON.stringify({ only_a: onlyA, only_b: onlyB, shared: inBoth }, null, 2));
+          return;
+        }
 
         if (onlyA.length === 0 && onlyB.length === 0 && inBoth.length === 0) {
           console.log(chalk.dim(`Both profiles '${a}' and '${b}' are empty.`));

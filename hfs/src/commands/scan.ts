@@ -153,10 +153,11 @@ export function registerScanCommands(program: Command): void {
     .option("--dry-run", "Report findings without storing")
     .option("--private", "Store as e2e private (encrypted for only you)")
     .option("-t, --tags <tags>", "Tags to apply to imported secrets")
+    .option("-j, --json", "Output findings as JSON")
     .action(
       async (
         dir: string | undefined,
-        opts: { dryRun?: boolean; private?: boolean; tags?: string },
+        opts: { dryRun?: boolean; private?: boolean; tags?: string; json?: boolean },
       ) => {
         try {
           const scanDir = dir || process.cwd();
@@ -177,7 +178,13 @@ export function registerScanCommands(program: Command): void {
           }
 
           if (allFindings.length === 0) {
-            console.log(chalk.green("No hardcoded secrets detected."));
+            if (opts.json) console.log(JSON.stringify([], null, 2));
+            else console.log(chalk.green("No hardcoded secrets detected."));
+            return;
+          }
+
+          if (opts.json) {
+            console.log(JSON.stringify(allFindings, null, 2));
             return;
           }
 

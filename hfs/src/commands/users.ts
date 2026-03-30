@@ -7,6 +7,7 @@ export function registerUserCommands(program: Command) {
 
   user
     .command("ls")
+    .alias("list")
     .description("List all users")
     .option("-j, --json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
@@ -20,8 +21,11 @@ export function registerUserCommands(program: Command) {
           console.log(chalk.dim("No users."));
           return;
         }
-        const header = `${"EMAIL".padEnd(36)} ${"NAME".padEnd(20)} ${"ROLE".padEnd(10)} ${"ENABLED".padEnd(8)} LAST LOGIN`;
-        console.log(header);
+        console.log(
+          chalk.dim(
+            `${"EMAIL".padEnd(36)} ${"NAME".padEnd(20)} ${"ROLE".padEnd(10)} ${"ENABLED".padEnd(8)} LAST LOGIN`,
+          ),
+        );
         for (const u of users) {
           const enabled = u.enabled ? chalk.green("yes") : chalk.red("no");
           const lastLogin = u.last_login_at || chalk.dim("never");
