@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.24.0] - 2026-03-30
+
+### Bug Fixes
+
+- Sync root package.json version with VERSION file
+- Release workflow uses --latest for release notes, not full changelog
+- Mask CA cert full path in config show (CodeQL CWE-532)
+
+### Features
+
+- Rebrand favicon and meta to HomeFlare (HF)
+- Add Infisical to comparison table, strengthen differentiators
+- V0.24.0 - expiration reminders, secret refs, profiles, audit consumers
+
+## [0.23.1] - 2026-03-30
 
 ### Bug Fixes
 
@@ -11,6 +25,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Enriched /whoami with browser UI, WARP status, and vault diagnostics
+
+### Miscellaneous
+
+- Bump version to 0.23.1
 
 ## [0.23.0] - 2026-03-29
 
