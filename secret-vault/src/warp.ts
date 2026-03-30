@@ -72,7 +72,7 @@ export async function verifyZtChallenge(
   if (Number.isNaN(parsedMinute)) return false;
 
   const currentMinute = Math.floor(Date.now() / 60000);
-  if (currentMinute - parsedMinute > 2) return false;
+  if (Math.abs(currentMinute - parsedMinute) > 2) return false;
 
   // Check the exact minute the client claimed
   const expected = await computeZtHmac(storedFingerprint, timestamp);

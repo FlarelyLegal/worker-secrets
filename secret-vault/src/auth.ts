@@ -220,9 +220,12 @@ export async function authenticate(
     return null;
   }
 
-  // Check if this JWT is from a service token (header or JWT common_name)
+  // Check if this JWT is from a service token (header or JWT common_name).
+  // Only trust common_name when the JWT type is "app" (Cloudflare Access service token JWT),
+  // not from interactive IdP sessions where common_name could be attacker-controlled.
   const jwtClientId =
-    request.headers.get("CF-Access-Client-Id") || (payload.common_name as string | undefined);
+    request.headers.get("CF-Access-Client-Id") ||
+    (payload.type === "app" && payload.common_name ? (payload.common_name as string) : undefined);
   if (jwtClientId) {
     return await authenticateWithJwt(request, env, jwtClientId, payload);
   }

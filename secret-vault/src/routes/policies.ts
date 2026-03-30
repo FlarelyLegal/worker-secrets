@@ -1,11 +1,20 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit } from "../audit.js";
-import { ACTION_SET_ROLE } from "../constants.js";
+import { audit, isAdmin } from "../auth.js";
+import { ACTION_SET_ROLE, AUTH_INTERACTIVE } from "../constants.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { PoliciesBody, PolicySchema, RoleNameParam } from "../schemas-rbac.js";
 import type { HonoEnv } from "../types.js";
 
 const policies = new OpenAPIHono<HonoEnv>();
+
+// Admin-only guard - policies control RBAC, must be restricted
+policies.use("*", async (c, next) => {
+  const auth = c.get("auth");
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
+    return c.json({ error: "Admin only" }, 403);
+  }
+  return next();
+});
 
 // --- List policies ---
 
