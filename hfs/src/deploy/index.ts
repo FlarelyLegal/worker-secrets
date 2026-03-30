@@ -1,4 +1,12 @@
-export { createAccessApp, deleteAccessApp, findAccessApp, updateAccessApp } from "./access.js";
+export {
+  createAccessApp,
+  createAllowPolicy,
+  createServiceAuthPolicy,
+  deleteAccessApp,
+  findAccessApp,
+  listAccessPolicies,
+  updateAccessApp,
+} from "./access.js";
 export {
   checkD1Exists,
   checkKVExists,

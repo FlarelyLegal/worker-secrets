@@ -76,3 +76,51 @@ export async function deleteAccessApp(
 ): Promise<void> {
   await cfApi("DELETE", `/accounts/${accountId}/access/apps/${appId}`, auth);
 }
+
+// --- Access Policies ---
+
+interface AccessPolicy {
+  id: string;
+  name: string;
+  decision: string;
+  precedence: number;
+}
+
+export async function listAccessPolicies(
+  accountId: string,
+  appId: string,
+  auth: CfAuth,
+): Promise<AccessPolicy[]> {
+  return cfApi<AccessPolicy[]>("GET", `/accounts/${accountId}/access/apps/${appId}/policies`, auth);
+}
+
+/** Create an Allow policy for the deployer's email (interactive users). */
+export async function createAllowPolicy(
+  accountId: string,
+  appId: string,
+  email: string,
+  auth: CfAuth,
+): Promise<AccessPolicy> {
+  const domain = email.split("@")[1];
+  return cfApi<AccessPolicy>("POST", `/accounts/${accountId}/access/apps/${appId}/policies`, auth, {
+    name: `${domain} - Allow`,
+    decision: "allow",
+    include: [{ email: { email } }],
+    precedence: 1,
+    session_duration: "168h",
+  });
+}
+
+/** Create a Service Auth policy so registered service tokens can authenticate. */
+export async function createServiceAuthPolicy(
+  accountId: string,
+  appId: string,
+  auth: CfAuth,
+): Promise<AccessPolicy> {
+  return cfApi<AccessPolicy>("POST", `/accounts/${accountId}/access/apps/${appId}/policies`, auth, {
+    name: "Service Tokens",
+    decision: "non_identity",
+    include: [{ any_valid_service_token: {} }],
+    precedence: 2,
+  });
+}

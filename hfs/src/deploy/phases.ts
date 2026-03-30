@@ -6,11 +6,14 @@ import {
   checkKVExists,
   checkSecretExists,
   createAccessApp,
+  createAllowPolicy,
   createD1,
   createKV,
+  createServiceAuthPolicy,
   deployWorker,
   dryRunDeploy,
   findAccessApp,
+  listAccessPolicies,
   listPendingMigrations,
   resolveCfAuth,
   setEncryptionKey,
@@ -90,7 +93,41 @@ export async function phaseAccess(state: DeployState, dry: boolean): Promise<voi
       saveState(state);
       ok(`App created for ${domains.length} domain(s)`, dry);
       ok(`AUD: ${chalk.dim(state.policyAud.slice(0, 16))}...`, dry);
-      console.log(chalk.dim("    Add policies in Zero Trust: Service Auth + Allow (hwk)"));
+
+      // Scaffold default policies
+      try {
+        await createAllowPolicy(state.accountId, app.id, auth.email, auth);
+        ok(`Allow policy created for ${chalk.dim(auth.email)}`, dry);
+      } catch {
+        console.log(chalk.dim("    Could not create allow policy - add manually in Zero Trust"));
+      }
+      try {
+        await createServiceAuthPolicy(state.accountId, app.id, auth);
+        ok("Service token policy created", dry);
+      } catch {
+        console.log(
+          chalk.dim("    Could not create service auth policy - add manually in Zero Trust"),
+        );
+      }
+    }
+
+    // Ensure existing apps have policies
+    if (state.accessAppId && !dry) {
+      try {
+        const policies = await listAccessPolicies(state.accountId, state.accessAppId, auth);
+        const hasAllow = policies.some((p) => p.decision === "allow");
+        const hasService = policies.some((p) => p.decision === "non_identity");
+        if (!hasAllow) {
+          await createAllowPolicy(state.accountId, state.accessAppId, auth.email, auth);
+          ok(`Allow policy added for ${chalk.dim(auth.email)}`, dry);
+        }
+        if (!hasService) {
+          await createServiceAuthPolicy(state.accountId, state.accessAppId, auth);
+          ok("Service token policy added", dry);
+        }
+      } catch {
+        // Non-fatal - policies may already exist or user lacks permission
+      }
     }
   } catch (e) {
     fail("Access application setup", e);
