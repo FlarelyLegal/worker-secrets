@@ -14,7 +14,7 @@ interface HealthData {
 export function healthPage(brand: string, data: HealthData): string {
   const allOk = data.database === "ok" && data.kv === "ok";
   const b = esc(brand);
-  const initial = esc(brand.charAt(0).toUpperCase());
+  const initial = "HF";
   const ok = (v: string) => (v === "ok" ? "ok" : "fail");
   const flag = (v: boolean, label: string) =>
     v ? `<span class="flag-on">${esc(label)}: on</span>` : "";
@@ -23,8 +23,8 @@ export function healthPage(brand: string, data: HealthData): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${b} - Health</title>
-  <meta name="description" content="${b} health check: database, KV, version, and operational status." />
+  <title>${b} Health | HomeFlare</title>
+  <meta name="description" content="${b} by HomeFlare: health check — database, KV, version, and operational status." />
   ${favicon(initial)}
   <style>${STYLES}
     body { display: flex; align-items: center; justify-content: center; padding: 2rem; }

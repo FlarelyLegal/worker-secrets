@@ -153,14 +153,13 @@ app.get("/doc", async (c) => {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-  const initial = brand.charAt(0);
   return c.html(`<!DOCTYPE html>
 <html>
 <head>
-  <title>${brand} API</title>
+  <title>${brand} API | HomeFlare</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${initial}</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='67' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='44' fill='white'>HF</text></svg>" />
 </head>
 <body>
   <script id="api-reference" data-url="/doc/json" data-configuration='${JSON.stringify({

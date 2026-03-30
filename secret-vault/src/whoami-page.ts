@@ -16,14 +16,14 @@ interface WhoamiData {
 
 export function whoamiPage(brand: string, data: WhoamiData): string {
   const b = esc(brand);
-  const initial = esc(brand.charAt(0).toUpperCase());
+  const initial = "HF";
   const ok = (v: boolean) => (v ? "ok" : "dim");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${b} - Who Am I</title>
+  <title>${b} Who Am I | HomeFlare</title>
   ${favicon(initial)}
   <style>${STYLES}
     body { display: flex; align-items: center; justify-content: center; padding: 2rem; }

@@ -26,7 +26,9 @@ export function esc(s: string): string {
 }
 
 export function favicon(initial: string): string {
-  return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='72' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='60' fill='white'>${esc(initial)}</text></svg>" />`;
+  const fs = initial.length > 1 ? 44 : 60;
+  const y = initial.length > 1 ? 67 : 72;
+  return `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%23f97316'/><text x='50' y='${y}' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='${fs}' fill='white'>${esc(initial)}</text></svg>" />`;
 }
 
 export function landingPage(
@@ -39,7 +41,7 @@ export function landingPage(
   const repo = repoUrl || "https://github.com/FlarelyLegal/worker-secrets";
   const pkg = packageName || "@FlarelyLegal/hfs-cli";
   const b = esc(brand);
-  const initial = esc(brand.charAt(0).toUpperCase());
+  const initial = "HF";
   const o = esc(origin);
   const r = esc(repo);
   const p = esc(pkg);
@@ -48,17 +50,18 @@ export function landingPage(
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${b}</title>
-  <meta name="description" content="${b}: Self-hosted encrypted secret manager on Cloudflare Workers with end-to-end encryption, RBAC, and tamper-evident audit logs." />
-  <meta property="og:title" content="${b}" />
+  <title>${b} | HomeFlare</title>
+  <meta name="description" content="${b} by HomeFlare: Self-hosted encrypted secret manager on Cloudflare Workers with end-to-end encryption, RBAC, and tamper-evident audit logs." />
+  <meta property="og:title" content="${b} | HomeFlare" />
   <meta property="og:description" content="Self-hosted secret manager with zero-knowledge encryption. Your secrets, your keys, your infrastructure." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${o}" />
+  <meta property="og:site_name" content="HomeFlare" />
   ${favicon(initial)}
   <style>${STYLES}
     .page { max-width: 720px; margin: 0 auto; padding: 5rem 2rem 3rem; }
     header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 3rem; }
-    .brand-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; }
+    .brand-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8125rem; color: #fff; letter-spacing: -0.02em; }
     .brand-name { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
     h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 1rem; }
     h1 .highlight { color: var(--accent); }
