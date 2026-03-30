@@ -4,6 +4,7 @@ import { computeZtResponse } from "./tls.js";
 
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const USER_AGENT = `hfs-cli/${pkg.version} (${process.platform}; ${process.arch}) node/${process.versions.node}`;
+
 import type {
   AuditEntry,
   FlagEntry,
@@ -33,7 +34,10 @@ export class VaultClient {
   }
 
   private get headers(): Record<string, string> {
-    const h: Record<string, string> = { "Content-Type": "application/json", "User-Agent": USER_AGENT };
+    const h: Record<string, string> = {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    };
     if (this.auth.type === "service_token") {
       h["CF-Access-Client-Id"] = this.auth.clientId;
       h["CF-Access-Client-Secret"] = this.auth.clientSecret;
