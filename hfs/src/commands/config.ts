@@ -125,9 +125,7 @@ export function registerConfigCommands(program: Command): void {
       console.log(chalk.underline("TLS"));
       const tlsStatus = getCaCertStatus();
       if (tlsStatus.active) {
-        // Show basename only - full path may expose system layout
-        const certName = tlsStatus.path ? tlsStatus.path.split("/").pop() : "configured";
-        console.log(chalk.dim("  ca cert:   ") + chalk.dim(certName));
+        console.log(chalk.dim("  ca cert:   ") + chalk.dim(tlsStatus.name || "configured"));
         console.log(chalk.dim("  source:    ") + chalk.green(tlsStatus.source));
       } else {
         console.log(chalk.dim("  ca cert:   ") + chalk.dim("system defaults"));

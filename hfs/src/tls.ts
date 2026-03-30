@@ -93,11 +93,15 @@ export function computeZtResponse(): {
   return { response, timestamp };
 }
 
-export function getCaCertStatus(): { active: boolean; path?: string; source?: string } {
+export function getCaCertStatus(): { active: boolean; name?: string; source?: string } {
   if (process.env.NODE_EXTRA_CA_CERTS) {
-    return { active: true, path: process.env.NODE_EXTRA_CA_CERTS, source: "NODE_EXTRA_CA_CERTS" };
+    const name = process.env.NODE_EXTRA_CA_CERTS.split("/").pop() || "custom";
+    return { active: true, name, source: "NODE_EXTRA_CA_CERTS" };
   }
   const cert = resolveCaCert();
-  if (cert) return { active: true, ...cert };
+  if (cert) {
+    const name = cert.path ? cert.path.split("/").pop() : "detected";
+    return { active: true, name, source: cert.source };
+  }
   return { active: false };
 }
