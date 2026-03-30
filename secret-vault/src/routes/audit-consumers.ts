@@ -1,6 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { isAdmin } from "../auth.js";
-import { AUTH_INTERACTIVE } from "../constants.js";
 import { ErrorSchema } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
 
