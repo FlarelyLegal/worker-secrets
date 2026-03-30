@@ -1,4 +1,4 @@
-# Secret Vault
+# HomeFlare Secret Vault
 
 Self-hosted encrypted secret manager on Cloudflare Workers. No external dependencies, no third-party trust - runs entirely on your own account.
 

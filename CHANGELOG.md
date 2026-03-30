@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Fix critical policy auth bypass + SSRF + JWT spoofing + WARP replay
+
+## [0.28.0] - 2026-03-30
+
+### Bug Fixes
+
+- Add NPM_PACKAGE to Env type
+- Release workflow publishes to GitHub Packages under @flarelylegal scope
+
+### Features
+
+- CLI polish - no-color, aliases, consistency, completions, env var
+- CLI polish #7-15 - help, validation, spinners, completions
+
+### Miscellaneous
+
+- Bump version to 0.28.0
+
+## [0.27.0] - 2026-03-30
+
+### Bug Fixes
+
+- Update crypto test signatures and bulk-export for AAD parameter
+- Landing page npm package name uses NPM_PACKAGE env var
+
+### Features
+
+- Homeflare umbrella CLI with secrets subcommand
+- V0.27.0 - homeflare umbrella CLI + Homebrew tap
+
+## [0.26.0] - 2026-03-30
+
+### Bug Fixes
+
+- Allow admin service tokens to query audit consumers
+- Remove unused AUTH_INTERACTIVE import (biome)
+
+### Features
+
+- V0.26.0 - AES-256-GCM AAD binding for secret key names
+
+### Miscellaneous
+
+- Regenerate changelog for v0.25.0
+
 ## [0.25.0] - 2026-03-30
 
 ### Bug Fixes
