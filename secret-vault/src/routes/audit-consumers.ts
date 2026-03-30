@@ -57,7 +57,7 @@ const consumersRoute = createRoute({
 
 auditConsumers.openapi(consumersRoute, async (c) => {
   const auth = c.get("auth");
-  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
+  if (!isAdmin(auth)) {
     return c.json({ error: "Admin only" }, 403);
   }
 
