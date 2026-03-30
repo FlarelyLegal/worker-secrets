@@ -1,6 +1,6 @@
 {
   "name": "@homeflare/hfs",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "type": "module",
   "description": "Encrypted secret vault CLI for Cloudflare Workers",
   "bin": {
