@@ -35,7 +35,7 @@ Two modes, no fallback. They never mix.
 
 **Human** - Set the vault URL with `hfs config set --url`, then `hfs login` opens a browser via cloudflared. Tap your YubiKey or use your IdP. Short-lived JWT stored locally.
 
-**Machine** - Set `HFS_URL`, `HFS_CLIENT_ID`, `HFS_CLIENT_SECRET` env vars. Must correspond to a registered service token.
+**Machine** - Set `HFS_URL`, `HFS_CLIENT_ID`, `HFS_CLIENT_SECRET` env vars. Must correspond to a registered service token. Tokens registered with `--secret` authenticate via hashed client secret and work on all endpoints, not just Access-protected paths.
 
 ## Commands
 
@@ -119,7 +119,7 @@ hfs role policy rm <role> <id>                 Remove a policy rule by ID
 
 ### Service tokens (interactive only)
 ```
-hfs token register <id> -n <name> [-s <scopes>] [-r <role>] [-d <desc>]
+hfs token register <id> -n <name> [-s <scopes>] [-r <role>] [--secret <s>] [--age-key <k>] [-d <desc>]
 hfs token revoke <id>      Revoke a token
 hfs token ls               List tokens with last-used times
 ```
@@ -183,7 +183,7 @@ hfs export > backup.json
 hfs import backup.json --overwrite
 
 # Register a read-only CI token
-hfs token register abc.access -n ci-pipeline -s read
+hfs token register abc.access -n ci-pipeline -s read --secret "your-client-secret"
 
 # Audit
 hfs audit -n 50

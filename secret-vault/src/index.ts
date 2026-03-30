@@ -4,6 +4,7 @@ import {
   ACTION_AUTH_FAILED,
   ACTION_WARP_REJECTED,
   AUTH_REJECTED,
+  AUTH_SERVICE_TOKEN,
   FLAG_ALLOWED_COUNTRIES,
   FLAG_AUDIT_CLEANUP_PROBABILITY,
   FLAG_AUDIT_RETENTION_DAYS,
@@ -218,9 +219,11 @@ app.use("*", async (c, next) => {
   const { user, jwtPayload } = authResult;
   // WARP enforcement (pass JWT payload for device_sessions detection)
   const warpInfo = extractWarpInfo(c.req.raw, jwtPayload);
-  // Exempt /whoami from WARP enforcement (diagnostic endpoint, browser-accessible)
+  // Exempt /whoami (diagnostic) and service tokens (machine-to-machine) from WARP enforcement
   const isWhoami = new URL(c.req.url).pathname === "/whoami";
-  const warpRequired = isWhoami ? false : (getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean);
+  const isServiceToken = user.method === AUTH_SERVICE_TOKEN;
+  const warpRequired =
+    isWhoami || isServiceToken ? false : (getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean);
   const ztResponse = c.req.header("X-ZT-Response");
   const ztTimestamp = c.req.header("X-ZT-Timestamp");
   // Query user's registered ZT fingerprint for device binding

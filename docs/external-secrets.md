@@ -21,7 +21,7 @@ Secrets stored with `--e2e` or `--private` are encrypted client-side with age be
 ### Prerequisites
 
 - ESO installed in your cluster (`helm install external-secrets external-secrets/external-secrets`)
-- A registered service token in the vault (`hfs token create <name>`)
+- A registered service token in the vault (`hfs token register <client_id> -n <name> --secret <secret>`)
 - The vault URL (e.g. `https://secrets.example.com`)
 
 ---

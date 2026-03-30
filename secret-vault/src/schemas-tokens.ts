@@ -27,6 +27,11 @@ export const TokenCreateBody = z.object({
   description: z.string().max(1000).optional().default(""),
   scopes: ScopesString.optional().default("*"),
   role: z.string().max(64).optional(),
+  client_secret_hash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/, "Must be a 64-char lowercase hex SHA-256 hash")
+    .optional(),
+  age_public_key: z.string().startsWith("age1").max(100).optional(),
 });
 
 export const TokenCreateResponse = z

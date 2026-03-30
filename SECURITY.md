@@ -42,7 +42,7 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 
 - [ ] Set `ENCRYPTION_KEY` via `wrangler secret put` (never in code or wrangler.jsonc)
 - [ ] Configure Cloudflare Access with your IdP and appropriate policies
-- [ ] Register all service tokens with minimal scopes (`read` for CI, `read,write` for deploy)
+- [ ] Register all service tokens with minimal scopes (`read` for CI, `read,write` for deploy); use `--secret` for direct auth if the token must reach endpoints without Access protection
 - [ ] Add users to the `users` table with appropriate roles (don't rely on `ALLOWED_EMAILS`)
 
 ### Recommended

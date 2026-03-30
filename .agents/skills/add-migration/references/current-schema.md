@@ -1,8 +1,8 @@
 # Current D1 schema
 
-Applied via migrations `0001_init.sql` through `0011_zt_device_binding.sql`.
+Applied via migrations `0001_init.sql` through `0013_service_token_age_key.sql`.
 
-Migrations 0002-0011 are incremental and apply columns/tables that already exist in `0001_init.sql` for fresh deployments; they are retained for upgrade paths from older versions.
+Migrations 0002-0013 are incremental and apply columns/tables that already exist in `0001_init.sql` for fresh deployments; they are retained for upgrade paths from older versions.
 
 ## Tables
 
@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS service_tokens (
   description TEXT DEFAULT '',
   scopes TEXT DEFAULT '*',        -- comma-separated: 'read', 'write', 'delete', '*'
   role TEXT REFERENCES roles(name), -- optional: overrides scopes when set
+  client_secret_hash TEXT,        -- SHA-256 hash of client secret for direct auth (null = Access-only)
+  age_public_key TEXT,            -- age public key for E2E encryption (null = no E2E)
   created_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
@@ -148,4 +150,4 @@ CREATE INDEX idx_audit_log_action ON audit_log(action, timestamp);
 - Primary keys are text, not auto-increment (except `audit_log`, `secret_versions`, `role_policies`)
 - Use `ON CONFLICT ... DO UPDATE` for upserts
 - Always use parameterized `.bind()`, never string interpolation
-- Next migration: `0012_*.sql`
+- Next migration: `0014_*.sql`

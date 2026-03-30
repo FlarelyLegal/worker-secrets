@@ -127,8 +127,10 @@ jobs:
 1. Register a service token with minimal scopes:
 
 ```bash
-hfs token register your-ci.access -n github-ci -s read -d "GitHub Actions"
+hfs token register your-ci.access -n github-ci -s read --secret "$CF_CLIENT_SECRET" -d "GitHub Actions"
 ```
+
+The `--secret` flag stores a hashed client secret, enabling direct auth so the token works on all endpoints without requiring Access protection.
 
 2. Store credentials as GitHub repository secrets:
    - `HFS_URL` - your vault URL

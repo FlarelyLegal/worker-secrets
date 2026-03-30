@@ -54,15 +54,16 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 
 ### Auth (CRITICAL)
 
-- **Two paths, no fallback, no mixing**: interactive JWT or service token headers
+- **Three paths, no fallback, no mixing**: interactive JWT, service token via Access JWT (common_name), or direct service token auth (hashed secret)
 - **NEVER** fall back between auth modes - partial config is a hard error
 - **NEVER** store service token credentials on disk - env vars only (`HFS_CLIENT_ID`, `HFS_CLIENT_SECRET`)
 - **ALWAYS** validate JWT signature against Cloudflare JWKS + check issuer + AUD
 - **ALWAYS** check `users` table first, fall back to `ALLOWED_EMAILS` only if table is empty (grants reader, not admin)
 - **ALWAYS** use `isAdmin(auth)` for user/role management endpoints
 - Scopes resolved from role via `roles` table - not hardcoded
-- Unregistered service tokens are rejected even if Access JWT is valid
+- Unregistered service tokens are rejected even if Access JWT is valid; direct auth also validates the client secret hash
 - Disabled users (`enabled = 0`) are rejected even with valid JWT
+- Service tokens registered with `--secret` can authenticate on ANY endpoint without Access protection
 
 ### Worker
 

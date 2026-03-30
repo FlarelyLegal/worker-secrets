@@ -51,11 +51,16 @@ recipients.openapi(recipientsRoute, async (c) => {
   const { tags } = c.req.valid("query");
 
   // Fetch all enabled users with age public keys
-  const { results } = await c.env.DB.prepare(
+  const { results: userResults } = await c.env.DB.prepare(
     "SELECT email, name, role, age_public_key FROM users WHERE enabled = 1 AND age_public_key IS NOT NULL",
   ).all();
 
-  let eligible = results as UserRow[];
+  // Also include service tokens with age public keys
+  const { results: tokenResults } = await c.env.DB.prepare(
+    "SELECT client_id AS email, name, COALESCE(role, 'custom') AS role, age_public_key FROM service_tokens WHERE age_public_key IS NOT NULL",
+  ).all();
+
+  let eligible = [...(userResults as UserRow[]), ...(tokenResults as UserRow[])];
 
   // If tags specified, filter to users whose roles grant access to those tags
   if (tags) {

@@ -36,7 +36,7 @@ Create an Access application for your domain with two policies (order matters):
 1. **Service Auth** - Include: your service token
 2. **Allow** - Include: allowed emails. Require: `hwk` (hardware key)
 
-Copy the **Application Audience (AUD) Tag** into `POLICY_AUD`.
+`hfs deploy` scaffolds both the Allow and Service Auth policies automatically. Copy the **Application Audience (AUD) Tag** into `POLICY_AUD`.
 
 ## Endpoints
 

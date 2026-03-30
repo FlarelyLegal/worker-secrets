@@ -1,0 +1,98 @@
+name: E2E Tests
+# Service tokens are exempt from WARP enforcement, so this workflow
+# works even when require_warp is enabled on the vault.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 24
+
+      - name: Install CLI
+        run: npm install -g @homeflare/hfs
+
+      - name: Configure vault
+        run: hfs config set --url "$HFS_URL"
+        env:
+          HFS_URL: ${{ secrets.HFS_URL }}
+
+      - name: Set up age identity
+        run: |
+          mkdir -p ~/.config/hfs
+          install -m 600 /dev/null ~/.config/hfs/identity.txt
+          printf '%s\n' "$HFS_E2E_IDENTITY" >> ~/.config/hfs/identity.txt
+          hfs config set --e2e-identity ~/.config/hfs/identity.txt
+        env:
+          HFS_E2E_IDENTITY: ${{ secrets.HFS_E2E_IDENTITY }}
+
+      - name: Auth check
+        run: hfs whoami
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}
+
+      - name: Test set + get
+        run: |
+          hfs set CI_E2E_TEST "hello-from-ci-$(date +%s)" --private -d "E2E test secret"
+          VALUE=$(hfs get CI_E2E_TEST -q)
+          printf 'Got: %s\n' "$VALUE"
+          [[ "$VALUE" == hello-from-ci-* ]] || { printf 'FAIL: unexpected value\n'; exit 1; }
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}
+
+      - name: Test ls + expiring
+        run: |
+          hfs set CI_TTL_TEST "expires-soon" --ttl 1d --private
+          hfs ls | grep CI_TTL_TEST
+          hfs ls | grep CI_E2E_TEST
+          hfs expiring --within 7d | grep CI_TTL_TEST
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}
+
+      - name: Test resolve
+        run: |
+          hfs set CI_HOST "db.example.com" --private
+          hfs set CI_PORT "5432" --private
+          hfs set CI_URL 'postgres://${CI_HOST}:${CI_PORT}/mydb' --private
+          RESOLVED=$(hfs get CI_URL -q --resolve)
+          printf 'Resolved: %s\n' "$RESOLVED"
+          [[ "$RESOLVED" == "postgres://db.example.com:5432/mydb" ]] || { printf 'FAIL: interpolation\n'; exit 1; }
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}
+
+      - name: Test audit consumers
+        run: |
+          hfs audit consumers CI_E2E_TEST | grep github-ci
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          hfs rm CI_E2E_TEST -f 2>/dev/null || true
+          hfs rm CI_TTL_TEST -f 2>/dev/null || true
+          hfs rm CI_HOST -f 2>/dev/null || true
+          hfs rm CI_PORT -f 2>/dev/null || true
+          hfs rm CI_URL -f 2>/dev/null || true
+        env:
+          HFS_CLIENT_ID: ${{ secrets.HFS_CLIENT_ID }}
+          HFS_CLIENT_SECRET: ${{ secrets.HFS_CLIENT_SECRET }}

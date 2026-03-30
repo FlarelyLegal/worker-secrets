@@ -12,20 +12,48 @@ export function registerTokenCommands(program: Command): void {
     .option("-d, --description <desc>", "Description")
     .option("-s, --scopes <scopes>", "Comma-separated scopes: read,write,delete or * (default: *)")
     .option("-r, --role <role>", "Assign a role (overrides scopes when set)")
+    .option(
+      "--secret <secret>",
+      "Client secret (hashed and stored for direct auth). Prefer env var to avoid shell history",
+    )
+    .option("--age-key <pubkey>", "age public key for E2E encryption (e.g. age1...)")
     .action(
       async (
         clientId: string,
-        opts: { name: string; description?: string; scopes?: string; role?: string },
+        opts: {
+          name: string;
+          description?: string;
+          scopes?: string;
+          role?: string;
+          secret?: string;
+          ageKey?: string;
+        },
       ) => {
         try {
+          let secretHash: string | undefined;
+          if (opts.secret) {
+            const encoder = new TextEncoder();
+            const digest = await crypto.subtle.digest("SHA-256", encoder.encode(opts.secret));
+            secretHash = [...new Uint8Array(digest)]
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("");
+          }
           await client().registerToken(clientId, opts.name, {
             description: opts.description,
             scopes: opts.scopes,
             role: opts.role,
+            client_secret_hash: secretHash,
+            age_public_key: opts.ageKey,
           });
           console.log(
             `${chalk.green("✓")} Registered ${chalk.bold(opts.name)} (${clientId.slice(0, 12)}...)`,
           );
+          if (secretHash) {
+            console.log(chalk.dim("  Direct auth enabled (secret hash stored)"));
+          }
+          if (opts.ageKey) {
+            console.log(chalk.dim(`  E2E key: ${opts.ageKey.slice(0, 20)}...`));
+          }
         } catch (e) {
           die(errorMessage(e));
         }

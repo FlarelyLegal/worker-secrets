@@ -115,7 +115,7 @@ class VaultClient {
 
   // Service tokens
   listTokens(): Promise<ServiceTokenEntry[]>
-  registerToken(clientId: string, name: string, opts?: { description?: string; scopes?: string; role?: string }): Promise<{ ok: boolean; client_id: string }>
+  registerToken(clientId: string, name: string, opts?: { description?: string; scopes?: string; role?: string; client_secret_hash?: string }): Promise<{ ok: boolean; client_id: string }>
   revokeToken(clientId: string): Promise<{ ok: boolean; revoked: string }>
 
   // Users (admin only)

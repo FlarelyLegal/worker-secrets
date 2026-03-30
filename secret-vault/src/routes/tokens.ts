@@ -85,7 +85,14 @@ const registerRoute = createRoute({
 
 tokens.openapi(registerRoute, async (c) => {
   const { clientId } = c.req.valid("param");
-  const { name, description, scopes, role } = c.req.valid("json");
+  const {
+    name,
+    description,
+    scopes,
+    role,
+    client_secret_hash: secretHash,
+    age_public_key: ageKey,
+  } = c.req.valid("json");
 
   // Verify role exists if provided
   if (role) {
@@ -97,13 +104,25 @@ tokens.openapi(registerRoute, async (c) => {
 
   const identity = c.get("auth").identity;
   await c.env.DB.prepare(
-    `INSERT INTO service_tokens (client_id, name, description, scopes, role, created_by, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    `INSERT INTO service_tokens (client_id, name, description, scopes, role, created_by, client_secret_hash, age_public_key, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(client_id) DO UPDATE SET
        name = excluded.name, description = excluded.description,
-       scopes = excluded.scopes, role = excluded.role, updated_at = datetime('now')`,
+       scopes = excluded.scopes, role = excluded.role,
+       client_secret_hash = COALESCE(excluded.client_secret_hash, client_secret_hash),
+       age_public_key = COALESCE(excluded.age_public_key, age_public_key),
+       updated_at = datetime('now')`,
   )
-    .bind(clientId, name, description, scopes, role || null, identity)
+    .bind(
+      clientId,
+      name,
+      description,
+      scopes,
+      role || null,
+      identity,
+      secretHash || null,
+      ageKey || null,
+    )
     .run();
 
   await audit(

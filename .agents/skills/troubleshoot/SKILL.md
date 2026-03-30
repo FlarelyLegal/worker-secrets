@@ -63,7 +63,7 @@ See [common errors](references/common-errors.md) for the full error catalog.
 ```bash
 wrangler tail                     # Live Worker logs
 cd secret-vault && npm run dev    # Local dev
-echo $JWT | cut -d. -f2 | base64 -d | jq .  # Inspect JWT claims
+printf '%s' "$JWT" | cut -d. -f2 | base64 -d | jq .  # Inspect JWT claims
 ```
 
 ## KNOWN LIMITATIONS

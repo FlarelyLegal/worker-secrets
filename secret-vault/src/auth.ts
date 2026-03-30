@@ -75,10 +75,70 @@ async function resolveRole(
   return { scopes, allowedTags, policies: [policy] };
 }
 
+// --- Crypto helpers ---
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 // --- Auth ---
 
 type UserRow = { email: string; name: string; role: string; enabled: number };
 type TokenRow = { client_id: string; name: string; scopes: string; role: string | null };
+
+async function resolveTokenUser(db: D1Database, registered: TokenRow): Promise<AuthUser> {
+  let scopes: string[];
+  let allowedTags: string[] = [];
+  let policies: PolicyRule[];
+  if (registered.role) {
+    const resolved = await resolveRole(db, registered.role);
+    scopes = resolved.scopes;
+    allowedTags = resolved.allowedTags;
+    policies = resolved.policies;
+  } else {
+    scopes =
+      registered.scopes === SCOPE_ALL
+        ? [SCOPE_ALL]
+        : registered.scopes.split(",").map((s) => s.trim());
+    policies = [{ scopes, tags: allowedTags }];
+  }
+  return {
+    method: AUTH_SERVICE_TOKEN,
+    identity: registered.client_id,
+    name: registered.name,
+    role: registered.role || "custom",
+    scopes,
+    allowedTags,
+    policies,
+  };
+}
+
+async function authenticateWithJwt(
+  _request: Request,
+  env: Env,
+  clientId: string,
+  payload?: Record<string, unknown>,
+): Promise<{ user: AuthUser; jwtPayload?: Record<string, unknown> } | null> {
+  const registered = await env.DB.prepare(
+    "SELECT client_id, name, scopes, role FROM service_tokens WHERE client_id = ?",
+  )
+    .bind(clientId)
+    .first<TokenRow>();
+  if (!registered) return null;
+
+  await env.DB.prepare(
+    "UPDATE service_tokens SET last_used_at = datetime('now') WHERE client_id = ?",
+  )
+    .bind(clientId)
+    .run();
+
+  return { user: await resolveTokenUser(env.DB, registered), jwtPayload: payload };
+}
 
 export async function authenticate(
   request: Request,
@@ -105,7 +165,41 @@ export async function authenticate(
     }
   }
 
-  // Check header first (CLI/API), then cookie (browser via Cloudflare Access)
+  // Path 1: Direct service token validation (no JWT required)
+  // Allows service tokens to authenticate on any path, not just Access-protected ones.
+  const clientId = request.headers.get("CF-Access-Client-Id");
+  const clientSecret = request.headers.get("CF-Access-Client-Secret");
+  if (clientId && clientSecret) {
+    type TokenWithHash = TokenRow & { client_secret_hash: string | null };
+    const registered = await env.DB.prepare(
+      "SELECT client_id, name, scopes, role, client_secret_hash FROM service_tokens WHERE client_id = ?",
+    )
+      .bind(clientId)
+      .first<TokenWithHash>();
+
+    if (!registered) return null;
+
+    // Validate secret: compare SHA-256 hash of provided secret against stored hash
+    if (!registered.client_secret_hash) {
+      // No hash stored - direct auth not available for this token.
+      // Must authenticate via Access JWT instead (Path 2).
+      return null;
+    }
+    const encoder = new TextEncoder();
+    const digest = await crypto.subtle.digest("SHA-256", encoder.encode(clientSecret));
+    const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (!timingSafeEqual(hex, registered.client_secret_hash)) return null;
+
+    await env.DB.prepare(
+      "UPDATE service_tokens SET last_used_at = datetime('now') WHERE client_id = ?",
+    )
+      .bind(clientId)
+      .run();
+
+    return { user: await resolveTokenUser(env.DB, registered), jwtPayload: undefined };
+  }
+
+  // Path 2: JWT-based auth (interactive sessions + legacy service tokens without stored hash)
   let token = request.headers.get("Cf-Access-Jwt-Assertion");
   if (!token) {
     const cookie = request.headers.get("Cookie") || "";
@@ -126,54 +220,14 @@ export async function authenticate(
     return null;
   }
 
-  // Path 1: Service token
-  const clientId = request.headers.get("CF-Access-Client-Id");
-  if (clientId) {
-    const registered = await env.DB.prepare(
-      "SELECT client_id, name, scopes, role FROM service_tokens WHERE client_id = ?",
-    )
-      .bind(clientId)
-      .first<TokenRow>();
-
-    if (!registered) return null;
-
-    await env.DB.prepare(
-      "UPDATE service_tokens SET last_used_at = datetime('now') WHERE client_id = ?",
-    )
-      .bind(clientId)
-      .run();
-
-    let scopes: string[];
-    let allowedTags: string[] = [];
-    let policies: PolicyRule[];
-    if (registered.role) {
-      const resolved = await resolveRole(env.DB, registered.role);
-      scopes = resolved.scopes;
-      allowedTags = resolved.allowedTags;
-      policies = resolved.policies;
-    } else {
-      scopes =
-        registered.scopes === SCOPE_ALL
-          ? [SCOPE_ALL]
-          : registered.scopes.split(",").map((s) => s.trim());
-      policies = [{ scopes, tags: allowedTags }];
-    }
-
-    return {
-      user: {
-        method: AUTH_SERVICE_TOKEN,
-        identity: registered.client_id,
-        name: registered.name,
-        role: registered.role || "custom",
-        scopes,
-        allowedTags,
-        policies,
-      },
-      jwtPayload: payload,
-    };
+  // Check if this JWT is from a service token (header or JWT common_name)
+  const jwtClientId =
+    request.headers.get("CF-Access-Client-Id") || (payload.common_name as string | undefined);
+  if (jwtClientId) {
+    return await authenticateWithJwt(request, env, jwtClientId, payload);
   }
 
-  // Path 2: Interactive session
+  // Path 3: Interactive session
   const email = payload.email as string | undefined;
   if (!email) return null;
 
