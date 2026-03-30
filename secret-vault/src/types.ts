@@ -27,7 +27,7 @@ export type AuthUser = {
   scopes: string[];
   allowedTags: string[]; // empty = all tags allowed (legacy, derived from policies)
   policies: PolicyRule[];
-  warp?: { connected: boolean; deviceId?: string };
+  warp?: { connected: boolean; ztVerified: boolean; deviceId?: string };
 };
 
 export type HonoEnv = {

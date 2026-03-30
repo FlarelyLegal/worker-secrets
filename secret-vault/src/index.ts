@@ -218,7 +218,9 @@ app.use("*", async (c, next) => {
   const { user, jwtPayload } = authResult;
   // WARP enforcement (pass JWT payload for device_sessions detection)
   const warpInfo = extractWarpInfo(c.req.raw, jwtPayload);
-  const warpRequired = getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean;
+  // Exempt /whoami from WARP enforcement (diagnostic endpoint, browser-accessible)
+  const isWhoami = new URL(c.req.url).pathname === "/whoami";
+  const warpRequired = isWhoami ? false : (getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean);
   const ztResponse = c.req.header("X-ZT-Response");
   const ztTimestamp = c.req.header("X-ZT-Timestamp");
   // Query user's registered ZT fingerprint for device binding
@@ -255,7 +257,11 @@ app.use("*", async (c, next) => {
     }
     return c.json({ error: warpCheck.reason }, 403);
   }
-  user.warp = { connected: warpInfo.connected, deviceId: warpInfo.deviceId };
+  user.warp = {
+    connected: warpInfo.connected,
+    ztVerified: warpCheck.allowed && warpInfo.connected,
+    deviceId: warpInfo.deviceId,
+  };
 
   c.set("auth", user);
   c.set("ip", c.req.header("CF-Connecting-IP") ?? null);

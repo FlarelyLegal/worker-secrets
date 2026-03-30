@@ -3,6 +3,7 @@ import { isAdmin } from "../auth.js";
 import { AUTH_INTERACTIVE } from "../constants.js";
 import { AuditEntrySchema, AuditQuery, ErrorSchema, WhoamiSchema } from "../schemas.js";
 import type { HonoEnv } from "../types.js";
+import { whoamiPage } from "../whoami-page.js";
 
 const admin = new OpenAPIHono<HonoEnv>();
 
@@ -18,18 +19,60 @@ const whoamiRoute = createRoute({
   },
 });
 
-admin.openapi(whoamiRoute, (c) => {
+admin.openapi(whoamiRoute, async (c) => {
   const auth = c.get("auth");
-  return c.json(
-    {
-      method: auth.method,
-      identity: auth.identity,
-      name: auth.name,
-      role: auth.role,
-      scopes: auth.scopes,
-    },
-    200,
-  );
+
+  // Enrich with user record details
+  const user = await c.env.DB.prepare(
+    "SELECT age_public_key, zt_fingerprint, enabled, last_login_at FROM users WHERE email = ?",
+  )
+    .bind(auth.identity.toLowerCase())
+    .first<{
+      age_public_key: string | null;
+      zt_fingerprint: string;
+      enabled: number;
+      last_login_at: string | null;
+    }>();
+
+  // Count policies for this role
+  const policyCount = await c.env.DB.prepare(
+    "SELECT COUNT(*) as total FROM role_policies WHERE role = ?",
+  )
+    .bind(auth.role)
+    .first<{ total: number }>();
+
+  // Count accessible secrets
+  const secretCount = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
+    total: number;
+  }>();
+
+  const data = {
+    method: auth.method,
+    identity: auth.identity,
+    name: auth.name,
+    role: auth.role,
+    scopes: auth.scopes,
+    e2e: !!user?.age_public_key,
+    deviceBound: !!user?.zt_fingerprint,
+    policies: policyCount?.total ?? 0,
+    lastLogin: user?.last_login_at ?? null,
+    totalSecrets: secretCount?.total ?? 0,
+    warp: auth.warp
+      ? {
+          connected: auth.warp.connected,
+          ztVerified: auth.warp.ztVerified,
+          deviceId: auth.warp.deviceId,
+        }
+      : undefined,
+  };
+
+  const accept = c.req.header("Accept") || "";
+  if (accept.includes("text/html")) {
+    const brand = c.env.BRAND_NAME || "Secret Vault";
+    // biome-ignore lint/suspicious/noExplicitAny: content negotiation returns HTML or JSON
+    return c.html(whoamiPage(brand, data)) as any;
+  }
+  return c.json(data, 200);
 });
 
 // --- /audit ---

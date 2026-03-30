@@ -105,7 +105,13 @@ export async function authenticate(
     }
   }
 
-  const token = request.headers.get("Cf-Access-Jwt-Assertion");
+  // Check header first (CLI/API), then cookie (browser via Cloudflare Access)
+  let token = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!token) {
+    const cookie = request.headers.get("Cookie") || "";
+    const match = cookie.match(/CF_Authorization=([^\s;]+)/);
+    if (match) token = match[1];
+  }
   if (!token) return null;
 
   let payload: Record<string, unknown>;

@@ -115,6 +115,20 @@ export const WhoamiSchema = z
     name: z.string().openapi({ example: "Tim Schneider" }),
     role: z.string().openapi({ example: "admin" }),
     scopes: z.array(z.string()).openapi({ example: ["*"] }),
+    e2e: z.boolean().openapi({ example: true, description: "Age public key registered" }),
+    deviceBound: z
+      .boolean()
+      .openapi({ example: true, description: "ZT CA fingerprint registered" }),
+    policies: z.number().openapi({ example: 2, description: "Number of policy rules on role" }),
+    lastLogin: z.string().nullable().openapi({ example: "2026-03-29 20:42:58" }),
+    totalSecrets: z.number().openapi({ example: 15, description: "Total secrets in vault" }),
+    warp: z
+      .object({
+        connected: z.boolean().openapi({ example: true }),
+        ztVerified: z.boolean().openapi({ example: true }),
+        deviceId: z.string().optional().openapi({ example: "device-abc-123" }),
+      })
+      .optional(),
   })
   .openapi("Whoami");
 

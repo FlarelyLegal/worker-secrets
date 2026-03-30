@@ -361,6 +361,12 @@ export class VaultClient {
     name: string;
     role: string;
     scopes: string[];
+    e2e?: boolean;
+    deviceBound?: boolean;
+    policies?: number;
+    lastLogin?: string | null;
+    totalSecrets?: number;
+    warp?: { connected: boolean; ztVerified: boolean; deviceId?: string };
   }> {
     return this.request("GET", "/whoami");
   }

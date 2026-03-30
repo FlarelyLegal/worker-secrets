@@ -123,11 +123,32 @@ export function registerAuthCommands(program: Command): void {
           console.log(JSON.stringify(info, null, 2));
           return;
         }
-        console.log(chalk.dim("method:   ") + chalk.bold(info.method));
-        console.log(chalk.dim("name:     ") + info.name);
-        console.log(chalk.dim("identity: ") + info.identity);
-        console.log(chalk.dim("role:     ") + chalk.bold(info.role));
-        console.log(chalk.dim("scopes:   ") + info.scopes.join(", "));
+        console.log(chalk.dim("method:       ") + chalk.bold(info.method));
+        console.log(chalk.dim("name:         ") + info.name);
+        console.log(chalk.dim("identity:     ") + info.identity);
+        console.log(chalk.dim("role:         ") + chalk.bold(info.role));
+        console.log(chalk.dim("scopes:       ") + info.scopes.join(", "));
+        if (info.policies !== undefined) console.log(chalk.dim("policies:     ") + info.policies);
+        console.log(
+          chalk.dim("e2e:          ") +
+            (info.e2e ? chalk.green("registered") : chalk.yellow("not registered")),
+        );
+        console.log(
+          chalk.dim("device bound: ") +
+            (info.deviceBound ? chalk.green("yes") : chalk.yellow("no")),
+        );
+        if (info.warp) {
+          const w = info.warp;
+          console.log(
+            chalk.dim("warp:         ") +
+              (w.connected ? chalk.green("connected") : chalk.red("not connected")),
+          );
+          if (w.ztVerified) console.log(chalk.dim("zt verified:  ") + chalk.green("yes"));
+          if (w.deviceId) console.log(chalk.dim("device id:    ") + w.deviceId);
+        }
+        if (info.lastLogin) console.log(chalk.dim("last login:   ") + info.lastLogin);
+        if (info.totalSecrets !== undefined)
+          console.log(chalk.dim("vault:        ") + `${info.totalSecrets} secret(s)`);
       } catch (e) {
         die(errorMessage(e));
       }
