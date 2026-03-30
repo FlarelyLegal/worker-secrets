@@ -94,13 +94,15 @@ function fromBase64url(b64: string): Uint8Array {
 export async function envelopeEncrypt(
   plaintext: string,
   hexKey: string,
+  secretKeyName: string,
 ): Promise<{ ciphertext: string; iv: string; encrypted_dek: string; dek_iv: string }> {
   const kek = await getKey(hexKey);
+  const encoder = new TextEncoder();
 
   // Generate random DEK
   const dekRaw = crypto.getRandomValues(new Uint8Array(32));
 
-  // Encrypt plaintext with DEK
+  // Encrypt plaintext with DEK, binding the secret key name as AAD
   const dekCryptoKey = await crypto.subtle.importKey(
     "raw",
     dekRaw.buffer as ArrayBuffer,
@@ -110,9 +112,9 @@ export async function envelopeEncrypt(
   );
   const dataIv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: dataIv },
+    { name: "AES-GCM", iv: dataIv, additionalData: encoder.encode(secretKeyName) },
     dekCryptoKey,
-    new TextEncoder().encode(plaintext),
+    encoder.encode(plaintext),
   );
 
   // Encrypt DEK with KEK
@@ -133,6 +135,7 @@ export async function envelopeDecrypt(
   encryptedDekB64: string,
   dekIvB64: string,
   hexKey: string,
+  secretKeyName: string,
 ): Promise<string> {
   const kek = await getKey(hexKey);
 
@@ -143,10 +146,14 @@ export async function envelopeDecrypt(
     fromBase64url(encryptedDekB64),
   );
 
-  // Decrypt data with DEK
+  // Decrypt data with DEK, verifying the secret key name as AAD
   const dekCryptoKey = await crypto.subtle.importKey("raw", dekRaw, "AES-GCM", false, ["decrypt"]);
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fromBase64url(ivB64) },
+    {
+      name: "AES-GCM",
+      iv: fromBase64url(ivB64),
+      additionalData: new TextEncoder().encode(secretKeyName),
+    },
     dekCryptoKey,
     fromBase64url(ciphertext),
   );
@@ -158,19 +165,35 @@ export async function envelopeDecrypt(
 export async function encrypt(
   plaintext: string,
   hexKey: string,
+  secretKeyName: string,
 ): Promise<{ ciphertext: string; iv: string }> {
   const key = await getKey(hexKey);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plaintext);
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv, additionalData: new TextEncoder().encode(secretKeyName) },
+    key,
+    encoded,
+  );
   return { ciphertext: toBase64url(encrypted), iv: toBase64url(iv) };
 }
 
-export async function decrypt(ciphertext: string, ivB64: string, hexKey: string): Promise<string> {
+export async function decrypt(
+  ciphertext: string,
+  ivB64: string,
+  hexKey: string,
+  secretKeyName: string,
+): Promise<string> {
   const key = await getKey(hexKey);
-  const iv = fromBase64url(ivB64);
-  const data = fromBase64url(ciphertext);
-  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+  const decrypted = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv: fromBase64url(ivB64),
+      additionalData: new TextEncoder().encode(secretKeyName),
+    },
+    key,
+    fromBase64url(ciphertext),
+  );
   return new TextDecoder().decode(decrypted);
 }
 

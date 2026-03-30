@@ -135,7 +135,7 @@ Three layers protect each secret:
 
 1. End-to-end: age encryption on the client. Private secrets are encrypted for one person. Team secrets are encrypted for all users whose RBAC role grants access. The server stores ciphertext it cannot decrypt.
 2. Envelope: each secret gets its own AES-256-GCM data encryption key (DEK), wrapped by a master key (KEK). Key rotation re-wraps DEKs without re-encrypting data.
-3. Integrity: HMAC-SHA256 binds each secret to its key name and encryption keys. Detects tampering at rest.
+3. Integrity: Two layers - GCM AAD binds the key name to ciphertext at encrypt time; HMAC-SHA256 with a separate key detects tampering even if the encryption key is compromised.
 
 ## Authentication
 

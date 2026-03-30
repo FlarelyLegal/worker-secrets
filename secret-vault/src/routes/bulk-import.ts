@@ -164,6 +164,7 @@ bulkImport.openapi(importRoute, async (c) => {
       ({ ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
         item.value,
         c.env.ENCRYPTION_KEY,
+        item.key,
       ));
     } catch {
       return c.json({ error: `Encryption failed for key: ${item.key}` }, 500);

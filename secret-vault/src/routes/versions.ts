@@ -155,9 +155,10 @@ versions.openapi(getVersionRoute, async (c) => {
         version.encrypted_dek,
         version.dek_iv,
         c.env.ENCRYPTION_KEY,
+        key,
       );
     } else {
-      plaintext = await decrypt(version.value, version.iv, c.env.ENCRYPTION_KEY);
+      plaintext = await decrypt(version.value, version.iv, c.env.ENCRYPTION_KEY, key);
     }
   } catch {
     return c.json({ error: "Decryption failed" }, 500);

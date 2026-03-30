@@ -25,10 +25,11 @@ This is an encrypted secret store - security mistakes leak credentials.
 - `ENCRYPTION_KEY` is a Wrangler secret - **NEVER** in code or wrangler.jsonc
 - Key rotation supported via `/admin/rotate-key` - re-wraps all DEKs with a new master key
 
-### HMAC integrity
-- **ALWAYS** compute HMAC-SHA256 on write, verify on read
-- HMAC key from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` - **NEVER** use the encryption key directly as HMAC key
+### Integrity (two layers)
+- **AAD binding** - secret key name is passed as GCM Additional Authenticated Data; decryption fails if key name is wrong
+- **HMAC-SHA256** - computed on write, verified on read. Uses `INTEGRITY_KEY` (or HKDF-derived). **NEVER** use the encryption key directly as HMAC key
 - HMAC binds key name + ciphertext + IV + encrypted_dek + dek_iv, preventing ciphertext and DEK swap attacks
+- AAD catches key-name rebinding at the GCM layer; HMAC catches all tampering with an independent key
 - Tamper detection: if HMAC verification fails, return error - do not decrypt
 
 ### Scope enforcement

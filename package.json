@@ -1,6 +1,6 @@
 {
   "name": "secrets",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "description": "Encrypted secret management for Cloudflare Workers — a self-hosted vault with CLI.",
   "private": true,
   "scripts": {

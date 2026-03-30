@@ -54,8 +54,8 @@ sequenceDiagram
     Client->>Worker: PUT /secrets/{key} + plaintext
     Worker->>Crypto: Generate random 256-bit DEK
     Crypto-->>Worker: DEK (raw bytes)
-    Worker->>Crypto: AES-256-GCM encrypt(plaintext, DEK, random IV)
-    Crypto-->>Worker: ciphertext + IV
+    Worker->>Crypto: AES-256-GCM encrypt(plaintext, DEK, random IV, AAD=key_name)
+    Crypto-->>Worker: ciphertext + IV (key name bound via AAD)
     Worker->>Crypto: AES-256-GCM encrypt(DEK, KEK, random IV)
     Crypto-->>Worker: encrypted_dek + dek_iv
     Worker->>Crypto: HMAC-SHA256(key ‖ ciphertext ‖ IV ‖ encrypted_dek ‖ dek_iv)
@@ -65,7 +65,7 @@ sequenceDiagram
     Worker-->>Client: 200
 ```
 
-Decryption reverses the process: verify HMAC, unwrap DEK with KEK, decrypt ciphertext with DEK.
+Decryption reverses the process: verify HMAC, unwrap DEK with KEK, decrypt ciphertext with DEK (GCM verifies the key name via AAD).
 
 ## What Gets Stored
 
@@ -85,18 +85,29 @@ erDiagram
 
 The database only stores ciphertext. The KEK and INTEGRITY_KEY exist only as Wrangler secrets, available at Worker runtime.
 
-## HMAC Integrity Binding
+## Integrity: AAD + HMAC (two layers)
 
-The HMAC binds all encrypted fields together and to the secret's key name:
+### Layer 1: GCM Authenticated Associated Data (AAD)
+
+The secret's key name is passed as AAD to AES-256-GCM during encryption. GCM's authentication tag cryptographically binds the key name to the ciphertext at zero additional cost. If someone copies ciphertext from one key to another in D1, decryption fails immediately because the AAD (key name) won't match.
+
+### Layer 2: HMAC-SHA256 with independent key
+
+A separate HMAC using an independent `INTEGRITY_KEY` binds all encrypted fields together:
 
 ```
 HMAC-SHA256(INTEGRITY_KEY, key ‖ ":" ‖ ciphertext ‖ ":" ‖ IV ‖ ":" ‖ encrypted_dek ‖ ":" ‖ dek_iv)
 ```
 
-This detects:
+The two layers serve different purposes:
+- **AAD** catches key-name rebinding at decrypt time using the encryption key
+- **HMAC** catches all tampering using an independent key - even if the encryption key is compromised, the HMAC still detects modifications
+
+Together they detect:
 - Ciphertext tampering (modified value in D1)
 - DEK swap attacks (replacing encrypted_dek with one from another secret)
 - Key name rebinding (copying a row to a different key)
+- Forgery by an attacker who has the encryption key but not the integrity key
 
 ## End-to-End Encryption (age)
 

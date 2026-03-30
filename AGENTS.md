@@ -44,8 +44,10 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 - **NEVER** log decrypted values, encryption keys, DEKs, or tokens (`console.log` goes to `wrangler tail`)
 - **NEVER** expose `ENCRYPTION_KEY` or DEKs outside `encrypt()`/`decrypt()` helpers
 - **ALWAYS** wrap `encrypt()`/`decrypt()` in try-catch → return `{ error }` JSON, not stack traces
+- **AAD binding** - secret key name is passed as GCM Additional Authenticated Data; decryption fails if key name doesn't match
 - **ALWAYS** compute and store HMAC on write, verify on read - integrity binds key + ciphertext + IV
 - HMAC key for integrity binding - from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` via `crypto.subtle.deriveKey()`
+- Two integrity layers: AAD (bound to encryption key) + HMAC (independent key) - compromising one doesn't break the other
 - **Audit log hash chaining** - each audit entry includes `prev_hash` linking to the previous entry, making the log tamper-evident
 - **Policy-based RBAC** - roles have multiple policies, each binding scopes to specific tags. `hasAccess(auth, scope, tags)` is the primary access check. Legacy `allowed_tags` on roles still works as fallback.
 - **Secret expiry** - optional `expires_at` field per secret for rotation tracking

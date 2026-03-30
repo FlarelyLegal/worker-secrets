@@ -190,9 +190,10 @@ secrets.openapi(getRoute, async (c) => {
         row.encrypted_dek,
         row.dek_iv,
         c.env.ENCRYPTION_KEY,
+        key,
       );
     } else {
-      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY);
+      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY, key);
     }
   } catch {
     return c.json({ error: "Decryption failed" }, 500);

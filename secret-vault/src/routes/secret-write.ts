@@ -147,6 +147,7 @@ secretWrite.openapi(putRoute, async (c) => {
     ({ ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
       value,
       c.env.ENCRYPTION_KEY,
+      key,
     ));
   } catch {
     return c.json({ error: "Encryption failed" }, 500);

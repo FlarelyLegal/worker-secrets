@@ -71,7 +71,7 @@ adminOps.openapi(reencryptRoute, async (c) => {
 
     let plaintext: string;
     try {
-      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY);
+      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY, row.key);
     } catch {
       skipped++;
       continue;
@@ -80,6 +80,7 @@ adminOps.openapi(reencryptRoute, async (c) => {
     const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
       plaintext,
       c.env.ENCRYPTION_KEY,
+      row.key,
     );
     const hmac = await computeHmac(
       row.key,
