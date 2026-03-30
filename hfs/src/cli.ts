@@ -15,6 +15,7 @@ import { registerProfileCommands } from "./commands/profiles.js";
 import { registerRoleCommands } from "./commands/roles.js";
 import { registerSecretCommands } from "./commands/secrets.js";
 import { registerSecretBulkCommands } from "./commands/secrets-bulk.js";
+import { registerScanCommands } from "./commands/scan.js";
 import { registerSecretOpsCommands } from "./commands/secrets-ops.js";
 import { registerTemplateCommands } from "./commands/template.js";
 import { registerTokenCommands } from "./commands/tokens.js";
@@ -43,6 +44,7 @@ registerTemplateCommands(program);
 registerAdminOpsCommands(program);
 registerDeployCommands(program);
 registerProfileCommands(program);
+registerScanCommands(program);
 registerCompletionCommands(program);
 
 program
