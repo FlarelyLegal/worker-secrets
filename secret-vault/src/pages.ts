@@ -93,9 +93,9 @@ export function landingPage(
     .explanation strong { color: var(--text); font-weight: 600; }
     .explanation .accent { color: var(--accent); font-weight: 600; }
     .compare-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: 0.8125rem; background: var(--surface); border-radius: 0.75rem; overflow: hidden; border: 1px solid var(--border); }
-    .compare-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+    .compare-table th { text-align: left; padding: 0.75rem 0.625rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 600; }
     .compare-table th.ours { color: var(--accent); }
-    .compare-table td { padding: 0.625rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); }
+    .compare-table td { padding: 0.625rem 0.625rem; border-bottom: 1px solid var(--border); color: var(--muted); }
     .compare-table tr:last-child td { border-bottom: none; }
     .compare-table .check { color: var(--muted); }
     .compare-table .ours-check { color: var(--accent); font-weight: 600; }
@@ -137,30 +137,33 @@ export function landingPage(
         <tr>
           <th></th>
           <th class="ours">${b}</th>
-          <th>HashiCorp Vault</th>
-          <th>AWS Secrets Mgr</th>
+          <th>Vault</th>
+          <th>AWS SM</th>
           <th>Doppler</th>
+          <th>Infisical</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Self-hosted</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Zero-knowledge E2E</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>No servers to run</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Per-secret encryption keys</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Key rotation without re-encrypting</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
-        <tr><td>RBAC + tag restrictions</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Hash-chained audit log</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Burn after reading</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Cloudflare WARP / Zero Trust</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Gateway-policeable CLI</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Geo-fencing</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Version history + restore</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Runtime feature flags</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Config templates</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
-        <tr><td>GitHub Action</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Auto-provisioning</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
-        <tr><td>Free at any scale</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
-        <tr><td>Open source</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Self-hosted</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Zero-knowledge E2E</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
+        <tr><td>No servers to run</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td></tr>
+        <tr><td>One-command deploy</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Per-secret encryption keys</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Key rotation without re-encrypting</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
+        <tr><td>RBAC + tag restrictions</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Tamper-evident audit chain</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Burn after reading</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Cloudflare WARP / Zero Trust</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Device-bound authentication</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Gateway-policeable CLI</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Geo-fencing</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Version history + restore</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>SSO with any IdP (free)</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Runtime feature flags</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>GitHub Action</td><td class="ours-check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td><td class="check">&#10003;</td></tr>
+        <tr><td>Free at any scale</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>All features included</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td></tr>
+        <tr><td>Open source</td><td class="ours-check">&#10003;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="x">&mdash;</td><td class="check">&#10003;</td></tr>
       </tbody>
     </table>
 
