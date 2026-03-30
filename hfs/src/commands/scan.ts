@@ -37,6 +37,15 @@ const SECRET_KEY_PATTERNS = [
   /jwt[_-]?secret/i,
   /webhook[_-]?secret/i,
   /client[_-]?secret/i,
+  /cloudflare[_-]?api/i,
+  /cf[_-]?api/i,
+  /cf[_-]?token/i,
+  /cf[_-]?key/i,
+  /tunnel[_-]?token/i,
+  /wrangler[_-]?token/i,
+  /r2[_-]?access/i,
+  /r2[_-]?secret/i,
+  /origin[_-]?ca/i,
 ];
 
 /** Value patterns that look like real secrets regardless of key name. */
@@ -57,6 +66,7 @@ const SECRET_VALUE_PATTERNS = [
   /^whsec_[a-zA-Z0-9]{24,}/, // Stripe webhook
   /^np_[a-zA-Z0-9_-]{20,}/, // npm token
   /^age1[a-z0-9]{58}/, // age public key
+  /^v1\.0-[A-Za-z0-9-]{171}$/, // Cloudflare Origin CA key
 ];
 
 interface Finding {
