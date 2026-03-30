@@ -14,7 +14,7 @@ pub.get("/", async (c) => {
   const origin = new URL(c.req.url).origin;
   const brand = c.env.BRAND_NAME || "Secret Vault";
   const repoUrl = c.env.REPO_URL;
-  const pkg = c.env.PROJECT_NAME ? `${c.env.PROJECT_NAME}-cli` : undefined;
+  const pkg = c.env.NPM_PACKAGE || "@homeflare/hfs";
   return c.html(landingPage(brand, origin, VERSION, repoUrl, pkg));
 });
 
