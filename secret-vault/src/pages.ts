@@ -174,7 +174,7 @@ export function landingPage(
       <div class="step-content">
         <div class="step-title">Deploy to your Cloudflare account</div>
         <div class="step-desc">One command creates the Worker, D1 database, KV namespace, and Access policies. Everything runs on your account.</div>
-        <div class="terminal"><code><span class="cmd">$</span> npm i -g ${p}<br/><span class="cmd">$</span> hfs deploy<br/><span class="output">  Deployed to ${o}</span></code></div>
+        <div class="terminal"><code><span class="cmd">$</span> brew tap homeflare/tap &amp;&amp; brew install homeflare<br/><span class="comment"># or: npm i -g ${p}</span><br/><span class="cmd">$</span> homeflare secrets deploy<br/><span class="output">  Deployed to ${o}</span></code></div>
       </div>
     </div>
 

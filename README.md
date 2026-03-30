@@ -95,10 +95,16 @@ See [Encryption Architecture](docs/encryption.md) for detailed diagrams of envel
 **2. Install the CLI and connect**
 
 ```bash
+# Homebrew (macOS/Linux)
+brew tap homeflare/tap && brew install homeflare
+
+# npm
 npm install -g @homeflare/hfs
-# or from GitHub Packages: npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
-hfs config set --url https://secrets.yourcompany.com
-hfs login
+
+# Then connect
+homeflare secrets config set --url https://secrets.yourcompany.com
+homeflare secrets login
+# or use the shortcut: hfs config set --url ... && hfs login
 ```
 
 **3. Use it**

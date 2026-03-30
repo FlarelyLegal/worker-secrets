@@ -17,7 +17,7 @@ if (args[0] === "secrets") {
   console.log("Tools:");
   console.log("  secrets    Encrypted secret vault (alias: hfs)");
   console.log("\nExamples:");
-  console.log("  homeflare secrets set KEY \"value\" --private");
+  console.log('  homeflare secrets set KEY "value" --private');
   console.log("  homeflare secrets get KEY");
   console.log("  homeflare secrets ls");
   console.log("  homeflare secrets deploy");

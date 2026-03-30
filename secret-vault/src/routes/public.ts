@@ -159,12 +159,12 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 
 ## CLI quick start
 
-    npm i -g @homeflare/hfs
-    hfs deploy
-    hfs config set --url ${origin}
-    hfs login
-    hfs keygen --register
-    hfs set DB_PASSWORD "value" --private
+    brew tap homeflare/tap && brew install homeflare  # or: npm i -g @homeflare/hfs
+    homeflare secrets deploy
+    homeflare secrets config set --url ${origin}
+    homeflare secrets login
+    homeflare secrets keygen --register
+    homeflare secrets set DB_PASSWORD "value" --private
 
 ## Documentation
 

@@ -13,9 +13,14 @@ CLI for managing your encrypted secret vault on Cloudflare Workers.
 ## Install
 
 ```bash
+# Homebrew (macOS/Linux)
+brew tap homeflare/tap && brew install homeflare
+
+# npm
 npm install -g @homeflare/hfs
-# or from GitHub Packages: npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
 ```
+
+Installs both `homeflare secrets` (umbrella CLI) and `hfs` (shortcut alias).
 
 Requires [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) for interactive login.
 
