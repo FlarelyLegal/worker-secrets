@@ -3,6 +3,7 @@ import type { Command } from "commander";
 import { getConfig } from "../config.js";
 import { e2eDecrypt, e2eEncrypt, ensureE2ETag, isE2E, loadRecipient, tryDecrypt } from "../e2e.js";
 import { client, confirm, die, errorMessage, fetchAllSecrets } from "../helpers.js";
+import { startSpinner } from "../spinner.js";
 
 export function registerSecretOpsCommands(program: Command): void {
   program
@@ -123,10 +124,14 @@ export function registerSecretOpsCommands(program: Command): void {
         }
 
         let rewrapped = 0;
+        const spin = startSpinner(`Rewrapping 0/${keysToRewrap.length}...`);
         for (const k of keysToRewrap) {
           const secret = await c.get(k);
           if (!isE2E(secret.tags)) {
+            spin.stop();
             console.log(chalk.yellow(`⚠ ${k} is not e2e - skipping`));
+            spin.start();
+            spin.update(`Rewrapping ${rewrapped}/${keysToRewrap.length}...`);
             continue;
           }
 
@@ -135,7 +140,10 @@ export function registerSecretOpsCommands(program: Command): void {
           try {
             plaintext = await e2eDecrypt(secret.value || "", e2eId);
           } catch (e) {
+            spin.stop();
             console.error(chalk.red(`✗ ${k}: decryption failed - ${errorMessage(e)}`));
+            spin.start();
+            spin.update(`Rewrapping ${rewrapped}/${keysToRewrap.length}...`);
             continue;
           }
 
@@ -156,11 +164,11 @@ export function registerSecretOpsCommands(program: Command): void {
             tags: ensureE2ETag(secret.tags),
             expires_at: secret.expires_at,
           });
-          console.log(`${chalk.green("✓")} ${chalk.bold(k)} → ${recipients.length} recipient(s)`);
           rewrapped++;
+          spin.update(`Rewrapping ${rewrapped}/${keysToRewrap.length}...`);
         }
 
-        console.log(chalk.dim(`\n${rewrapped} secret(s) rewrapped`));
+        spin.succeed(`Rewrapped ${rewrapped} secret(s)`);
       } catch (e) {
         die(errorMessage(e));
       }

@@ -12,6 +12,15 @@ export function registerTemplateCommands(program: Command): void {
     .description("Render a template file, replacing {{SECRET_KEY}} with secret values")
     .option("-o, --output <path>", "Write output to file instead of stdout")
     .option("-r, --resolve", "Resolve ${SECRET} references inside substituted values")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs template .env.tpl               # render to stdout
+  $ hfs template .env.tpl -o .env       # render to file
+  $ hfs template config.tpl --resolve   # resolve \${SECRET} refs in values
+`,
+    )
     .action(async (file: string, opts: { output?: string; resolve?: boolean }) => {
       try {
         const template = readFileSync(file, "utf-8");

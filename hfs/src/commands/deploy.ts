@@ -103,6 +103,15 @@ export function registerDeployCommands(program: Command): void {
     .option("--observability", "Enable observability/logs")
     .option("--no-observability", "Disable observability/logs")
     .option("--dry-run", "Validate every step without making changes")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs deploy                          # interactive setup + deploy
+  $ hfs deploy --dry-run                # preview without changes
+  $ hfs deploy status                   # show current deploy state
+`,
+    )
     .action(async (opts) => {
       const dry = opts.dryRun ?? false;
       try {

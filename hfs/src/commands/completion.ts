@@ -46,7 +46,24 @@ export function registerCompletionCommands(program: Command): void {
       COMPREPLY=($(compgen -W "status reset destroy logs" -- "$cur"))
       ;;
     completion)
-      COMPREPLY=($(compgen -W "bash zsh" -- "$cur"))
+      COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur"))
+      ;;
+    get|rm|delete|versions|restore|diff|cp)
+      if command -v hfs &>/dev/null; then
+        local IFS=$'\\n'
+        local keys
+        keys=$(hfs ls --all -j 2>/dev/null | grep -o '"key":"[^"]*"' | cut -d'"' -f4)
+        while IFS= read -r k; do
+          [[ "$k" == "$cur"* ]] && COMPREPLY+=("$k")
+        done <<< "$keys"
+      fi
+      ;;
+    -r|--role)
+      if command -v hfs &>/dev/null; then
+        local roles
+        roles=$(hfs role ls -j 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+        COMPREPLY=($(compgen -W "$roles" -- "$cur"))
+      fi
       ;;
   esac
 }
@@ -60,6 +77,14 @@ complete -F _hfs_completions homeflare
     .description("Output zsh completion script")
     .action(() => {
       process.stdout.write(`#compdef hfs homeflare
+
+_hfs_secrets() {
+  local -a secrets
+  if (( $+commands[hfs] )); then
+    secrets=(\${(f)"$(hfs ls --all -j 2>/dev/null | grep -o '"key":"[^"]*"' | cut -d'"' -f4)"})
+    compadd -a secrets
+  fi
+}
 
 _hfs() {
   local -a commands
@@ -109,7 +134,7 @@ _hfs() {
   profile_cmds=('ls:List profiles' 'show:Show secrets in a profile' 'env:Export profile as shell vars' 'diff:Compare two profiles')
   config_cmds=('set:Set vault URL' 'show:Show current config' 'clear:Clear all config')
   deploy_cmds=('status:Show deploy state' 'reset:Clear deploy state' 'destroy:Tear down all resources' 'logs:Tail live Worker logs')
-  completion_cmds=('bash:Output bash completions' 'zsh:Output zsh completions')
+  completion_cmds=('bash:Output bash completions' 'zsh:Output zsh completions' 'fish:Output fish completions')
 
   case "$words[2]" in
     token) _describe 'token commands' token_cmds ;;
@@ -125,12 +150,41 @@ _hfs() {
     config) _describe 'config commands' config_cmds ;;
     deploy) _describe 'deploy commands' deploy_cmds ;;
     completion) _describe 'completion commands' completion_cmds ;;
+    get|rm|versions|restore|diff|cp) _hfs_secrets ;;
     *) _describe 'hfs commands' commands ;;
   esac
 }
 
 compdef _hfs hfs
 compdef _hfs homeflare
+`);
+    });
+
+  completionCmd
+    .command("fish")
+    .description("Output fish completion script")
+    .action(() => {
+      process.stdout.write(`# hfs fish completions
+complete -c hfs -f
+complete -c homeflare -f
+
+# Top-level commands
+complete -c hfs -n '__fish_use_subcommand' -a 'health login logout get set rm ls export import env cp diff versions restore rewrap re-encrypt rotate-key audit-verify audit token user role flag whoami config deploy keygen pubkey expiring scan profile template completion'
+complete -c homeflare -n '__fish_use_subcommand' -a 'secrets version'
+
+# Subcommands
+complete -c hfs -n '__fish_seen_subcommand_from token' -a 'register revoke ls'
+complete -c hfs -n '__fish_seen_subcommand_from user' -a 'ls add rm disable enable role'
+complete -c hfs -n '__fish_seen_subcommand_from role' -a 'ls set rm policy'
+complete -c hfs -n '__fish_seen_subcommand_from flag' -a 'ls get set rm'
+complete -c hfs -n '__fish_seen_subcommand_from audit' -a 'log consumers'
+complete -c hfs -n '__fish_seen_subcommand_from profile' -a 'ls show env diff'
+complete -c hfs -n '__fish_seen_subcommand_from config' -a 'set show clear'
+complete -c hfs -n '__fish_seen_subcommand_from deploy' -a 'status reset destroy logs'
+complete -c hfs -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
+
+# Dynamic secret key completion
+complete -c hfs -n '__fish_seen_subcommand_from get rm versions restore diff cp' -a "(hfs ls --all -j 2>/dev/null | string match -rg '"key":"([^"]*)"')"
 `);
     });
 }

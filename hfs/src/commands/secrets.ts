@@ -14,6 +14,7 @@ import {
 } from "../e2e.js";
 import { client, confirm, die, errorMessage, fetchAllSecrets, readStdin } from "../helpers.js";
 import { interpolate } from "../interpolate.js";
+import { validateDate, validateSecretKey, validateTags } from "../validate.js";
 
 export function registerSecretCommands(program: Command): void {
   program
@@ -23,12 +24,24 @@ export function registerSecretCommands(program: Command): void {
     .option("-j, --json", "Output as JSON")
     .option("--raw", "Skip e2e decryption (show ciphertext)")
     .option("-r, --resolve", "Resolve ${SECRET} references in the value")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs get API_KEY                     # show all metadata + value
+  $ hfs get API_KEY -q                  # value only (pipe-friendly)
+  $ hfs get DB_URL --resolve            # resolve \${HOST}:\${PORT} references
+  $ hfs get API_KEY -j                  # JSON output
+`,
+    )
     .action(
       async (
         key: string,
         opts: { quiet?: boolean; json?: boolean; raw?: boolean; resolve?: boolean },
       ) => {
         try {
+          const keyErr = validateSecretKey(key);
+          if (keyErr) die(keyErr);
           const secret = await client().get(key);
 
           // Auto-decrypt e2e secrets
@@ -104,6 +117,16 @@ export function registerSecretCommands(program: Command): void {
     .option("--e2e", "Encrypt client-side with age (for all eligible team members)")
     .option("--private", "Encrypt client-side for only yourself (not shared)")
     .option("--recipients <file>", "Encrypt for recipients in file (one age1... per line)")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs set API_KEY "sk-ant-..." -t production
+  $ hfs set DB_PASS "hunter2" --private            # only you can decrypt
+  $ hfs set TOKEN "ghp_..." --ttl 90d --e2e        # expires in 90 days, team e2e
+  $ hfs set CERT --from-file ./cert.pem -d "TLS"   # read value from file
+`,
+    )
     .action(
       async (
         key: string,
@@ -121,6 +144,17 @@ export function registerSecretCommands(program: Command): void {
         },
       ) => {
         try {
+          const keyErr = validateSecretKey(key);
+          if (keyErr) die(keyErr);
+          if (opts.tags) {
+            const tagErr = validateTags(opts.tags);
+            if (tagErr) die(tagErr);
+          }
+          if (opts.expires) {
+            const dateErr = validateDate(opts.expires);
+            if (dateErr) die(dateErr);
+          }
+
           let secretValue: string;
 
           if (opts.fromFile) {

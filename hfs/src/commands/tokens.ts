@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import type { Command } from "commander";
-import { client, confirm, die, errorMessage } from "../helpers.js";
+import { client, confirm, die, errorMessage, readStdin } from "../helpers.js";
+import { validateAgeKey } from "../validate.js";
 
 export function registerTokenCommands(program: Command): void {
   const tokenCmd = program.command("token").description("Manage service token identities");
@@ -16,7 +17,17 @@ export function registerTokenCommands(program: Command): void {
       "--secret <secret>",
       "Client secret (hashed and stored for direct auth). Prefer env var to avoid shell history",
     )
+    .option("--secret-stdin", "Read client secret from stdin (avoids shell history)")
     .option("--age-key <pubkey>", "age public key for E2E encryption (e.g. age1...)")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs token register abc.access -n ci -s read
+  $ hfs token register abc.access -n deploy -r admin --secret "$CF_SECRET"
+  $ hfs token register abc.access -n ci --secret "$S" --age-key "$PUBKEY"
+`,
+    )
     .action(
       async (
         clientId: string,
@@ -26,14 +37,25 @@ export function registerTokenCommands(program: Command): void {
           scopes?: string;
           role?: string;
           secret?: string;
+          secretStdin?: boolean;
           ageKey?: string;
         },
       ) => {
         try {
+          if (opts.ageKey) {
+            const ageErr = validateAgeKey(opts.ageKey);
+            if (ageErr) die(ageErr);
+          }
+          if (opts.secret && opts.secretStdin) die("Cannot use both --secret and --secret-stdin");
+          let secretValue = opts.secret;
+          if (opts.secretStdin) {
+            secretValue = (await readStdin()).trim();
+            if (!secretValue) die("No secret provided on stdin");
+          }
           let secretHash: string | undefined;
-          if (opts.secret) {
+          if (secretValue) {
             const encoder = new TextEncoder();
-            const digest = await crypto.subtle.digest("SHA-256", encoder.encode(opts.secret));
+            const digest = await crypto.subtle.digest("SHA-256", encoder.encode(secretValue));
             secretHash = [...new Uint8Array(digest)]
               .map((b) => b.toString(16).padStart(2, "0"))
               .join("");

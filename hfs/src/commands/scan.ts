@@ -5,6 +5,7 @@ import type { Command } from "commander";
 import { getConfig } from "../config.js";
 import { e2eEncrypt, loadRecipient } from "../e2e.js";
 import { client, confirm, die, errorMessage } from "../helpers.js";
+import { startSpinner } from "../spinner.js";
 
 /** File patterns to scan for secrets. */
 const ENV_PATTERNS = [
@@ -154,6 +155,16 @@ export function registerScanCommands(program: Command): void {
     .option("--private", "Store as e2e private (encrypted for only you)")
     .option("-t, --tags <tags>", "Tags to apply to imported secrets")
     .option("-j, --json", "Output findings as JSON")
+    .addHelpText(
+      "after",
+      `
+Examples:
+  $ hfs scan                            # scan current directory
+  $ hfs scan ~/projects --dry-run       # report without storing
+  $ hfs scan . --private -t ci          # store as e2e private with tags
+  $ hfs scan . -j                       # JSON output for CI
+`,
+    )
     .action(
       async (
         dir: string | undefined,
@@ -161,9 +172,9 @@ export function registerScanCommands(program: Command): void {
       ) => {
         try {
           const scanDir = dir || process.cwd();
-          console.log(chalk.dim(`Scanning ${scanDir} for .env files...`));
-
+          const spin = startSpinner(`Scanning ${scanDir} for .env files...`);
           const files = findEnvFiles(scanDir);
+          spin.stop();
           if (files.length === 0) {
             console.log(chalk.dim("No .env files found."));
             return;

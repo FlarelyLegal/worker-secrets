@@ -62,7 +62,8 @@ export class VaultClient {
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = Math.max(1000, Number(process.env.HFS_TIMEOUT) || 30000);
+    const timer = setTimeout(() => controller.abort(), timeout);
     try {
       const res = await fetch(`${this.base}${path}`, {
         method,
@@ -102,10 +103,12 @@ export class VaultClient {
       return data as T;
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError")
-        throw new Error("Request timed out after 30s. Check your connection and vault URL.");
+        throw new Error(
+          `Request timed out after ${timeout / 1000}s. Check your connection and vault URL.`,
+        );
       throw e;
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(timer);
     }
   }
 

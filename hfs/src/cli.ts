@@ -73,7 +73,12 @@ if (process.stdout.isTTY && REPO) {
     .then((data) => {
       const latest = data.tag_name?.replace(/^v/, "");
       if (latest && latest !== VERSION) {
-        console.error(`\nhfs update available: ${VERSION} → ${latest} (${REPO}/releases/latest)\n`);
+        const bin = process.argv[1]?.includes("homeflare") ? "homeflare" : "hfs";
+        const hint =
+          bin === "homeflare"
+            ? "brew upgrade homeflare  # or: npm i -g @homeflare/hfs"
+            : "npm i -g @homeflare/hfs  # or: brew upgrade homeflare";
+        console.error(`\nhfs update available: ${VERSION} -> ${latest}\n  ${hint}\n`);
       }
     })
     .catch(() => {});

@@ -3,6 +3,7 @@ import chalk from "chalk";
 import type { SecretEntry } from "./client.js";
 import { VaultClient } from "./client.js";
 import { resolveAuth } from "./config.js";
+import { startSpinner } from "./spinner.js";
 
 export function client(): VaultClient {
   const auth = resolveAuth();
@@ -39,14 +40,20 @@ export async function fetchAllSecrets(
   c: VaultClient,
   opts?: { search?: string },
 ): Promise<SecretEntry[]> {
+  const spin = startSpinner("Fetching secrets...");
   let all: SecretEntry[] = [];
   let offset = 0;
-  const pageSize = 500;
-  while (true) {
-    const page = await c.list({ limit: pageSize, offset, search: opts?.search });
-    all = all.concat(page.secrets);
-    if (all.length >= page.total) break;
-    offset += pageSize;
+  const pageSize = Math.max(1, Math.floor(Number(process.env.HFS_PAGE_SIZE) || 500));
+  try {
+    while (true) {
+      const page = await c.list({ limit: pageSize, offset, search: opts?.search });
+      all = all.concat(page.secrets);
+      spin.update(`Fetching secrets... ${all.length}/${page.total}`);
+      if (all.length >= page.total) break;
+      offset += pageSize;
+    }
+  } finally {
+    spin.stop();
   }
   return all;
 }

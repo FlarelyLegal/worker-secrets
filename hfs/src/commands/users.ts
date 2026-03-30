@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 import { client, confirm, die, errorMessage } from "../helpers.js";
+import { validateEmail } from "../validate.js";
 
 export function registerUserCommands(program: Command) {
   const user = program.command("user").description("Manage users (admin only)");
@@ -46,6 +47,8 @@ export function registerUserCommands(program: Command) {
     .option("-n, --name <name>", "Display name")
     .action(async (email: string, opts: { role: string; name?: string }) => {
       try {
+        const emailErr = validateEmail(email);
+        if (emailErr) die(emailErr);
         await client().addUser(email, opts.role, opts.name);
         console.log(
           `${chalk.green("✓")} User ${chalk.bold(email)} added with role ${chalk.bold(opts.role)}`,
@@ -75,8 +78,13 @@ export function registerUserCommands(program: Command) {
   user
     .command("disable <email>")
     .description("Disable a user (reject auth without deleting)")
-    .action(async (email: string) => {
+    .option("-f, --force", "Skip confirmation")
+    .action(async (email: string, opts: { force?: boolean }) => {
       try {
+        if (!opts.force) {
+          if (!(await confirm(`Disable ${chalk.bold(email)}? They will lose vault access.`)))
+            return;
+        }
         await client().updateUser(email, { enabled: false });
         console.log(`${chalk.green("✓")} User ${chalk.bold(email)} disabled`);
       } catch (e) {
@@ -99,10 +107,14 @@ export function registerUserCommands(program: Command) {
   user
     .command("role <email> <role>")
     .description("Change a user's role")
-    .action(async (email: string, role: string) => {
+    .option("-f, --force", "Skip confirmation")
+    .action(async (email: string, role: string, opts: { force?: boolean }) => {
       try {
+        if (!opts.force) {
+          if (!(await confirm(`Change ${chalk.bold(email)} role to ${chalk.bold(role)}?`))) return;
+        }
         await client().updateUser(email, { role });
-        console.log(`${chalk.green("✓")} User ${chalk.bold(email)} → role ${chalk.bold(role)}`);
+        console.log(`${chalk.green("✓")} User ${chalk.bold(email)} role -> ${chalk.bold(role)}`);
       } catch (e) {
         die(errorMessage(e));
       }
