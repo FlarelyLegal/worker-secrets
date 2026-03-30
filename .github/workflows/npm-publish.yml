@@ -1,7 +1,9 @@
 name: Publish to npm
 
-# Manual trigger only - run from GitHub Actions UI when ready
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       dry-run:
@@ -39,11 +41,11 @@ jobs:
         run: cd hfs && npx vitest run
 
       - name: Publish (dry run)
-        if: inputs.dry-run
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run
         run: cd hfs && npm publish --access public --dry-run
 
       - name: Publish
-        if: ${{ !inputs.dry-run }}
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry-run)
         run: cd hfs && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
