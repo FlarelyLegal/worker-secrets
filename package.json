@@ -1,6 +1,6 @@
 {
   "name": "secrets",
-  "version": "1.0.0",
+  "version": "0.23.1",
   "description": "Encrypted secret management for Cloudflare Workers — a self-hosted vault with CLI.",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "format": "biome format --fix .",
     "changelog": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)} git-cliff -o CHANGELOG.md || git-cliff --offline -o CHANGELOG.md",
     "changelog:unreleased": "GITHUB_TOKEN=${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)} git-cliff --unreleased || git-cliff --offline --unreleased",
-    "sync-version": "npm --prefix hfs pkg set version=$(cat VERSION) && printf 'export const VERSION = \"%s\";\\n' $(cat VERSION) > secret-vault/src/version.ts"
+    "sync-version": "npm pkg set version=$(cat VERSION) && npm --prefix hfs pkg set version=$(cat VERSION) && printf 'export const VERSION = \"%s\";\\n' $(cat VERSION) > secret-vault/src/version.ts"
   },
   "repository": {
     "type": "git",
