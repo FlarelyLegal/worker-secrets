@@ -32,10 +32,11 @@ This is an encrypted secret store - security mistakes leak credentials.
 - Tamper detection: if HMAC verification fails, return error - do not decrypt
 
 ### Scope enforcement
-- **ALWAYS** call `hasScope(auth, scope)` before every data operation
-- **ALWAYS** call `hasTagAccess(auth, secretTags)` before returning secret data
-- Scopes resolved from role via `roles` table: `read`, `write`, `delete`, `*`
-- Tag-based RBAC: roles can restrict access via `allowed_tags`
+- **ALWAYS** call `hasScope(auth, scope)` as a gate check before any route touching secrets
+- **ALWAYS** call `hasAccess(auth, scope, secretTags)` per-resource when iterating secrets with tag filtering
+- Scopes resolved from role via `roles` table + `role_policies` table: `read`, `write`, `delete`, `*`
+- Policy-based RBAC: `role_policies` binds scopes to specific tags; `hasAccess()` enforces this
+- Legacy `allowed_tags` on roles still works as fallback via `hasTagAccess()` (deprecated)
 - Token management: restricted to `interactive` auth only
 - Audit log + user/role management: restricted to `interactive` auth + `admin` role
 - Admin operations (re-encrypt, rotate-key) intentionally bypass tag restrictions - they must process ALL secrets
@@ -65,7 +66,7 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 ## REVIEW CHECKLIST
 
 - [ ] No secret values logged, returned in list endpoints, or included in errors
-- [ ] New endpoints have scope guards via `hasScope()` or `isAdmin()` and tag guards via `hasTagAccess()`
+- [ ] New endpoints have scope guards via `hasScope()` or `isAdmin()` and per-resource tag guards via `hasAccess()`
 - [ ] All data access calls `audit()` with `requestId`
 - [ ] No raw `ENCRYPTION_KEY` exposure outside `encrypt`/`decrypt`
 - [ ] Auth middleware cannot be bypassed (route ordering in Hono)

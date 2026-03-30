@@ -1,6 +1,6 @@
 # VaultClient interface
 
-Source: `hfs/src/client.ts`
+Source: `hfs/src/client.ts`, `hfs/src/types.ts`
 
 ## Types
 
@@ -12,7 +12,9 @@ interface SecretEntry {
   tags: string;
   expires_at: string | null;
   created_at: string;
+  created_by?: string;
   updated_at: string;
+  updated_by?: string;
 }
 
 interface ServiceTokenEntry {
@@ -32,6 +34,8 @@ interface UserEntry {
   name: string;
   role: string;
   enabled: number;
+  age_public_key: string | null;
+  zt_fingerprint: string;
   last_login_at: string | null;
   created_by: string;
   created_at: string;
@@ -50,15 +54,6 @@ interface RoleEntry {
   updated_at: string;
 }
 
-interface FlagEntry {
-  key: string;
-  value: string | number | boolean | object;
-  type: "string" | "number" | "boolean" | "json";
-  description: string;
-  updated_by: string;
-  updated_at: string;
-}
-
 interface AuditEntry {
   id: number;
   timestamp: string;
@@ -70,6 +65,30 @@ interface AuditEntry {
   user_agent: string | null;
   request_id: string | null;
   prev_hash: string | null;
+}
+
+interface FlagEntry {
+  key: string;
+  value: string | number | boolean | Record<string, unknown>;
+  type: "string" | "number" | "boolean" | "json";
+  description: string;
+  updated_by: string;
+  updated_at: string;
+}
+
+interface RecipientEntry {
+  email: string;
+  name: string;
+  age_public_key: string;
+}
+
+interface ConsumerEntry {
+  identity: string;
+  user_agent: string | null;
+  method: string;
+  access_count: number;
+  last_accessed: string;
+  first_accessed: string;
 }
 ```
 
@@ -102,16 +121,24 @@ class VaultClient {
   // Users (admin only)
   listUsers(): Promise<UserEntry[]>
   addUser(email: string, role: string, name?: string): Promise<{ ok: boolean; email: string }>
-  updateUser(email: string, updates: { name?: string; role?: string; enabled?: boolean }): Promise<{ ok: boolean; email: string }>
+  updateUser(email: string, updates: { name?: string; role?: string; enabled?: boolean; age_public_key?: string | null; zt_fingerprint?: string }): Promise<{ ok: boolean; email: string }>
   deleteUser(email: string): Promise<{ ok: boolean; deleted: string }>
+
+  // Recipients (users with age_public_key set)
+  listRecipients(tags?: string): Promise<RecipientEntry[]>
 
   // Roles (admin only)
   listRoles(): Promise<RoleEntry[]>
   setRole(name: string, scopes: string, description?: string, allowedTags?: string): Promise<{ ok: boolean; name: string }>
   deleteRole(name: string): Promise<{ ok: boolean; deleted: string }>
 
+  // Policies (admin only)
+  listPolicies(role: string): Promise<{ id: number; scopes: string; tags: string; description: string }[]>
+  setPolicies(role: string, policies: { scopes: string; tags?: string; description?: string }[]): Promise<{ ok: boolean; count: number }>
+
   // Audit
   audit(opts?: { limit?: number; offset?: number; identity?: string; action?: string; key?: string; method?: string; from?: string; to?: string }): Promise<AuditEntry[]>
+  auditConsumers(key: string, opts?: { from?: string; to?: string }): Promise<ConsumerEntry[]>
 
   // Feature flags
   listFlags(): Promise<FlagEntry[]>
@@ -120,7 +147,7 @@ class VaultClient {
   deleteFlag(key: string): Promise<{ ok: boolean; deleted: string }>
 
   // Info
-  whoami(): Promise<{ method: string; identity: string; name: string; role: string; scopes: string[] }>
+  whoami(): Promise<{ method: string; identity: string; name: string; role: string; scopes: string[]; e2e?: boolean; deviceBound?: boolean; policies?: number; lastLogin?: string | null; totalSecrets?: number; warp?: { connected: boolean; ztVerified: boolean; deviceId?: string } }>
 }
 ```
 
@@ -128,6 +155,7 @@ class VaultClient {
 
 - `request<T>(method, path, body?)` - handles auth headers, JSON parse, error throwing, 30s timeout
 - Auth headers set automatically based on `AuthMode` (jwt cookie + header, or service token headers)
+- WARP ZT challenge-response headers (`X-ZT-Response`, `X-ZT-Timestamp`) added automatically when available
 
 ## Copy/rename (CLI-only)
 

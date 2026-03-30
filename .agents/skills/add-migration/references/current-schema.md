@@ -1,6 +1,8 @@
 # Current D1 schema
 
-Applied via `secret-vault/migrations/0001_init.sql` (single consolidated migration).
+Applied via migrations `0001_init.sql` through `0011_zt_device_binding.sql`.
+
+Migrations 0002-0011 are incremental and apply columns/tables that already exist in `0001_init.sql` for fresh deployments; they are retained for upgrade paths from older versions.
 
 ## Tables
 
@@ -12,8 +14,11 @@ CREATE TABLE IF NOT EXISTS secrets (
   value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64url encoded
   iv TEXT NOT NULL,               -- initialization vector, base64url encoded
   hmac TEXT NOT NULL DEFAULT '',  -- HMAC-SHA256 integrity binding (key + ciphertext + iv)
+  encrypted_dek TEXT,             -- envelope encryption: DEK encrypted with master KEK
+  dek_iv TEXT,                    -- IV used to encrypt the DEK
   description TEXT DEFAULT '',
-  tags TEXT DEFAULT '',            -- comma-separated tags for organization
+  tags TEXT DEFAULT '',           -- comma-separated tags for organization
+  expires_at TEXT,                -- optional expiry date (UTC text, null = no expiry)
   created_by TEXT DEFAULT '',
   updated_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
@@ -32,6 +37,8 @@ CREATE TABLE IF NOT EXISTS secret_versions (
   value TEXT NOT NULL,            -- AES-256-GCM encrypted, base64url encoded (previous value)
   iv TEXT NOT NULL,
   hmac TEXT NOT NULL DEFAULT '',
+  encrypted_dek TEXT,             -- envelope encryption: DEK encrypted with master KEK
+  dek_iv TEXT,                    -- IV used to encrypt the DEK
   description TEXT DEFAULT '',
   changed_by TEXT DEFAULT '',
   changed_at TEXT DEFAULT (datetime('now')),
@@ -47,6 +54,7 @@ CREATE INDEX idx_secret_versions_key ON secret_versions(secret_key, changed_at);
 CREATE TABLE IF NOT EXISTS roles (
   name TEXT PRIMARY KEY,             -- e.g. 'admin', 'operator', 'reader'
   scopes TEXT NOT NULL,              -- comma-separated: 'read', 'write', 'delete', '*'
+  allowed_tags TEXT DEFAULT '',      -- comma-separated tag restriction (empty = all tags, legacy)
   description TEXT DEFAULT '',
   created_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
@@ -57,6 +65,23 @@ CREATE TABLE IF NOT EXISTS roles (
 
 Seeded with: `admin` (`*`), `operator` (`read,write`), `reader` (`read`).
 
+### role_policies
+
+```sql
+CREATE TABLE IF NOT EXISTS role_policies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  role TEXT NOT NULL,
+  scopes TEXT NOT NULL,              -- comma-separated scopes this policy grants
+  tags TEXT NOT NULL DEFAULT '',     -- comma-separated tag restriction (empty = all tags)
+  description TEXT DEFAULT '',
+  created_by TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (role) REFERENCES roles(name) ON DELETE CASCADE
+);
+```
+
+Policy-based RBAC: each role can have multiple policies, each binding a set of scopes to specific tags. Used by `hasAccess()` in `access.ts`.
+
 ### users
 
 ```sql
@@ -65,6 +90,8 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL,                -- references roles.name
   enabled INTEGER NOT NULL DEFAULT 1, -- 0 = disabled (auth rejected without deletion)
+  age_public_key TEXT,               -- age recipient (age1...) for e2e team encryption
+  zt_fingerprint TEXT DEFAULT '',    -- Zero Trust device certificate fingerprint
   last_login_at TEXT,
   created_by TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now')),
@@ -104,7 +131,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
   secret_key TEXT,                -- which secret was accessed (null for list/export/import)
   ip TEXT,
   user_agent TEXT,
-  request_id TEXT                 -- correlates with X-Request-ID response header
+  request_id TEXT,                -- correlates with X-Request-ID response header
+  prev_hash TEXT,                 -- SHA-256 hash of previous entry (tamper-evident chain)
+  warp_connected INTEGER DEFAULT 0 -- 1 if request came through WARP tunnel
 );
 
 CREATE INDEX idx_audit_log_timestamp ON audit_log(timestamp);
@@ -116,7 +145,7 @@ CREATE INDEX idx_audit_log_action ON audit_log(action, timestamp);
 ## Conventions
 
 - All timestamps are SQLite `datetime('now')` (UTC, text format)
-- Primary keys are text, not auto-increment (except audit_log, secret_versions)
+- Primary keys are text, not auto-increment (except `audit_log`, `secret_versions`, `role_policies`)
 - Use `ON CONFLICT ... DO UPDATE` for upserts
 - Always use parameterized `.bind()`, never string interpolation
-- Single migration file: all schema changes consolidated into `0001_init.sql`
+- Next migration: `0012_*.sql`

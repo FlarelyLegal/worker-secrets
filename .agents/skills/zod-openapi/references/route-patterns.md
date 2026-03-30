@@ -6,7 +6,7 @@ Routes use `createRoute()` from `@hono/zod-openapi` and are registered with `app
 
 ```typescript
 import { createRoute } from "@hono/zod-openapi";
-import { ErrorSchema, KeyParam, SecretEntrySchema } from "../schemas.js";
+import { ErrorSchema, KeyParam, SecretEntrySchema } from "../schemas-secrets.js";
 
 const getSecretRoute = createRoute({
   method: "get",

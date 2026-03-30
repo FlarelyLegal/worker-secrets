@@ -80,13 +80,27 @@ Default roles: `admin` (`*`), `operator` (`read,write`), `reader` (`read`).
 
 ## Scope enforcement
 
-After auth, individual routes check scopes:
+After auth, individual routes use two checks from `secret-vault/src/access.ts`:
 
 ```typescript
+// Gate check: does ANY policy grant this scope (regardless of tags)?
 function hasScope(auth: AuthUser, required: string): boolean {
-  return auth.scopes.includes("*") || auth.scopes.includes(required);
+  return auth.policies.some((p) => p.scopes.includes("*") || p.scopes.includes(required));
+}
+
+// Resource check: does a policy grant this scope for this secret's tags?
+function hasAccess(auth: AuthUser, requiredScope: string, secretTags: string): boolean {
+  return auth.policies.some((p) => {
+    const scopeOk = p.scopes.includes("*") || p.scopes.includes(requiredScope);
+    if (!scopeOk) return false;
+    if (p.tags.length === 0) return true; // unrestricted policy
+    if (!secretTags) return false;        // restricted policy, untagged secret
+    return p.tags.some((t) => secretTags.split(",").map(s => s.trim()).includes(t));
+  });
 }
 ```
+
+Use `hasScope` at the route level, `hasAccess` per-resource when filtering secrets by tag.
 
 ## Admin enforcement
 

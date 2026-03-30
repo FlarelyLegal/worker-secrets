@@ -9,7 +9,7 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 
 ## CONVENTIONS
 
-- **ALWAYS** use sequential naming: `NNNN_description.sql` (next: `0002_*.sql`)
+- **ALWAYS** use sequential naming: `NNNN_description.sql` (next: `0012_*.sql`)
 - **ALWAYS** use `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE`
 - **ALWAYS** add indexes for columns used in WHERE/ORDER BY
 - **ALWAYS** test locally first: `npm run db:migrate:local`
@@ -20,9 +20,17 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 
 ## EXISTING SCHEMA
 
-- `0001_init.sql` - Consolidated: `secrets` (HMAC, tags), `secret_versions`, `roles` (seeded), `users` (RBAC), `service_tokens` (role FK), `audit_log` (request_id)
+- `0001_init.sql` - Consolidated: `secrets` (HMAC, tags, envelope encryption, expiry), `secret_versions`, `roles` (seeded, allowed_tags), `users` (RBAC, age_public_key), `service_tokens` (role FK), `audit_log` (request_id, prev_hash, warp_connected)
 - `0002_rbac.sql` - Incremental: `roles` + `users` tables (for upgrades from v0.7.x/v0.8.x)
 - `0003_production_hardening.sql` - Incremental: role FK, tags, request_id columns (for upgrades)
+- `0004_secret_expiry.sql` - Incremental: `expires_at` column on `secrets`
+- `0005_audit_hash_chain.sql` - Incremental: `prev_hash` column on `audit_log`
+- `0006_envelope_encryption.sql` - Incremental: `encrypted_dek`, `dek_iv` on `secrets` and `secret_versions`
+- `0007_role_tags.sql` - Incremental: `allowed_tags` column on `roles`
+- `0008_user_pubkey.sql` - Incremental: `age_public_key` column on `users`
+- `0009_role_policies.sql` - New table: `role_policies` (policy-based RBAC with per-scope tag restrictions)
+- `0010_audit_warp.sql` - Incremental: `warp_connected` column on `audit_log`
+- `0011_zt_device_binding.sql` - Incremental: `zt_fingerprint` column on `users`
 
 See [current schema](references/current-schema.md) for full DDL.
 

@@ -1,6 +1,6 @@
 # Zod schema patterns
 
-All schemas live in `secret-vault/src/schemas.ts`. Import `z` from `@hono/zod-openapi`.
+Schemas are split by domain: `secret-vault/src/schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts`. Import `z` from `@hono/zod-openapi`.
 
 ## Naming
 

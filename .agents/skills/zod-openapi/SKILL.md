@@ -18,7 +18,7 @@ All Worker API endpoints use `@hono/zod-openapi`. Schemas define validation AND 
 
 ### Schemas
 
-- **ALWAYS** define request/response schemas in `schemas.ts`
+- **ALWAYS** define request/response schemas in the appropriate `schemas-*.ts` file: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts`
 - **ALWAYS** use `.openapi("SchemaName")` on response schemas for spec readability
 - **ALWAYS** add `.openapi({ example: ... })` on fields where the example aids understanding
 - **NEVER** duplicate types - derive TypeScript types from Zod schemas with `z.infer<>`
@@ -77,7 +77,7 @@ export const KeyParam = z.object({
 // routes/secrets.ts
 import { createRoute } from "@hono/zod-openapi";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { ErrorSchema, KeyParam, SecretSchema } from "../schemas.js";
+import { ErrorSchema, KeyParam, SecretSchema } from "../schemas-secrets.js";
 
 const app = new OpenAPIHono<HonoEnv>();
 

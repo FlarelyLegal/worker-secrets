@@ -11,8 +11,9 @@ Routes live in `secret-vault/src/routes/` as Hono sub-routers, mounted in `src/i
 
 ### Guards (CRITICAL)
 
-- **ALWAYS** call `hasScope(auth, "read"|"write"|"delete")` before touching secrets
-- **ALWAYS** call `audit(env, auth, action, key, ip, userAgent)` after every data access or mutation
+- **ALWAYS** call `hasScope(auth, "read"|"write"|"delete")` as a gate check before any route touching secrets
+- **ALWAYS** call `hasAccess(auth, scope, secretTags)` per-resource when iterating secrets with tag filtering
+- **ALWAYS** call `audit(env, auth, action, secretKey, ip, userAgent, requestId)` after every data access or mutation
 - **ALWAYS** wrap crypto and D1 calls in try-catch → return 500 with generic message
 - **NEVER** add routes above the auth middleware in `index.ts` unless intentionally public
 - **NEVER** return internal details in errors (stack traces, SQL, key fragments)

@@ -62,7 +62,7 @@ import { describe, it, expect } from "vitest";
 
 // Import or inline the crypto functions for testing
 describe("encrypt/decrypt", () => {
-  const testKey = "a]".repeat(32); // 64-char hex = 32 bytes
+  const testKey = "a".repeat(64); // 64-char hex = 32 bytes
 
   it("round-trips plaintext", async () => {
     const { ciphertext, iv } = await encrypt("hello world", testKey);

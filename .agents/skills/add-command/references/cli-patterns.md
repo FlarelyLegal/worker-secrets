@@ -56,4 +56,4 @@ const parentCmd = program.command("parent").description("...");
 parentCmd.command("child <arg>").action(async (arg) => { ... });
 ```
 
-Existing groups: `config` (set, show, clear), `token` (register, revoke, ls).
+Existing groups: `config` (set, show, clear), `token` (register, revoke, ls), `user` (ls, add, rm, disable, enable, role), `role` (ls, set, rm), `flag` (ls, get, set, rm).

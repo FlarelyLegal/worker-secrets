@@ -7,7 +7,7 @@ description: Add a new CLI command to the hfs tool. Use when adding user-facing 
 
 ## FILES
 
-- `hfs/src/commands/` - Command modules (`auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`)
+- `hfs/src/commands/` - Command modules (`admin-ops.ts`, `audit.ts`, `auth.ts`, `completion.ts`, `config.ts`, `deploy.ts`, `expiring.ts`, `flags.ts`, `keygen.ts`, `profiles.ts`, `roles.ts`, `scan.ts`, `secrets-bulk.ts`, `secrets-ops.ts`, `secrets.ts`, `template.ts`, `tokens.ts`, `users.ts`)
 - `hfs/src/deploy/` - Deploy phases (`state.ts`, `phases.ts`, `access.ts`, `assets.ts`, `worker.ts`, `cf-api.ts`)
 - `hfs/src/client.ts` - `VaultClient` HTTP methods against the vault API
 - `hfs/src/config.ts` - Auth resolution, JWT storage, config management
