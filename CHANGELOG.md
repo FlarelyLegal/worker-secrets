@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.0] - 2026-03-30
+
+### Bug Fixes
+
+- Trailing space in comment (biome format)
+- Update stale agent skills, AGENTS.md, and schema references
+- Strip full path from CA cert status before logging (CodeQL CWE-532)
+
+### CI
+
+- Add npm publish workflow (manual trigger, dry-run default)
+- Npm publish triggers on tag push alongside manual dispatch
+- Add biome lint to npm publish workflow
+
+### Features
+
+- Hfs scan command + ESO webhook integration docs
+- Add Cloudflare token patterns to hfs scan
+- Publish CLI to public npm as @homeflare/hfs
+- Scaffold Access policies during hfs deploy
+- V0.25.0 - direct service token auth with E2E encryption
+
+### Miscellaneous
+
+- Regenerate changelog for v0.24.0
+
 ## [0.24.0] - 2026-03-30
 
 ### Bug Fixes
