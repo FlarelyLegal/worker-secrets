@@ -4,10 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Biome formatting in client.ts
+
+### Features
+
+- Enriched /whoami with browser UI, WARP status, and vault diagnostics
+
+## [0.23.0] - 2026-03-29
+
 ### Features
 
 - Show version and health status in landing page footer
 - Cloudflare WARP / Zero Trust integration (#12)
+
+### Miscellaneous
+
+- Bump version to 0.23.0
 
 ## [0.22.0] - 2026-03-29
 
