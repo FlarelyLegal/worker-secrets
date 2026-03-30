@@ -28,8 +28,14 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
+      - name: Install root deps
+        run: npm ci
+
       - name: Install CLI deps
         run: cd hfs && npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build CLI
         run: cd hfs && npm run build
