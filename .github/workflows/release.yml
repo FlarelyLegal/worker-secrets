@@ -57,13 +57,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate changelog
+      - name: Generate release notes
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --offline -o CHANGELOG.md
+          args: --offline --latest -o RELEASE_NOTES.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.6.1
         with:
-          body_path: CHANGELOG.md
+          body_path: RELEASE_NOTES.md
