@@ -159,7 +159,7 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 
 ## CLI quick start
 
-    npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
+    npm i -g @homeflare/hfs
     hfs deploy
     hfs config set --url ${origin}
     hfs login

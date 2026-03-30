@@ -1,5 +1,5 @@
 {
-  "name": "@FlarelyLegal/hfs-cli",
+  "name": "@homeflare/hfs",
   "version": "0.24.0",
   "type": "module",
   "description": "Encrypted secret vault CLI for Cloudflare Workers",
@@ -25,7 +25,7 @@
     "directory": "hfs"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "files": [
     "dist",

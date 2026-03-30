@@ -39,7 +39,7 @@ export function landingPage(
   packageName?: string,
 ): string {
   const repo = repoUrl || "https://github.com/FlarelyLegal/worker-secrets";
-  const pkg = packageName || "@FlarelyLegal/hfs-cli";
+  const pkg = packageName || "@homeflare/hfs";
   const b = esc(brand);
   const initial = "HF";
   const o = esc(origin);
@@ -174,7 +174,7 @@ export function landingPage(
       <div class="step-content">
         <div class="step-title">Deploy to your Cloudflare account</div>
         <div class="step-desc">One command creates the Worker, D1 database, KV namespace, and Access policies. Everything runs on your account.</div>
-        <div class="terminal"><code><span class="cmd">$</span> npm i -g ${p} --registry=https://npm.pkg.github.com<br/><span class="cmd">$</span> hfs deploy<br/><span class="output">  Deployed to ${o}</span></code></div>
+        <div class="terminal"><code><span class="cmd">$</span> npm i -g ${p}<br/><span class="cmd">$</span> hfs deploy<br/><span class="output">  Deployed to ${o}</span></code></div>
       </div>
     </div>
 
