@@ -95,8 +95,3 @@ The Worker uses only three runtime dependencies:
 
 All cryptographic operations use the Web Crypto API (`crypto.subtle`), built into the Cloudflare Workers runtime. No third-party crypto libraries.
 
-## Security audit history
-
-| Date | Scope | Findings | Status |
-|------|-------|----------|--------|
-| 2026-03-30 | Full codebase audit | 1 critical (policy auth bypass), 3 high (SSRF ranges, JWT spoofing, WARP replay), 5 medium, 6 low | All critical/high fixed |
