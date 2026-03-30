@@ -9,7 +9,7 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 
 ## CONVENTIONS
 
-- **ALWAYS** use sequential naming: `NNNN_description.sql` (next: `0012_*.sql`)
+- **ALWAYS** use sequential naming: `NNNN_description.sql` (next: `0014_*.sql`)
 - **ALWAYS** use `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE`
 - **ALWAYS** add indexes for columns used in WHERE/ORDER BY
 - **ALWAYS** test locally first: `npm run db:migrate:local`
@@ -31,6 +31,8 @@ Migrations live in `secret-vault/migrations/`. Applied with Wrangler.
 - `0009_role_policies.sql` - New table: `role_policies` (policy-based RBAC with per-scope tag restrictions)
 - `0010_audit_warp.sql` - Incremental: `warp_connected` column on `audit_log`
 - `0011_zt_device_binding.sql` - Incremental: `zt_fingerprint` column on `users`
+- `0012_service_token_secret.sql` - Incremental: `client_secret_hash` column on `service_tokens` for direct auth
+- `0013_service_token_age_key.sql` - Incremental: `age_public_key` column on `service_tokens` for E2E encryption
 
 See [current schema](references/current-schema.md) for full DDL.
 

@@ -66,6 +66,8 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 - Unregistered service tokens are rejected even if Access JWT is valid; direct auth also validates the client secret hash
 - Disabled users (`enabled = 0`) are rejected even with valid JWT
 - Service tokens registered with `--secret` can authenticate on ANY endpoint without Access protection
+- Service tokens bypass `require_warp` enforcement by design - machine-to-machine traffic cannot enroll in WARP
+- Service tokens can register an age public key (`--age-key`) for E2E encryption by automated systems
 
 ### Worker
 
