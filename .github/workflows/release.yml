@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v6.3.0
         with:
           node-version: 24
-          registry-url: https://npm.pkg.github.com
 
       - name: Install root deps
         run: npm ci
@@ -44,7 +43,7 @@ jobs:
         run: cd hfs && npx tsc --noEmit
 
       - name: Test Worker
-        run: cd secret-vault && npx vitest run
+        run: cd secret-vault && npx vitest run --project unit
 
       - name: Test CLI
         run: cd hfs && npx vitest run
@@ -53,7 +52,14 @@ jobs:
         run: cd hfs && npm run build
 
       - name: Publish to GitHub Packages
-        run: cd hfs && npm publish
+        run: |
+          cd hfs
+          # GitHub Packages requires scope to match repo owner
+          npm pkg set name="@flarelylegal/hfs-cli"
+          printf 'registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
+          npm publish || true
+          # Restore original name
+          npm pkg set name="@homeflare/hfs"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
