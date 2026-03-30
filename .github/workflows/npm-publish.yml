@@ -1,0 +1,49 @@
+name: Publish to npm
+
+# Manual trigger only - run from GitHub Actions UI when ready
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run (don't actually publish)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install CLI deps
+        run: cd hfs && npm ci
+
+      - name: Build CLI
+        run: cd hfs && npm run build
+
+      - name: Type-check
+        run: cd hfs && npx tsc --noEmit
+
+      - name: Test
+        run: cd hfs && npx vitest run
+
+      - name: Publish (dry run)
+        if: inputs.dry-run
+        run: cd hfs && npm publish --access public --dry-run
+
+      - name: Publish
+        if: ${{ !inputs.dry-run }}
+        run: cd hfs && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
