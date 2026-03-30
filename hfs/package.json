@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Encrypted secret vault CLI for Cloudflare Workers",
   "bin": {
+    "homeflare": "./dist/homeflare.js",
     "hfs": "./dist/cli.js"
   },
   "scripts": {
