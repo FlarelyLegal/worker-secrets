@@ -74,8 +74,9 @@ bulkExport.openapi(exportRoute, async (c) => {
                   row.encrypted_dek,
                   row.dek_iv,
                   c.env.ENCRYPTION_KEY,
+                  row.key,
                 )
-              : await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY),
+              : await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY, row.key),
           description: row.description,
           tags: row.tags,
           expires_at: row.expires_at,
