@@ -1,8 +1,8 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 import { getConfig } from "../config.js";
-import { e2eDecrypt, e2eEncrypt, ensureE2ETag, isE2E, loadRecipient } from "../e2e.js";
-import { client, confirm, die, errorMessage } from "../helpers.js";
+import { e2eDecrypt, e2eEncrypt, ensureE2ETag, isE2E, loadRecipient, tryDecrypt } from "../e2e.js";
+import { client, confirm, die, errorMessage, fetchAllSecrets } from "../helpers.js";
 
 export function registerSecretOpsCommands(program: Command): void {
   program
@@ -43,25 +43,9 @@ export function registerSecretOpsCommands(program: Command): void {
           c.getVersion(key, parseInt(versionId, 10)),
         ]);
 
-        let currentValue = current.value || "";
-        let versionValue = version.value || "";
-
-        // Auto-decrypt e2e
         const e2eId = getConfig().e2eIdentity;
-        if (isE2E(current.tags) && currentValue) {
-          try {
-            currentValue = await e2eDecrypt(currentValue, e2eId);
-          } catch {
-            /* show ciphertext */
-          }
-        }
-        if (isE2E(current.tags) && versionValue) {
-          try {
-            versionValue = await e2eDecrypt(versionValue, e2eId);
-          } catch {
-            /* show ciphertext */
-          }
-        }
+        const currentValue = await tryDecrypt(current.value || "", current.tags, e2eId);
+        const versionValue = await tryDecrypt(version.value || "", current.tags, e2eId);
 
         if (currentValue === versionValue) {
           console.log(chalk.dim("No differences."));
@@ -123,7 +107,7 @@ export function registerSecretOpsCommands(program: Command): void {
 
         const keysToRewrap: string[] = [];
         if (opts.all) {
-          const { secrets } = await c.list({ limit: 10000 });
+          const secrets = await fetchAllSecrets(c);
           for (const s of secrets) {
             if (isE2E(s.tags)) keysToRewrap.push(s.key);
           }
@@ -142,7 +126,7 @@ export function registerSecretOpsCommands(program: Command): void {
         for (const k of keysToRewrap) {
           const secret = await c.get(k);
           if (!isE2E(secret.tags)) {
-            console.log(chalk.yellow(`⚠ ${k} is not e2e — skipping`));
+            console.log(chalk.yellow(`⚠ ${k} is not e2e - skipping`));
             continue;
           }
 
@@ -151,7 +135,7 @@ export function registerSecretOpsCommands(program: Command): void {
           try {
             plaintext = await e2eDecrypt(secret.value || "", e2eId);
           } catch (e) {
-            console.error(chalk.red(`✗ ${k}: decryption failed — ${errorMessage(e)}`));
+            console.error(chalk.red(`✗ ${k}: decryption failed - ${errorMessage(e)}`));
             continue;
           }
 

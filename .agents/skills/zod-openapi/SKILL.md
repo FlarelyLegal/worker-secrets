@@ -5,13 +5,13 @@ description: Define API endpoints with Zod schemas and auto-generated OpenAPI sp
 
 # Zod + OpenAPI for Hono
 
-All Worker API endpoints use `@hono/zod-openapi`. Schemas define validation AND documentation in one place. The OpenAPI spec is auto-generated — no manual maintenance.
+All Worker API endpoints use `@hono/zod-openapi`. Schemas define validation AND documentation in one place. The OpenAPI spec is auto-generated - no manual maintenance.
 
 ## CONVENTIONS (CRITICAL)
 
 ### Packages
 
-- **ONLY `@hono/zod-openapi`** — not `hono-openapi` (different package)
+- **ONLY `@hono/zod-openapi`** - not `hono-openapi` (different package)
 - **ALWAYS** import `z` from `@hono/zod-openapi`, not from `zod` directly
 - **ALWAYS** import `OpenAPIHono` instead of `Hono` for routers that have OpenAPI routes
 - Regular `Hono` is fine for routers that only use middleware (no OpenAPI routes)
@@ -21,18 +21,18 @@ All Worker API endpoints use `@hono/zod-openapi`. Schemas define validation AND 
 - **ALWAYS** define request/response schemas in `schemas.ts`
 - **ALWAYS** use `.openapi("SchemaName")` on response schemas for spec readability
 - **ALWAYS** add `.openapi({ example: ... })` on fields where the example aids understanding
-- **NEVER** duplicate types — derive TypeScript types from Zod schemas with `z.infer<>`
+- **NEVER** duplicate types - derive TypeScript types from Zod schemas with `z.infer<>`
 - Path params use `z.string().openapi({ param: { name: "key", in: "path" } })`
 - Query params use `z.string().optional().openapi({ param: { name: "limit", in: "query" } })`
 
 ### Routes
 
-- **ALWAYS** define routes with `createRoute()` — includes method, path, schemas, and descriptions
-- **ALWAYS** register routes with `app.openapi(route, handler)` — never `app.get()` for API routes
+- **ALWAYS** define routes with `createRoute()` - includes method, path, schemas, and descriptions
+- **ALWAYS** register routes with `app.openapi(route, handler)` - never `app.get()` for API routes
 - **ALWAYS** tag routes for grouping in the spec: `tags: ["Secrets"]`
-- **NEVER** use manual `c.req.json()` — Zod validates automatically via `c.req.valid("json")`
-- **NEVER** use manual param decoding — use `c.req.valid("param")`
-- Error responses still use `c.json({ error: "message" }, status)` — Zod handles input validation, you handle business logic errors
+- **NEVER** use manual `c.req.json()` - Zod validates automatically via `c.req.valid("json")`
+- **NEVER** use manual param decoding - use `c.req.valid("param")`
+- Error responses still use `c.json({ error: "message" }, status)` - Zod handles input validation, you handle business logic errors
 
 ### Error handling
 
@@ -42,7 +42,7 @@ All Worker API endpoints use `@hono/zod-openapi`. Schemas define validation AND 
 
 ### Spec endpoint
 
-- Serve at `app.doc("/doc", { ... })` — auto-generated from all registered routes
+- Serve at `app.doc("/doc", { ... })` - auto-generated from all registered routes
 - Include OpenAPI `info`, `security` schemes, and `tags`
 
 ## PATTERN
@@ -120,7 +120,7 @@ app.doc("/doc", {
 
 - [ ] Schema defined in `schemas.ts` with `.openapi("Name")`
 - [ ] Route defined with `createRoute()` including all response codes
-- [ ] Handler uses `c.req.valid("json")` / `c.req.valid("param")` — not `c.req.json()`
+- [ ] Handler uses `c.req.valid("json")` / `c.req.valid("param")` - not `c.req.json()`
 - [ ] Route tagged for spec grouping: `tags: ["Secrets"]`
 - [ ] Error responses use `ErrorSchema` for consistency
 - [ ] Verify spec at `/doc` includes the new route
@@ -139,5 +139,5 @@ app.doc("/doc", {
 
 ## REFERENCES
 
-- [Route patterns](references/route-patterns.md) — full createRoute examples for GET/PUT/DELETE with params, body, query
-- [Schema patterns](references/schema-patterns.md) — Zod schema conventions for this project
+- [Route patterns](references/route-patterns.md) - full createRoute examples for GET/PUT/DELETE with params, body, query
+- [Schema patterns](references/schema-patterns.md) - Zod schema conventions for this project

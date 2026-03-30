@@ -27,11 +27,11 @@ type AuthMode =
 
 ## Common options
 
-- `-q, --quiet` — print only the raw value (for piping)
-- `-j, --json` — output as JSON
-- `-f, --force` — skip confirmation prompt
-- `-n, --limit <n>` — limit results
-- `-d, --description <desc>` — attach a description
+- `-q, --quiet` - print only the raw value (for piping)
+- `-j, --json` - output as JSON
+- `-f, --force` - skip confirmation prompt
+- `-n, --limit <n>` - limit results
+- `-d, --description <desc>` - attach a description
 
 ## Confirmation prompt
 

@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { getConfig } from "../config.js";
-import { e2eDecrypt, isE2E } from "../e2e.js";
-import { client, die, errorMessage } from "../helpers.js";
+import { tryDecrypt } from "../e2e.js";
+import { client, die, errorMessage, toShellLine } from "../helpers.js";
+import { interpolate } from "../interpolate.js";
 
 export function registerSecretBulkCommands(program: Command): void {
   program
@@ -80,23 +81,29 @@ export function registerSecretBulkCommands(program: Command): void {
     .command("env <keys...>")
     .description("Output secrets as KEY=value for shell (dashes converted to underscores)")
     .option("-e, --export", "Prefix each line with 'export'")
-    .action(async (keys: string[], opts: { export?: boolean }) => {
+    .option("-r, --resolve", "Resolve ${SECRET} references in each value")
+    .action(async (keys: string[], opts: { export?: boolean; resolve?: boolean }) => {
       try {
         const c = client();
+        const cfg = getConfig();
+        // Shared cache for --resolve: avoids re-fetching the same secret across keys.
+        const resolveCache = new Map<string, string>();
+
+        const resolveRef = async (ref: string): Promise<string> => {
+          if (resolveCache.has(ref)) return resolveCache.get(ref)!;
+          const entry = await c.get(ref);
+          const val = await tryDecrypt(entry.value || "", entry.tags, cfg.e2eIdentity);
+          resolveCache.set(ref, val);
+          return val;
+        };
+
         for (const key of keys) {
           const secret = await c.get(key);
-          // Auto-decrypt e2e secrets
-          if (isE2E(secret.tags) && secret.value) {
-            try {
-              secret.value = await e2eDecrypt(secret.value, getConfig().e2eIdentity);
-            } catch {
-              // If decryption fails, output the ciphertext (let the user notice)
-            }
+          let val = await tryDecrypt(secret.value || "", secret.tags, cfg.e2eIdentity);
+          if (opts.resolve && val) {
+            val = await interpolate(val, resolveRef);
           }
-          const escaped = (secret.value || "").replace(/'/g, "'\\''");
-          const prefix = opts.export ? "export " : "";
-          const shellKey = key.replace(/[^a-zA-Z0-9_]/g, "_");
-          process.stdout.write(`${prefix}${shellKey}='${escaped}'\n`);
+          process.stdout.write(toShellLine(key, val, opts.export ?? false));
         }
       } catch (e) {
         die(errorMessage(e));

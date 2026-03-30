@@ -1,6 +1,14 @@
 import { ROLE_ADMIN, SCOPE_ALL } from "./constants.js";
 import type { AuthUser } from "./types.js";
 
+/** Parse comma-separated tag string into trimmed non-empty array. */
+export function parseTags(tags: string): string[] {
+  return tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
 // --- Scope checking ---
 
 /** Gate check: does ANY policy grant this scope (regardless of tags)? */
@@ -23,8 +31,7 @@ export function hasAccess(auth: AuthUser, requiredScope: string, secretTags: str
     if (!scopeOk) return false;
     if (p.tags.length === 0) return true; // unrestricted policy
     if (!secretTags) return false; // restricted policy, untagged secret
-    const sTags = secretTags.split(",").map((t) => t.trim());
-    return p.tags.some((t) => sTags.includes(t));
+    return p.tags.some((t) => parseTags(secretTags).includes(t));
   });
 }
 
@@ -47,6 +54,5 @@ export function accessibleTags(auth: AuthUser, requiredScope: string): string[] 
 export function hasTagAccess(auth: AuthUser, secretTags: string): boolean {
   if (auth.allowedTags.length === 0) return true;
   if (!secretTags) return false;
-  const tags = secretTags.split(",").map((t) => t.trim());
-  return auth.allowedTags.some((allowed) => tags.includes(allowed));
+  return auth.allowedTags.some((allowed) => parseTags(secretTags).includes(allowed));
 }

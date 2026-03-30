@@ -179,7 +179,7 @@ const app = new OpenAPIHono<HonoEnv>({ ... });
 // Regular middleware (auth) still uses app.use()
 app.use("*", async (c, next) => { ... });
 
-// Mount sub-routers — their OpenAPI routes merge into parent spec
+// Mount sub-routers - their OpenAPI routes merge into parent spec
 app.route("/secrets", secrets);
 app.route("/tokens", tokens);
 
@@ -215,5 +215,5 @@ const listSecretsRoute = createRoute({
 
 ## What NOT to put in OpenAPI routes
 
-- Auth middleware — uses regular `app.use()`, not `createRoute()`
-- Internal helpers — `hasScope()`, `audit()` are called from handlers, not routes
+- Auth middleware - uses regular `app.use()`, not `createRoute()`
+- Internal helpers - `hasScope()`, `audit()` are called from handlers, not routes

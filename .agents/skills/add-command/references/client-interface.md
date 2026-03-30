@@ -126,9 +126,9 @@ class VaultClient {
 
 ## Internal helpers
 
-- `request<T>(method, path, body?)` — handles auth headers, JSON parse, error throwing, 30s timeout
+- `request<T>(method, path, body?)` - handles auth headers, JSON parse, error throwing, 30s timeout
 - Auth headers set automatically based on `AuthMode` (jwt cookie + header, or service token headers)
 
 ## Copy/rename (CLI-only)
 
-`hfs cp` copies a secret to a new key. With `--move`, it deletes the source after copying. This is implemented at the CLI level using `get()` + `set()` + `delete()` — there is no `cp` method on `VaultClient`.
+`hfs cp` copies a secret to a new key. With `--move`, it deletes the source after copying. This is implemented at the CLI level using `get()` + `set()` + `delete()` - there is no `cp` method on `VaultClient`.

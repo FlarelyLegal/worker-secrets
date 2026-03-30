@@ -161,7 +161,7 @@ describe("burn-after-reading creates audit entry", () => {
     );
     expect(putRes.status).toBe(201);
 
-    // GET the secret — should succeed and trigger burn
+    // GET the secret - should succeed and trigger burn
     const getRes = await app.fetch(req(`/secrets/${KEY}`), env, ctx);
     expect(getRes.status).toBe(200);
     const body = (await getRes.json()) as { value: string };
@@ -220,7 +220,7 @@ describe("burn-after-reading skips non-burn tags", () => {
     const get1 = await app.fetch(req(`/secrets/${KEY}`), env, ctx);
     expect(get1.status).toBe(200);
 
-    // GET again — should still return 200 (not deleted)
+    // GET again - should still return 200 (not deleted)
     const get2 = await app.fetch(req(`/secrets/${KEY}`), env, ctx);
     expect(get2.status).toBe(200);
     const body = (await get2.json()) as { value: string };

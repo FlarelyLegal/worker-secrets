@@ -78,4 +78,4 @@ cd hfs && npm install -D vitest
 
 ## REFERENCES
 
-- [Test patterns](references/test-patterns.md) — code examples for Worker, crypto, CLI, and scope tests
+- [Test patterns](references/test-patterns.md) - code examples for Worker, crypto, CLI, and scope tests

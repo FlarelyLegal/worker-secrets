@@ -44,7 +44,7 @@ export function listPendingMigrations(dbName: string): string[] {
     }
     return pending;
   } catch {
-    return ["(unable to check — database may not exist yet)"];
+    return ["(unable to check - database may not exist yet)"];
   }
 }
 

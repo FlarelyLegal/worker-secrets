@@ -61,7 +61,7 @@ export function initTls(): void {
     const ca = [...tls.rootCertificates, customCa];
     setGlobalDispatcher(new Agent({ connect: { ca } }));
   } catch {
-    // Silent failure — fall back to system defaults
+    // Silent failure - fall back to system defaults
   }
 }
 

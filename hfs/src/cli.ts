@@ -8,8 +8,10 @@ import { registerAuthCommands } from "./commands/auth.js";
 import { registerCompletionCommands } from "./commands/completion.js";
 import { registerConfigCommands } from "./commands/config.js";
 import { registerDeployCommands } from "./commands/deploy.js";
+import { registerExpiringCommands } from "./commands/expiring.js";
 import { registerFlagCommands } from "./commands/flags.js";
 import { registerKeygenCommands } from "./commands/keygen.js";
+import { registerProfileCommands } from "./commands/profiles.js";
 import { registerRoleCommands } from "./commands/roles.js";
 import { registerSecretCommands } from "./commands/secrets.js";
 import { registerSecretBulkCommands } from "./commands/secrets-bulk.js";
@@ -29,6 +31,7 @@ registerAuthCommands(program);
 registerSecretCommands(program);
 registerSecretBulkCommands(program);
 registerSecretOpsCommands(program);
+registerExpiringCommands(program);
 registerTokenCommands(program);
 registerUserCommands(program);
 registerRoleCommands(program);
@@ -39,6 +42,7 @@ registerKeygenCommands(program);
 registerTemplateCommands(program);
 registerAdminOpsCommands(program);
 registerDeployCommands(program);
+registerProfileCommands(program);
 registerCompletionCommands(program);
 
 program

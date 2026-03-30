@@ -29,7 +29,7 @@ async function getHmacKey(encryptionKey: string, integrityKey?: string): Promise
   if (_cachedHmacKey && _cachedHmacKeySource === source) return _cachedHmacKey;
 
   if (integrityKey) {
-    // Separate integrity key — validate and use directly
+    // Separate integrity key - validate and use directly
     if (!/^[0-9a-fA-F]{64}$/.test(integrityKey)) {
       throw new Error("INTEGRITY_KEY must be exactly 64 hex characters (32 bytes)");
     }
@@ -186,7 +186,7 @@ export async function computeHmac(
   dekIv?: string | null,
 ): Promise<string> {
   const hmacKey = await getHmacKey(hexKey, integrityKey);
-  // Bind all encrypted fields — prevents DEK swap attacks
+  // Bind all encrypted fields - prevents DEK swap attacks
   const parts = [secretKey, ciphertext, iv];
   if (encryptedDek) parts.push(encryptedDek);
   if (dekIv) parts.push(dekIv);

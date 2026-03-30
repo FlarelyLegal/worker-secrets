@@ -7,6 +7,7 @@ const USER_AGENT = `hfs-cli/${pkg.version} (${process.platform}; ${process.arch}
 
 import type {
   AuditEntry,
+  ConsumerEntry,
   FlagEntry,
   RecipientEntry,
   RoleEntry,
@@ -18,6 +19,7 @@ import type {
 
 export type {
   AuditEntry,
+  ConsumerEntry,
   FlagEntry,
   RecipientEntry,
   RoleEntry,
@@ -353,6 +355,22 @@ export class VaultClient {
     if (opts?.to) params.set("to", opts.to);
     const q = params.toString() ? `?${params}` : "";
     return (await this.request<{ entries: AuditEntry[] }>("GET", `/audit${q}`)).entries;
+  }
+
+  async auditConsumers(
+    key: string,
+    opts?: { from?: string; to?: string },
+  ): Promise<ConsumerEntry[]> {
+    const params = new URLSearchParams();
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    const q = params.toString() ? `?${params}` : "";
+    return (
+      await this.request<{ consumers: ConsumerEntry[] }>(
+        "GET",
+        `/audit/consumers/${encodeURIComponent(key)}${q}`,
+      )
+    ).consumers;
   }
 
   async whoami(): Promise<{

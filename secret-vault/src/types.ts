@@ -1,7 +1,7 @@
 export interface Env {
   DB: D1Database;
   FLAGS: KVNamespace;
-  ENCRYPTION_KEY: string; // 64-char hex string (32 bytes) — master KEK
+  ENCRYPTION_KEY: string; // 64-char hex string (32 bytes) - master KEK
   INTEGRITY_KEY?: string; // optional separate HMAC key (64-char hex, falls back to HKDF derivation)
   ALLOWED_EMAILS?: string; // fallback if users table is empty (comma-separated)
   TEAM_DOMAIN: string; // https://<team>.cloudflareaccess.com
@@ -11,7 +11,7 @@ export interface Env {
   REPO_URL?: string; // GitHub repo URL for landing page links
   CORS_ORIGINS?: string; // comma-separated allowed origins (empty = no CORS)
   ZT_CA_FINGERPRINT?: string; // SHA-256 fingerprint of org's Zero Trust CA (hex, no colons)
-  DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only — never set in production
+  DEV_AUTH_BYPASS?: string; // "true" in .dev.vars only - never set in production
 }
 
 export type PolicyRule = {

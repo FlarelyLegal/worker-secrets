@@ -68,3 +68,4 @@ export const FLAG_AUTO_PROVISION_ROLE = "auto_provision_role";
 export const FLAG_REQUIRE_WARP = "require_warp";
 
 export const ACTION_WARP_REJECTED = "warp_rejected";
+export const ACTION_EXPIRED_ACCESS = "expired_access";

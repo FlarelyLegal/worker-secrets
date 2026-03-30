@@ -25,9 +25,9 @@ sequenceDiagram
 
 Three verification layers when `require_warp` is enabled:
 
-1. **ASN check** — traffic routed through Cloudflare's network (ASN 13335)
-2. **Challenge-response** — CLI proves possession of the org's ZT CA cert via time-based HMAC
-3. **Device binding** — user's registered ZT fingerprint must match the org's cert
+1. **ASN check** - traffic routed through Cloudflare's network (ASN 13335)
+2. **Challenge-response** - CLI proves possession of the org's ZT CA cert via time-based HMAC
+3. **Device binding** - user's registered ZT fingerprint must match the org's cert
 
 ## How Challenge-Response Works
 
@@ -36,7 +36,7 @@ The CLI and Worker share knowledge of the org's ZT CA certificate fingerprint. O
 1. CLI computes `HMAC-SHA256(zt_ca_fingerprint, current_unix_minute)`
 2. Sends as `X-ZT-Response` + `X-ZT-Timestamp` headers
 3. Worker recomputes using stored `ZT_CA_FINGERPRINT` secret + the timestamp
-4. Constant-time comparison — rejects if mismatched
+4. Constant-time comparison - rejects if mismatched
 5. 2-minute staleness window with 1-minute clock skew tolerance
 
 This is stateless (no nonce exchange), adds zero latency (no extra round-trip), and prevents replay (timestamp-bound).
@@ -117,7 +117,7 @@ Gateway admins can use this to allow or block the CLI at the network level:
 - **Block**: HTTP policy matching `User-Agent` contains `hfs-cli` → Block
 - **Audit**: HTTP policy → Log all `hfs-cli` traffic for compliance
 
-This means companies control whether Secret Vault is used on their network — no coordination with the vault operator needed. Standard Cloudflare Gateway policy.
+This means companies control whether Secret Vault is used on their network - no coordination with the vault operator needed. Standard Cloudflare Gateway policy.
 
 ## E2E Encryption + WARP
 
@@ -125,10 +125,10 @@ WARP and E2E encryption are independent layers:
 
 | Layer | Protects | Where |
 |-------|----------|-------|
-| **WARP + Gateway** | Transport — TLS inspection, DLP | Network |
-| **Challenge-response** | Device identity — org cert possession | Headers |
-| **E2E (age)** | Content — server never sees plaintext | Client-side |
-| **Envelope** | Storage — per-secret DEK + master KEK | Server-side |
+| **WARP + Gateway** | Transport - TLS inspection, DLP | Network |
+| **Challenge-response** | Device identity - org cert possession | Headers |
+| **E2E (age)** | Content - server never sees plaintext | Client-side |
+| **Envelope** | Storage - per-secret DEK + master KEK | Server-side |
 
 With `--e2e` or `--private`, even Gateway TLS inspection only sees age ciphertext.
 

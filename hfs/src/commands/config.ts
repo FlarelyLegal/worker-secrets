@@ -101,7 +101,7 @@ export function registerConfigCommands(program: Command): void {
       } else if (envId || envSecret) {
         console.log(
           chalk.dim("  status:    ") +
-            chalk.red("incomplete — need both HFS_CLIENT_ID and HFS_CLIENT_SECRET"),
+            chalk.red("incomplete - need both HFS_CLIENT_ID and HFS_CLIENT_SECRET"),
         );
       } else {
         console.log(
@@ -116,7 +116,7 @@ export function registerConfigCommands(program: Command): void {
         const { loadRecipient } = await import("../e2e.js");
         const pubkey = await loadRecipient(cfg.e2eIdentity);
         console.log(chalk.dim("  identity:  ") + chalk.dim(e2ePath));
-        console.log(chalk.dim("  public key:") + ` ${chalk.cyan(pubkey)}`);
+        console.log(`${chalk.dim("  public key:")} ${chalk.cyan(pubkey)}`);
       } catch {
         console.log(chalk.dim("  identity:  ") + chalk.dim("not set (run hfs keygen)"));
       }
@@ -125,7 +125,7 @@ export function registerConfigCommands(program: Command): void {
       console.log(chalk.underline("TLS"));
       const tlsStatus = getCaCertStatus();
       if (tlsStatus.active) {
-        // Show basename only — full path may expose system layout
+        // Show basename only - full path may expose system layout
         const certName = tlsStatus.path ? tlsStatus.path.split("/").pop() : "configured";
         console.log(chalk.dim("  ca cert:   ") + chalk.dim(certName));
         console.log(chalk.dim("  source:    ") + chalk.green(tlsStatus.source));
@@ -141,7 +141,7 @@ export function registerConfigCommands(program: Command): void {
             chalk.green(auth.type === "jwt" ? "interactive session" : "service token"),
         );
       } catch (e) {
-        console.log(chalk.dim("active:    ") + chalk.red(`none — ${errorMessage(e)}`));
+        console.log(chalk.dim("active:    ") + chalk.red(`none - ${errorMessage(e)}`));
       }
     });
 

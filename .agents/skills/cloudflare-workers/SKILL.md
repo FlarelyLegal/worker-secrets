@@ -5,7 +5,7 @@ description: Cloudflare Workers runtime constraints, D1 patterns, Hono conventio
 
 # Cloudflare Workers
 
-**ALWAYS** verify patterns against current Cloudflare docs. Use `search_cloudflare_documentation` MCP tool — don't assume Node.js conventions apply.
+**ALWAYS** verify patterns against current Cloudflare docs. Use `search_cloudflare_documentation` MCP tool - don't assume Node.js conventions apply.
 
 ## CONVENTIONS
 
@@ -13,16 +13,16 @@ description: Cloudflare Workers runtime constraints, D1 patterns, Hono conventio
 
 - **ONLY Web Standards APIs**: `fetch`, `Request`, `Response`, `crypto.subtle`, `TextEncoder`/`TextDecoder`, `URL`, `Headers`
 - **NEVER** assume Node.js built-ins work unless behind `nodejs_compat` flag (enabled in this project)
-- **NO filesystem, NO long-running processes** — Workers are short-lived request handlers
+- **NO filesystem, NO long-running processes** - Workers are short-lived request handlers
 - CPU time: ~30ms free, ~30s paid. Memory: 128MB. Keep it tight.
-- Module-level variables persist within the same isolate — use for caching (CryptoKey, JWKS), **NEVER** for request-specific data
+- Module-level variables persist within the same isolate - use for caching (CryptoKey, JWKS), **NEVER** for request-specific data
 
 ### D1
 
 - **ALWAYS** parameterized queries: `.prepare("SELECT * FROM t WHERE k = ?").bind(key)`
 - **NEVER** string interpolation in SQL
 - **ALWAYS** use `db.batch()` for atomic multi-statement operations (no traditional transactions)
-- SQLite types: TEXT, INTEGER, REAL, BLOB. No native DATE — use `datetime('now')`
+- SQLite types: TEXT, INTEGER, REAL, BLOB. No native DATE - use `datetime('now')`
 - Migrations: sequential numbered SQL files in `migrations/`, applied with `wrangler d1 migrations apply`
 - **ALWAYS** test migrations locally first: `npm run db:migrate:local`
 
@@ -30,18 +30,18 @@ See [D1 patterns](references/d1-patterns.md) for query patterns used in this pro
 
 ### Hono
 
-- Mount sub-routers with `app.route("/path", router)` — **order matters for middleware**
-- Auth middleware uses `app.use("*", ...)` — routes registered BEFORE it are unprotected
+- Mount sub-routers with `app.route("/path", router)` - **order matters for middleware**
+- Auth middleware uses `app.use("*", ...)` - routes registered BEFORE it are unprotected
 - Context: `c.get("auth")`, `c.env.DB`, `c.req.json()`
 - Responses: `c.json({ data }, statusCode)` or `c.json({ error: "message" }, 4xx/5xx)`
 
 ### Crypto
 
-- **ONLY `crypto.subtle`** — no third-party crypto
+- **ONLY `crypto.subtle`** - no third-party crypto
 - AES-256-GCM, 12-byte random IV per operation
-- **ALWAYS** cache CryptoKey at module level — `importKey()` is async and expensive
+- **ALWAYS** cache CryptoKey at module level - `importKey()` is async and expensive
 - Base64 encode ciphertext and IV for D1 TEXT columns
-- HKDF key derivation for HMAC: use `crypto.subtle.deriveKey()` with `HKDF` algorithm, SHA-256, and a fixed info/salt to derive a separate HMAC signing key from `ENCRYPTION_KEY` — cache the derived key at module level
+- HKDF key derivation for HMAC: use `crypto.subtle.deriveKey()` with `HKDF` algorithm, SHA-256, and a fixed info/salt to derive a separate HMAC signing key from `ENCRYPTION_KEY` - cache the derived key at module level
 
 ### Secrets and Config
 
@@ -52,10 +52,10 @@ See [D1 patterns](references/d1-patterns.md) for query patterns used in this pro
 
 ### MCP Tools (prefer over shell)
 
-- `d1_database_query` — run SQL against D1 directly
-- `d1_databases_list` — list databases and get IDs
-- `search_cloudflare_documentation` — look up Workers APIs, D1 limits, Access docs
-- `workers_list` / `workers_get_worker` — inspect deployed Workers
+- `d1_database_query` - run SQL against D1 directly
+- `d1_databases_list` - list databases and get IDs
+- `search_cloudflare_documentation` - look up Workers APIs, D1 limits, Access docs
+- `workers_list` / `workers_get_worker` - inspect deployed Workers
 
 ## ANTI-PATTERNS
 

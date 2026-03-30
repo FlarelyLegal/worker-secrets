@@ -23,7 +23,7 @@ We aim to acknowledge reports within 48 hours and provide a fix or mitigation pl
 
 | Threat | Why |
 |--------|-----|
-| **Compromised Cloudflare account** | Dashboard access can read Wrangler secrets (the master key). Same trust boundary as any cloud-hosted vault. E2E secrets remain protected — age decryption requires the client's private key. |
+| **Compromised Cloudflare account** | Dashboard access can read Wrangler secrets (the master key). Same trust boundary as any cloud-hosted vault. E2E secrets remain protected - age decryption requires the client's private key. |
 | **Malicious Worker deployment** | A modified Worker can read the master key at runtime. Mitigate with CI/CD controls, branch protection, and Access policies. E2E secrets remain protected. |
 | **DDoS** | No application-level rate limiting. Relies on Cloudflare's edge DDoS protection. |
 | **Side-channel timing attacks** | Not specifically mitigated. AES-GCM via `crypto.subtle` is constant-time in the Workers runtime. |
@@ -64,12 +64,12 @@ The master key (`ENCRYPTION_KEY`) and optional `INTEGRITY_KEY` are the root of t
 
 ### Key rotation
 
-See [Encryption Architecture — Key Rotation](docs/encryption.md#key-rotation) for step-by-step instructions and diagrams covering master key, integrity key, and age identity rotation.
+See [Encryption Architecture - Key Rotation](docs/encryption.md#key-rotation) for step-by-step instructions and diagrams covering master key, integrity key, and age identity rotation.
 
 ## Dependencies
 
 The Worker uses only three runtime dependencies:
-- `hono` + `@hono/zod-openapi` — HTTP framework and schema validation
-- `jose` — JWT verification (JWKS)
+- `hono` + `@hono/zod-openapi` - HTTP framework and schema validation
+- `jose` - JWT verification (JWKS)
 
 All cryptographic operations use the Web Crypto API (`crypto.subtle`), built into the Cloudflare Workers runtime. No third-party crypto libraries.

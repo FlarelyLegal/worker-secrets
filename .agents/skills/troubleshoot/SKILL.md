@@ -45,7 +45,7 @@ description: Diagnose and fix issues with the secret-vault Worker, hfs CLI, D1 d
 ### Crypto
 - "Decryption failed" → `ENCRYPTION_KEY` changed since secrets were stored
 - "Encryption failed" → `ENCRYPTION_KEY` invalid format
-- No key rotation support — changing the key makes all existing secrets unreadable
+- No key rotation support - changing the key makes all existing secrets unreadable
 
 See [common errors](references/common-errors.md) for the full error catalog.
 
@@ -53,10 +53,10 @@ See [common errors](references/common-errors.md) for the full error catalog.
 
 ### MCP tools (prefer over shell)
 
-- `d1_database_query` — `SELECT key FROM secrets`, `SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 10`
-- `search_cloudflare_documentation` — D1 limits, Workers APIs, Access JWT format
-- `workers_list` / `workers_get_worker` — verify deployment state
-- `d1_databases_list` — confirm database exists
+- `d1_database_query` - `SELECT key FROM secrets`, `SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 10`
+- `search_cloudflare_documentation` - D1 limits, Workers APIs, Access JWT format
+- `workers_list` / `workers_get_worker` - verify deployment state
+- `d1_databases_list` - confirm database exists
 
 ### Shell
 
@@ -68,6 +68,6 @@ echo $JWT | cut -d. -f2 | base64 -d | jq .  # Inspect JWT claims
 
 ## KNOWN LIMITATIONS
 
-- No rate limiting — Cloudflare's edge DDoS protection only
+- No rate limiting - Cloudflare's edge DDoS protection only
 - `"export"` and `"import"` are reserved secret key names (collide with `/secrets/export` and `/secrets/import` routes)
 - X-Request-ID header on every response for debugging

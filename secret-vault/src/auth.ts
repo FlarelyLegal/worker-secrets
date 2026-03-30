@@ -228,7 +228,7 @@ export async function authenticate(
         jwtPayload: payload,
       };
     }
-    // Lost the race — fall through to re-query the users table
+    // Lost the race - fall through to re-query the users table
     const retryUser = await env.DB.prepare(
       "SELECT email, name, role, enabled FROM users WHERE email = ?",
     )

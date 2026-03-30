@@ -93,6 +93,15 @@ export const AuditQuery = z.object({
 
 export const VALID_SCOPES = ["*", "read", "write", "delete"] as const;
 
+export const ScopesString = z.string().refine(
+  (s) =>
+    s
+      .split(",")
+      .map((v) => v.trim())
+      .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
+  { message: "Valid scopes: *, read, write, delete (comma-separated)" },
+);
+
 // --- Admin ---
 
 export const HealthSchema = z

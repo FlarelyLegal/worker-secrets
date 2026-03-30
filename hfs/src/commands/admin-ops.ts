@@ -46,7 +46,7 @@ export function registerAdminOpsCommands(program: Command): void {
         }
         if (!opts.force) {
           const ok = await confirm(
-            `Rotate master key? After this, update ENCRYPTION_KEY in Wrangler secrets to the new key.\n${chalk.yellow("WARNING: Legacy secrets without DEK will NOT be rotated — run re-encrypt first.")}`,
+            `Rotate master key? After this, update ENCRYPTION_KEY in Wrangler secrets to the new key.\n${chalk.yellow("WARNING: Legacy secrets without DEK will NOT be rotated - run re-encrypt first.")}`,
           );
           if (!ok) return;
         }
@@ -55,7 +55,7 @@ export function registerAdminOpsCommands(program: Command): void {
         if (result.legacy > 0) {
           console.log(
             chalk.yellow(
-              `⚠ ${result.legacy} legacy secrets skipped — run ${chalk.bold("hfs re-encrypt")} first`,
+              `⚠ ${result.legacy} legacy secrets skipped - run ${chalk.bold("hfs re-encrypt")} first`,
             ),
           );
         }
@@ -121,12 +121,12 @@ export function registerAdminOpsCommands(program: Command): void {
 
         if (broken === 0) {
           console.log(
-            `${chalk.green("✓")} Audit chain intact — ${verified} verified, ${noHash} pre-chain entries`,
+            `${chalk.green("✓")} Audit chain intact - ${verified} verified, ${noHash} pre-chain entries`,
           );
         } else {
           console.log(
             chalk.red(
-              `\n✗ ${broken} broken link(s) detected — audit log may have been tampered with`,
+              `\n✗ ${broken} broken link(s) detected - audit log may have been tampered with`,
             ),
           );
           process.exit(1);

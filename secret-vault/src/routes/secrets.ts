@@ -2,6 +2,7 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { accessibleTags, audit, hasAccess, hasScope } from "../auth.js";
 import {
   ACTION_DELETE,
+  ACTION_EXPIRED_ACCESS,
   ACTION_GET,
   ACTION_LIST,
   FLAG_BURN_AFTER_READING,
@@ -66,7 +67,7 @@ secrets.openapi(listRoute, async (c) => {
   // Policy-based tag filtering for correct pagination
   const readable = accessibleTags(auth, SCOPE_READ);
   if (readable !== null && readable.length === 0) {
-    // No tags accessible — return empty results
+    // No tags accessible - return empty results
     return c.json({ secrets: [], total: 0 }, 200);
   }
   if (readable !== null && readable.length > 0) {
@@ -130,13 +131,23 @@ secrets.openapi(getRoute, async (c) => {
 
   // Policy-based access control
   if (!hasAccess(auth, SCOPE_READ, row.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
   // Enforce expiry
   if (row.expires_at) {
     const enforceExpiry = getFlag(c.get("flags"), FLAG_ENFORCE_EXPIRY, false);
-    if (enforceExpiry && new Date(row.expires_at).getTime() < Date.now())
-      return c.json({ error: `Secret expired at ${row.expires_at} — rotate or re-set it` }, 403);
+    if (enforceExpiry && new Date(row.expires_at).getTime() < Date.now()) {
+      await audit(
+        c.env,
+        auth,
+        ACTION_EXPIRED_ACCESS,
+        key,
+        c.get("ip"),
+        c.get("ua"),
+        c.get("requestId"),
+      );
+      return c.json({ error: `Secret expired at ${row.expires_at} - rotate or re-set it` }, 403);
+    }
   }
 
   // Require envelope encryption
@@ -144,7 +155,7 @@ secrets.openapi(getRoute, async (c) => {
     const requireEnvelope = getFlag(c.get("flags"), FLAG_REQUIRE_ENVELOPE_ENCRYPTION, false);
     if (requireEnvelope)
       return c.json(
-        { error: "Secret uses legacy encryption — run `hfs re-encrypt` to migrate" },
+        { error: "Secret uses legacy encryption - run `hfs re-encrypt` to migrate" },
         403,
       );
   }
@@ -162,11 +173,11 @@ secrets.openapi(getRoute, async (c) => {
       row.dek_iv,
     );
     if (!valid)
-      return c.json({ error: "Integrity check failed — secret may have been tampered with" }, 500);
+      return c.json({ error: "Integrity check failed - secret may have been tampered with" }, 500);
   } else {
     const hmacRequired = getFlag(c.get("flags"), FLAG_HMAC_REQUIRED, false);
     if (hmacRequired)
-      return c.json({ error: "Secret missing HMAC integrity tag — re-save to add one" }, 500);
+      return c.json({ error: "Secret missing HMAC integrity tag - re-save to add one" }, 500);
   }
 
   // Decrypt: envelope (DEK) or legacy (direct)
@@ -254,9 +265,9 @@ secrets.openapi(deleteRoute, async (c) => {
     .first<{ tags: string }>();
   if (!row) return c.json({ error: "Secret not found" }, 404);
   if (!hasAccess(auth, SCOPE_DELETE, row.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
-  // Delete versions first (explicit cleanup — FK CASCADE may not be enforced in D1)
+  // Delete versions first (explicit cleanup - FK CASCADE may not be enforced in D1)
   await c.env.DB.batch([
     c.env.DB.prepare("DELETE FROM secret_versions WHERE secret_key = ?").bind(key),
     c.env.DB.prepare("DELETE FROM secrets WHERE key = ?").bind(key),

@@ -33,8 +33,8 @@ npm run deploy
 
 Create an Access application for your domain with two policies (order matters):
 
-1. **Service Auth** — Include: your service token
-2. **Allow** — Include: allowed emails. Require: `hwk` (hardware key)
+1. **Service Auth** - Include: your service token
+2. **Allow** - Include: allowed emails. Require: `hwk` (hardware key)
 
 Copy the **Application Audience (AUD) Tag** into `POLICY_AUD`.
 
@@ -90,7 +90,7 @@ const res = await fetch("https://vault.example.com/secrets/api-key", {
 const { value } = await res.json();
 ```
 
-Service Bindings are not supported — auth requires a valid Access JWT.
+Service Bindings are not supported - auth requires a valid Access JWT.
 
 ## Feature flags
 

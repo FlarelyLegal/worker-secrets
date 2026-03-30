@@ -1,5 +1,6 @@
 import { createInterface } from "node:readline";
 import chalk from "chalk";
+import type { SecretEntry } from "./client.js";
 import { VaultClient } from "./client.js";
 import { resolveAuth } from "./config.js";
 
@@ -32,6 +33,37 @@ export function readStdin(): Promise<string> {
       reject(e);
     });
   });
+}
+
+export async function fetchAllSecrets(
+  c: VaultClient,
+  opts?: { search?: string },
+): Promise<SecretEntry[]> {
+  let all: SecretEntry[] = [];
+  let offset = 0;
+  const pageSize = 500;
+  while (true) {
+    const page = await c.list({ limit: pageSize, offset, search: opts?.search });
+    all = all.concat(page.secrets);
+    if (all.length >= page.total) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
+/** Parse comma-separated tag string into trimmed non-empty array. */
+export function parseTags(tags: string): string[] {
+  if (!tags) return [];
+  return tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+export function toShellLine(key: string, value: string, exportPrefix: boolean): string {
+  const varName = key.replace(/[^a-zA-Z0-9_]/g, "_");
+  const escaped = value.replace(/'/g, "'\\''");
+  return `${exportPrefix ? "export " : ""}${varName}='${escaped}'\n`;
 }
 
 export function confirm(message: string): Promise<boolean> {

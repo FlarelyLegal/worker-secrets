@@ -39,7 +39,7 @@ function fromBase64url(b64: string): Uint8Array {
 }
 
 // --- Rotate key ---
-// Intentionally bypasses tag-based access control — must re-wrap ALL DEKs for key rotation.
+// Intentionally bypasses tag-based access control - must re-wrap ALL DEKs for key rotation.
 
 const rotateKeyRoute = createRoute({
   method: "post",

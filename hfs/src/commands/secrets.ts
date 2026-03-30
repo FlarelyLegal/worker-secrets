@@ -3,6 +3,7 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import type { SecretEntry } from "../client.js";
 import { getConfig } from "../config.js";
+import { expiryLabel, parseTtl } from "../duration.js";
 import {
   e2eDecrypt,
   e2eEncrypt,
@@ -11,7 +12,8 @@ import {
   loadRecipient,
   loadRecipients,
 } from "../e2e.js";
-import { client, confirm, die, errorMessage, readStdin } from "../helpers.js";
+import { client, confirm, die, errorMessage, fetchAllSecrets, readStdin } from "../helpers.js";
+import { interpolate } from "../interpolate.js";
 
 export function registerSecretCommands(program: Command): void {
   program
@@ -20,51 +22,75 @@ export function registerSecretCommands(program: Command): void {
     .option("-q, --quiet", "Print only the value (for piping)")
     .option("-j, --json", "Output as JSON")
     .option("--raw", "Skip e2e decryption (show ciphertext)")
-    .action(async (key: string, opts: { quiet?: boolean; json?: boolean; raw?: boolean }) => {
-      try {
-        const secret = await client().get(key);
+    .option("-r, --resolve", "Resolve ${SECRET} references in the value")
+    .action(
+      async (
+        key: string,
+        opts: { quiet?: boolean; json?: boolean; raw?: boolean; resolve?: boolean },
+      ) => {
+        try {
+          const secret = await client().get(key);
 
-        // Auto-decrypt e2e secrets
-        if (isE2E(secret.tags) && secret.value && !opts.raw) {
-          try {
-            secret.value = await e2eDecrypt(secret.value, getConfig().e2eIdentity);
-          } catch (e) {
-            if (opts.quiet) die(errorMessage(e));
-            console.error(
-              chalk.yellow("⚠ e2e decryption failed — showing ciphertext. Use --raw to suppress."),
-            );
-            console.error(chalk.dim(`  ${errorMessage(e)}`));
+          // Auto-decrypt e2e secrets
+          if (isE2E(secret.tags) && secret.value && !opts.raw) {
+            try {
+              secret.value = await e2eDecrypt(secret.value, getConfig().e2eIdentity);
+            } catch (e) {
+              if (opts.quiet) die(errorMessage(e));
+              console.error(
+                chalk.yellow(
+                  "⚠ e2e decryption failed - showing ciphertext. Use --raw to suppress.",
+                ),
+              );
+              console.error(chalk.dim(`  ${errorMessage(e)}`));
+            }
           }
-        }
 
-        if (opts.json) {
-          console.log(JSON.stringify(secret, null, 2));
-          return;
+          // Resolve ${SECRET} references if requested
+          if (opts.resolve && secret.value) {
+            const cfg = getConfig();
+            const cache = new Map<string, string>();
+            secret.value = await interpolate(secret.value, async (ref) => {
+              if (cache.has(ref)) return cache.get(ref)!;
+              const entry = await client().get(ref);
+              let val = entry.value || "";
+              if (isE2E(entry.tags) && val) {
+                val = await e2eDecrypt(val, cfg.e2eIdentity);
+              }
+              cache.set(ref, val);
+              return val;
+            });
+          }
+
+          if (opts.json) {
+            console.log(JSON.stringify(secret, null, 2));
+            return;
+          }
+          if (opts.quiet) {
+            process.stdout.write(secret.value || "");
+          } else {
+            console.log(chalk.dim("key:        ") + chalk.bold(secret.key));
+            console.log(chalk.dim("value:      ") + secret.value);
+            if (secret.description) {
+              console.log(chalk.dim("desc:       ") + secret.description);
+            }
+            if (secret.tags) {
+              console.log(chalk.dim("tags:       ") + secret.tags);
+            }
+            if (secret.expires_at) {
+              const exp = new Date(secret.expires_at);
+              const isExpired = exp < new Date();
+              const label = isExpired ? chalk.red("EXPIRED") : exp.toISOString().slice(0, 10);
+              console.log(chalk.dim("expires:    ") + label);
+            }
+            console.log(chalk.dim("created:    ") + secret.created_at);
+            console.log(chalk.dim("updated:    ") + secret.updated_at);
+          }
+        } catch (e) {
+          die(errorMessage(e));
         }
-        if (opts.quiet) {
-          process.stdout.write(secret.value || "");
-        } else {
-          console.log(chalk.dim("key:        ") + chalk.bold(secret.key));
-          console.log(chalk.dim("value:      ") + secret.value);
-          if (secret.description) {
-            console.log(chalk.dim("desc:       ") + secret.description);
-          }
-          if (secret.tags) {
-            console.log(chalk.dim("tags:       ") + secret.tags);
-          }
-          if (secret.expires_at) {
-            const exp = new Date(secret.expires_at);
-            const isExpired = exp < new Date();
-            const label = isExpired ? chalk.red("EXPIRED") : exp.toISOString().slice(0, 10);
-            console.log(chalk.dim("expires:    ") + label);
-          }
-          console.log(chalk.dim("created:    ") + secret.created_at);
-          console.log(chalk.dim("updated:    ") + secret.updated_at);
-        }
-      } catch (e) {
-        die(errorMessage(e));
-      }
-    });
+      },
+    );
 
   program
     .command("set <key> [value]")
@@ -72,6 +98,7 @@ export function registerSecretCommands(program: Command): void {
     .option("-d, --description <desc>", "Description for the secret")
     .option("-t, --tags <tags>", "Comma-separated tags (e.g. production,ci)")
     .option("--expires <date>", "Expiry date (YYYY-MM-DD or datetime)")
+    .option("--ttl <duration>", "Set expiry relative to now (e.g. 30d, 12h, 90d)")
     .option("--from-stdin", "Read value from stdin")
     .option("--from-file <path>", "Read value from a file")
     .option("--e2e", "Encrypt client-side with age (for all eligible team members)")
@@ -85,6 +112,7 @@ export function registerSecretCommands(program: Command): void {
           description?: string;
           tags?: string;
           expires?: string;
+          ttl?: string;
           fromStdin?: boolean;
           fromFile?: string;
           e2e?: boolean;
@@ -133,10 +161,18 @@ export function registerSecretCommands(program: Command): void {
             opts.tags = ensureE2ETag(opts.tags || "");
           }
 
+          if (opts.ttl && opts.expires) {
+            die("Cannot use both --ttl and --expires. Pick one.");
+          }
+          let expiresAt: string | null = opts.expires || null;
+          if (opts.ttl) {
+            expiresAt = parseTtl(opts.ttl);
+          }
+
           await client().set(key, secretValue, {
             description: opts.description,
             tags: opts.tags,
-            expires_at: opts.expires || null,
+            expires_at: expiresAt,
           });
           console.log(
             `${chalk.green("✓")} Stored ${chalk.bold(key)}${opts.private ? chalk.cyan(" (e2e private)") : opts.e2e || opts.recipients ? chalk.cyan(" (e2e)") : ""}`,
@@ -178,17 +214,8 @@ export function registerSecretCommands(program: Command): void {
         let secrets: SecretEntry[];
         let total: number;
         if (opts.all) {
-          let allSecrets: SecretEntry[] = [];
-          let offset = 0;
-          const pageSize = 500;
-          while (true) {
-            const page = await c.list({ limit: pageSize, offset, search: opts.search });
-            allSecrets = allSecrets.concat(page.secrets);
-            if (allSecrets.length >= page.total) break;
-            offset += pageSize;
-          }
-          secrets = allSecrets;
-          total = allSecrets.length;
+          secrets = await fetchAllSecrets(c, { search: opts.search });
+          total = secrets.length;
         } else {
           const result = await c.list({
             offset: parseInt(opts.offset || "0", 10),
@@ -209,15 +236,27 @@ export function registerSecretCommands(program: Command): void {
 
         const maxKey = Math.max(...secrets.map((s) => s.key.length), 3);
         const maxDesc = Math.max(...secrets.map((s) => (s.description || "").length), 4);
+        const maxExp = Math.max(
+          ...secrets.map((s) => (s.expires_at ? expiryLabel(s.expires_at).plain.length : 1)),
+          7,
+        );
 
         console.log(
-          chalk.dim(`${"KEY".padEnd(maxKey + 2) + "DESCRIPTION".padEnd(maxDesc + 2)}UPDATED`),
+          chalk.dim(
+            `${"KEY".padEnd(maxKey + 2)}${"DESCRIPTION".padEnd(maxDesc + 2)}${"EXPIRES".padEnd(maxExp + 2)}UPDATED`,
+          ),
         );
 
         for (const s of secrets) {
+          const { plain, colored } = s.expires_at
+            ? expiryLabel(s.expires_at)
+            : { plain: " - ", colored: chalk.dim(" - ") };
+          // padEnd with ansi-safe width: use plain length to determine padding, then append spaces
+          const expPadded = colored + " ".repeat(Math.max(0, maxExp + 2 - plain.length));
           console.log(
             chalk.bold(s.key.padEnd(maxKey + 2)) +
-              (s.description || chalk.dim("—")).padEnd(maxDesc + 2) +
+              (s.description || chalk.dim(" - ")).padEnd(maxDesc + 2) +
+              expPadded +
               chalk.dim(s.updated_at),
           );
         }

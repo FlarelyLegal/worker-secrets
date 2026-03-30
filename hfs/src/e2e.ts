@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { armor, Decrypter, Encrypter, generateIdentity, identityToRecipient } from "age-encryption";
 import { getConfigPath } from "./config.js";
+import { parseTags } from "./helpers.js";
 
 const E2E_TAG = "e2e";
 
@@ -75,12 +76,25 @@ export async function e2eDecrypt(
 
 /** Check if a secret's tags indicate it's e2e encrypted. */
 export function isE2E(tags: string): boolean {
-  if (!tags) return false;
-  return tags.split(",").some((t) => t.trim() === E2E_TAG);
+  return parseTags(tags).includes(E2E_TAG);
 }
 
 /** Ensure the e2e tag is present in a tags string. */
 export function ensureE2ETag(tags: string): string {
   if (isE2E(tags)) return tags;
   return tags ? `${tags},${E2E_TAG}` : E2E_TAG;
+}
+
+/** Decrypt e2e value silently, returning ciphertext on failure. */
+export async function tryDecrypt(
+  value: string,
+  tags: string,
+  identityPath?: string,
+): Promise<string> {
+  if (!isE2E(tags) || !value) return value;
+  try {
+    return await e2eDecrypt(value, identityPath);
+  } catch {
+    return value;
+  }
 }

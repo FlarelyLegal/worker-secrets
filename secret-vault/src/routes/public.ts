@@ -149,6 +149,10 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 - [WARP / Zero Trust](${repo}/blob/main/docs/cloudflare-warp.md): challenge-response device verification, ZT cert binding, Gateway-policeable CLI
 - [RBAC](${repo}/blob/main/SECURITY.md): roles with scoped permissions and tag-based access restrictions
 - [Feature flags](${repo}/blob/main/docs/feature-flags.md): runtime configuration stored in KV, no redeploy needed
+- [Secret expiration](${repo}/blob/main/docs/feature-flags.md#enforce_expiry): set TTL on secrets, list expiring secrets, enforce expiry via feature flag
+- [Secret references](${repo}/blob/main/hfs/README.md): \${SECRET_NAME} interpolation with --resolve on get, env, template, and profile commands
+- [Environment profiles](${repo}/blob/main/hfs/README.md): tag-based logical groupings, export as shell variables, compare across profiles
+- [Audit consumers](${repo}/blob/main/hfs/README.md): dependency mapping - see who (identity, agent, count) accessed any secret
 - [GitHub Action](${repo}/tree/main/action): fetch secrets into CI workflows
 - [OpenAPI spec](${origin}/doc/json): auto-generated from Zod schemas
 - [API docs](${origin}/doc): interactive Scalar UI
@@ -170,6 +174,10 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 - [Security](${repo}/blob/main/SECURITY.md): threat model and hardening guide
 - [WARP / Zero Trust](${repo}/blob/main/docs/cloudflare-warp.md): device binding, challenge-response, Gateway policies
 - [Feature flags](${repo}/blob/main/docs/feature-flags.md): all runtime flags with defaults
+
+## License
+
+Apache 2.0. See [LICENSE](${repo}/blob/main/LICENSE).
 `);
 });
 

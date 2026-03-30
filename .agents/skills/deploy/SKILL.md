@@ -16,7 +16,7 @@ description: Deploy the secret-vault Cloudflare Worker and run pending D1 migrat
 ## DEPLOY WITH `hfs deploy` (RECOMMENDED)
 
 ```bash
-# Full guided deployment — handles wrangler config, migrations, secrets, and deploy
+# Full guided deployment - handles wrangler config, migrations, secrets, and deploy
 hfs deploy
 ```
 

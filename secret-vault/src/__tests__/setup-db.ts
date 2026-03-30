@@ -1,4 +1,4 @@
-/** Shared test database schema — mirrors 0001_init.sql */
+/** Shared test database schema - mirrors 0001_init.sql */
 export const TEST_SCHEMA = `
   CREATE TABLE IF NOT EXISTS secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL, iv TEXT NOT NULL, hmac TEXT NOT NULL DEFAULT '', encrypted_dek TEXT, dek_iv TEXT, description TEXT DEFAULT '', tags TEXT DEFAULT '', expires_at TEXT, created_by TEXT DEFAULT '', updated_by TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
   CREATE TABLE IF NOT EXISTS service_tokens (client_id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT '', scopes TEXT DEFAULT '*', role TEXT, created_by TEXT DEFAULT '', created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), last_used_at TEXT);

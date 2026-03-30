@@ -1,6 +1,6 @@
 # Authentication flow
 
-Source: `secret-vault/src/auth.ts` — `authenticate()` function
+Source: `secret-vault/src/auth.ts` - `authenticate()` function
 
 ## Overview
 

@@ -131,9 +131,9 @@ hfs token register your-ci.access -n github-ci -s read -d "GitHub Actions"
 ```
 
 2. Store credentials as GitHub repository secrets:
-   - `HFS_URL` — your vault URL
-   - `HFS_CLIENT_ID` — the service token client ID
-   - `HFS_CLIENT_SECRET` — the service token client secret
+   - `HFS_URL` - your vault URL
+   - `HFS_CLIENT_ID` - the service token client ID
+   - `HFS_CLIENT_SECRET` - the service token client secret
 
 3. Assign the token a role with only the tags it needs:
 
@@ -144,10 +144,10 @@ hfs token register your-ci.access -n github-ci -r ci-reader
 
 ## Security
 
-- **No secrets on disk** — values are passed through environment variables only
-- **Masked in logs** — GitHub's masking prevents accidental exposure in log output
-- **Minimal scope** — use read-only service tokens with tag restrictions
-- **Authenticated** — all requests go through Cloudflare Access with registered service tokens
-- **Audited** — every secret fetch is logged in the vault's tamper-evident audit trail
-- **HTTPS only** — all communication over TLS to your Cloudflare Worker
-- Uses `jq` and `curl` (pre-installed on all GitHub-hosted runners) — no additional dependencies
+- **No secrets on disk** - values are passed through environment variables only
+- **Masked in logs** - GitHub's masking prevents accidental exposure in log output
+- **Minimal scope** - use read-only service tokens with tag restrictions
+- **Authenticated** - all requests go through Cloudflare Access with registered service tokens
+- **Audited** - every secret fetch is logged in the vault's tamper-evident audit trail
+- **HTTPS only** - all communication over TLS to your Cloudflare Worker
+- Uses `jq` and `curl` (pre-installed on all GitHub-hosted runners) - no additional dependencies

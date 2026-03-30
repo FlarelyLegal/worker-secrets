@@ -58,7 +58,7 @@ describe("envelope encryption round-trip", () => {
     );
     expect(putRes.status).toBe(201);
 
-    // Read the raw DB row — value should NOT be the plaintext
+    // Read the raw DB row - value should NOT be the plaintext
     const row = await env.DB.prepare(
       "SELECT value, iv, encrypted_dek, dek_iv FROM secrets WHERE key = ?",
     )
@@ -182,7 +182,7 @@ describe("version restore", () => {
     const v2Body = (await getV2.json()) as Record<string, unknown>;
     expect(v2Body.value).toBe("version-two");
 
-    // List versions — should have at least 1 archived version (v1)
+    // List versions - should have at least 1 archived version (v1)
     const versionsRes = await app.fetch(req(`/secrets/${KEY}/versions`), env, ctx);
     expect(versionsRes.status).toBe(200);
     const versionsBody = (await versionsRes.json()) as {
@@ -287,7 +287,7 @@ describe("feature flag: require_description", () => {
     );
     expect(setFlagRes.status).toBe(200);
 
-    // Try to PUT a secret without description — should be rejected
+    // Try to PUT a secret without description - should be rejected
     const putRes = await app.fetch(
       req("/secrets/rbac-nodesc", {
         method: "PUT",
@@ -335,7 +335,7 @@ describe("feature flag: disable_export", () => {
     );
     expect(setFlagRes.status).toBe(200);
 
-    // Try to export — should be blocked
+    // Try to export - should be blocked
     const exportRes = await app.fetch(req("/secrets/export"), env, ctx);
     expect(exportRes.status).toBe(403);
     const body = (await exportRes.json()) as { error: string };

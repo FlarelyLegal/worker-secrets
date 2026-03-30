@@ -74,7 +74,7 @@ audit(env: Env, auth: AuthUser, action: string, secretKey: string | null, ip: st
 
 All Zod schemas live in `secret-vault/src/schemas.ts`. See the `zod-openapi` skill for patterns.
 
-Routes use `createRoute()` + `app.openapi()` from `@hono/zod-openapi`. Request validation is automatic via Zod — use `c.req.valid("json")` and `c.req.valid("param")` instead of `c.req.json()`.
+Routes use `createRoute()` + `app.openapi()` from `@hono/zod-openapi`. Request validation is automatic via Zod - use `c.req.valid("json")` and `c.req.valid("param")` instead of `c.req.json()`.
 
 ## Route context
 

@@ -82,7 +82,7 @@ export function registerTokenCommands(program: Command): void {
           console.log(
             chalk.bold(t.name.padEnd(maxName + 2)) +
               t.scopes.padEnd(16) +
-              (t.role || chalk.dim("—")).toString().padEnd(12) +
+              (t.role || chalk.dim(" - ")).toString().padEnd(12) +
               (t.last_used_at || chalk.dim("never")).toString().padEnd(22) +
               chalk.dim(`${t.client_id.slice(0, 16)}...`),
           );

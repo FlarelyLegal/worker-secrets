@@ -52,7 +52,7 @@ versions.openapi(versionsRoute, async (c) => {
     .first<{ tags: string }>();
   if (!secret) return c.json({ error: "Secret not found" }, 404);
   if (!hasAccess(auth, SCOPE_READ, secret.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
   const { results } = await c.env.DB.prepare(
     "SELECT id, changed_by, changed_at FROM secret_versions WHERE secret_key = ? ORDER BY changed_at DESC",
@@ -117,7 +117,7 @@ versions.openapi(getVersionRoute, async (c) => {
     .first<{ tags: string }>();
   if (!secret) return c.json({ error: "Secret not found" }, 404);
   if (!hasAccess(auth, SCOPE_READ, secret.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
   const version = await c.env.DB.prepare(
     "SELECT id, secret_key, value, iv, encrypted_dek, dek_iv, description, changed_by, changed_at FROM secret_versions WHERE id = ? AND secret_key = ?",
@@ -139,11 +139,11 @@ versions.openapi(getVersionRoute, async (c) => {
       version.dek_iv,
     );
     if (!valid)
-      return c.json({ error: "Integrity check failed — version may have been tampered with" }, 500);
+      return c.json({ error: "Integrity check failed - version may have been tampered with" }, 500);
   } else {
     const hmacRequired = getFlag(c.get("flags"), FLAG_HMAC_REQUIRED, false);
     if (hmacRequired)
-      return c.json({ error: "Version missing HMAC integrity tag — re-save to add one" }, 500);
+      return c.json({ error: "Version missing HMAC integrity tag - re-save to add one" }, 500);
   }
 
   let plaintext: string;
@@ -236,7 +236,7 @@ versions.openapi(restoreRoute, async (c) => {
     .bind(key)
     .first<{ tags: string }>();
   if (secret && !hasAccess(auth, SCOPE_WRITE, secret.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
   // Fetch the version to restore
   const version = await c.env.DB.prepare(
@@ -262,7 +262,7 @@ versions.openapi(restoreRoute, async (c) => {
       return c.json(
         {
           error:
-            "Integrity check failed — version may have been tampered with, refusing to restore",
+            "Integrity check failed - version may have been tampered with, refusing to restore",
         },
         500,
       );

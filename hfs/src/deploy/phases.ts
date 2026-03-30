@@ -62,7 +62,7 @@ export async function phaseAccess(state: DeployState, dry: boolean): Promise<voi
       state.accessAppId = existing.id;
       state.policyAud = existing.aud;
 
-      // Check if domains changed — sync protected paths
+      // Check if domains changed - sync protected paths
       const currentPaths = existing.self_hosted_domains?.sort().join(",") ?? "";
       const expectedPaths = domains
         .flatMap((d) => [`${d}/secrets`, `${d}/tokens`])
@@ -73,7 +73,7 @@ export async function phaseAccess(state: DeployState, dry: boolean): Promise<voi
         await updateAccessApp(state.accountId, existing.id, domains, state.brandName, auth);
         ok(`App updated with ${domains.length} domain(s)`, dry);
       } else if (currentPaths !== expectedPaths) {
-        console.log(`  ${chalk.yellow("⚠")} Domains changed — will sync on deploy`);
+        console.log(`  ${chalk.yellow("⚠")} Domains changed - will sync on deploy`);
       } else {
         ok(`App exists ${chalk.dim(`(${existing.id.slice(0, 8)}...)`)}`, dry);
       }
@@ -82,7 +82,7 @@ export async function phaseAccess(state: DeployState, dry: boolean): Promise<voi
       ok(`AUD: ${chalk.dim(state.policyAud.slice(0, 16))}...`, dry);
       for (const d of domains) console.log(chalk.dim(`    ${d}`));
     } else if (dry) {
-      console.log(`  ${chalk.yellow("⚠")} Access app not found — will be created on deploy`);
+      console.log(`  ${chalk.yellow("⚠")} Access app not found - will be created on deploy`);
     } else {
       const app = await createAccessApp(state.accountId, domains, state.brandName, auth);
       state.accessAppId = app.id;
@@ -111,7 +111,7 @@ export async function phaseAssets(state: DeployState, dry: boolean): Promise<voi
       saveState(state);
       ok(`D1 database exists ${chalk.dim(`(${dbName}: ${dbId.slice(0, 8)}...)`)}`, dry);
     } else if (dry) {
-      console.log(`  ${chalk.yellow("⚠")} D1 database ${dbName} not found — will be created`);
+      console.log(`  ${chalk.yellow("⚠")} D1 database ${dbName} not found - will be created`);
     } else {
       state.databaseId = createD1(dbName);
       saveState(state);
@@ -157,11 +157,11 @@ export async function phaseWorker(state: DeployState, dry: boolean): Promise<voi
   const dbName = `${state.projectName}-db`;
 
   if (!state.policyAud && !dry)
-    fail("Worker deploy", new Error("No POLICY_AUD — Phase 1 did not complete. Run `hfs deploy`."));
+    fail("Worker deploy", new Error("No POLICY_AUD - Phase 1 did not complete. Run `hfs deploy`."));
   if (!state.databaseId && !dry)
     fail(
       "Worker deploy",
-      new Error("No database_id — Phase 2 did not complete. Run `hfs deploy`."),
+      new Error("No database_id - Phase 2 did not complete. Run `hfs deploy`."),
     );
 
   try {
@@ -177,7 +177,7 @@ export async function phaseWorker(state: DeployState, dry: boolean): Promise<voi
       state.encryptionKeySet = true;
       ok("ENCRYPTION_KEY already set", dry);
     } else if (dry) {
-      console.log(`  ${chalk.yellow("⚠")} ENCRYPTION_KEY not set — will be generated on deploy`);
+      console.log(`  ${chalk.yellow("⚠")} ENCRYPTION_KEY not set - will be generated on deploy`);
     } else {
       setEncryptionKey();
       state.encryptionKeySet = true;

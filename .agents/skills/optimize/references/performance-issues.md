@@ -1,4 +1,4 @@
-# Performance issues — code-level detail
+# Performance issues - code-level detail
 
 ## Resolved
 

@@ -26,7 +26,7 @@ export function registerUserCommands(program: Command) {
           const enabled = u.enabled ? chalk.green("yes") : chalk.red("no");
           const lastLogin = u.last_login_at || chalk.dim("never");
           console.log(
-            `${u.email.padEnd(36)} ${(u.name || chalk.dim("—")).padEnd(20)} ${u.role.padEnd(10)} ${enabled.padEnd(8 + 10)} ${lastLogin}`,
+            `${u.email.padEnd(36)} ${(u.name || chalk.dim(" - ")).padEnd(20)} ${u.role.padEnd(10)} ${enabled.padEnd(8 + 10)} ${lastLogin}`,
           );
         }
         console.log(chalk.dim(`\n${users.length} user(s)`));

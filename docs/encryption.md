@@ -6,7 +6,7 @@ How Secret Vault encrypts, authenticates, and protects secrets at rest and in tr
 
 ```mermaid
 graph TD
-    KEK["ENCRYPTION_KEY<br/>(KEK — master key)<br/>256-bit AES, Wrangler secret"]
+    KEK["ENCRYPTION_KEY<br/>(KEK - master key)<br/>256-bit AES, Wrangler secret"]
     IK["INTEGRITY_KEY<br/>(HMAC key)<br/>256-bit, Wrangler secret"]
     DEK1["DEK<sub>1</sub><br/>random 256-bit"]
     DEK2["DEK<sub>2</sub><br/>random 256-bit"]
@@ -153,11 +153,11 @@ sequenceDiagram
 - **Leave**: admin disables the user, then `rewrap --all` to exclude their key
 - **Rotate**: member runs `keygen --register` (replaces their public key), then `rewrap --all`
 
-After `rewrap`, the old key can no longer decrypt any e2e secrets. The `--private` secrets are single-recipient — only the owner can rewrap those.
+After `rewrap`, the old key can no longer decrypt any e2e secrets. The `--private` secrets are single-recipient - only the owner can rewrap those.
 
 ## Key Rotation
 
-Each layer rotates independently. Secret data is never re-encrypted — only wrapping or signing keys change.
+Each layer rotates independently. Secret data is never re-encrypted - only wrapping or signing keys change.
 
 ### Master key (ENCRYPTION_KEY)
 
@@ -242,7 +242,7 @@ Under concurrent inserts, the chain self-heals: if a race condition causes an en
 | DEK wrapping | AES-256-GCM | 256-bit KEK | Per-wrap random IV |
 | Integrity binding | HMAC-SHA256 | 256-bit | Separate INTEGRITY_KEY recommended |
 | ZT challenge-response | HMAC-SHA256 | ZT CA fingerprint | Time-based, replay-protected |
-| Audit chain | SHA-256 | — | Hash-linked, self-healing, includes timestamp |
+| Audit chain | SHA-256 | - | Hash-linked, self-healing, includes timestamp |
 | E2E encryption | X25519 + ChaCha20-Poly1305 | via [age](https://age-encryption.org/) | Client-side only |
 | Auth tokens | ES256 (P-256) | via Cloudflare Access JWKS | Edge + Worker validation |
 

@@ -4,14 +4,14 @@ All schemas live in `secret-vault/src/schemas.ts`. Import `z` from `@hono/zod-op
 
 ## Naming
 
-- Response schemas: `.openapi("SecretEntry")` — PascalCase, appears in spec
-- Request body schemas: no `.openapi()` needed — inlined in route definition
-- Param schemas: no `.openapi()` needed — just add `param` metadata per field
+- Response schemas: `.openapi("SecretEntry")` - PascalCase, appears in spec
+- Request body schemas: no `.openapi()` needed - inlined in route definition
+- Param schemas: no `.openapi()` needed - just add `param` metadata per field
 
 ## Common schemas
 
 ```typescript
-// Error response — used across all endpoints
+// Error response - used across all endpoints
 export const ErrorSchema = z.object({
   error: z.string().openapi({ example: "Secret not found" }),
 }).openapi("Error");
@@ -47,7 +47,7 @@ export const AuditQuerySchema = z.object({
 });
 ```
 
-- Use `z.coerce.number()` for query params — they arrive as strings
+- Use `z.coerce.number()` for query params - they arrive as strings
 - Use `.default()` for optional params with defaults
 
 ## Request body schema
@@ -61,7 +61,7 @@ export const SecretCreateBody = z.object({
 
 - Validation messages in `.min(1, "message")` become the error text
 - Use `.optional().default("")` for optional fields with defaults
-- No `.openapi("Name")` needed — body schemas are inlined in route spec
+- No `.openapi("Name")` needed - body schemas are inlined in route spec
 
 ## Response schema
 

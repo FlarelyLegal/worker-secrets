@@ -1,4 +1,4 @@
-# hfs — Encrypted Secret Vault CLI
+# hfs - Encrypted Secret Vault CLI
 
 CLI for managing your encrypted secret vault on Cloudflare Workers.
 
@@ -32,9 +32,9 @@ An admin gives you the vault URL. If auto-provisioning is enabled, your account 
 
 Two modes, no fallback. They never mix.
 
-**Human** — Set the vault URL with `hfs config set --url`, then `hfs login` opens a browser via cloudflared. Tap your YubiKey or use your IdP. Short-lived JWT stored locally.
+**Human** - Set the vault URL with `hfs config set --url`, then `hfs login` opens a browser via cloudflared. Tap your YubiKey or use your IdP. Short-lived JWT stored locally.
 
-**Machine** — Set `HFS_URL`, `HFS_CLIENT_ID`, `HFS_CLIENT_SECRET` env vars. Must correspond to a registered service token.
+**Machine** - Set `HFS_URL`, `HFS_CLIENT_ID`, `HFS_CLIENT_SECRET` env vars. Must correspond to a registered service token.
 
 ## Commands
 
@@ -47,6 +47,11 @@ hfs set <key> <value>      Store a secret
 hfs set <key> --from-file  Read value from a file
 hfs set <key> -t <tags>    Set with comma-separated tags
 hfs set <key> --expires <date>  Set with expiry (ISO 8601 date or duration)
+hfs set <key> --ttl <dur>  Set with relative expiry (e.g. 90d, 12h, 2w)
+hfs get <key> --resolve    Resolve ${SECRET} references in the value
+hfs env --resolve <keys>   Resolve references in exported values
+hfs expiring               List secrets expiring within 7 days (shows EXPIRES column)
+hfs expiring --within 30d  Custom time window
 hfs rm <key>               Delete a secret (confirms first)
 hfs ls                     List all secret keys
 hfs versions <key>         List version history
@@ -60,6 +65,7 @@ hfs cp <src> <dest> -m     Move (copy + delete source, confirms first)
 hfs diff <key> <id>        Compare current value with a version
 hfs template <file>        Render {{SECRET_KEY}} placeholders from vault
 hfs template <file> -o out Write rendered output to file
+hfs template <file> --resolve  Also resolve ${SECRET} references in rendered output
 ```
 
 ### End-to-end encryption
@@ -127,6 +133,18 @@ hfs flag rm <key>          Delete a flag
 
 Auto-type detection: `"true"`/`"false"` become boolean, numeric strings become number, valid JSON objects become json, everything else is string. Flags are plaintext KV, not encrypted like secrets.
 
+### Profiles
+```
+hfs profile ls              List available profiles (tags) with secret counts
+hfs profile show <tag>      List secrets in a profile
+hfs profile env <tag>       Export profile secrets as shell variables (KEY=value)
+hfs profile env <tag> -e    Same with export prefix
+hfs profile env <tag> --resolve  Resolve ${SECRET} references in exported values
+hfs profile diff <a> <b>    Compare two profiles side by side
+```
+
+Profiles are virtual groupings based on tags. Any tag you apply to secrets becomes a profile automatically.
+
 ### Admin
 ```
 hfs audit [-n 100] [-j]    View audit log
@@ -134,6 +152,7 @@ hfs audit --action get     Filter by action
 hfs audit --identity <email> Filter by identity
 hfs audit --key <key>      Filter by secret key
 hfs audit --from/--to <date> Filter by date range
+hfs audit consumers <key>  Show who accessed a secret (identity, agent, count)
 hfs audit-verify [-n 1000] Verify audit log hash chain integrity
 hfs re-encrypt             Migrate legacy secrets to envelope encryption
 hfs rotate-key --stdin     Re-wrap all DEKs with a new master key (reads from stdin)

@@ -69,7 +69,7 @@ secretWrite.openapi(putRoute, async (c) => {
       if (!new RegExp(namePattern).test(key))
         return c.json({ error: "Key does not match the required naming pattern" }, 400);
     } catch {
-      // Invalid regex in flag — skip enforcement, don't block writes
+      // Invalid regex in flag - skip enforcement, don't block writes
     }
   }
 
@@ -83,7 +83,7 @@ secretWrite.openapi(putRoute, async (c) => {
     const maxTags = getFlag(c.get("flags"), FLAG_MAX_TAGS_PER_SECRET, 0);
     const tagCount = tags.split(",").filter((t) => t.trim()).length;
     if (maxTags > 0 && tagCount > (maxTags as number))
-      return c.json({ error: `Too many tags (${tagCount}) — maximum is ${maxTags}` }, 400);
+      return c.json({ error: `Too many tags (${tagCount}) - maximum is ${maxTags}` }, 400);
   }
 
   const existing = await c.env.DB.prepare("SELECT * FROM secrets WHERE key = ?")
@@ -92,11 +92,11 @@ secretWrite.openapi(putRoute, async (c) => {
 
   // Policy-based access control: check existing secret tags on update
   if (existing && !hasAccess(auth, SCOPE_WRITE, existing.tags))
-    return c.json({ error: "Access denied — secret tags do not match your role" }, 403);
+    return c.json({ error: "Access denied - secret tags do not match your role" }, 403);
 
   // Policy-based access control: check new tags on create/update
   if (!hasAccess(auth, SCOPE_WRITE, tags || ""))
-    return c.json({ error: "Access denied — you cannot assign tags outside your role" }, 403);
+    return c.json({ error: "Access denied - you cannot assign tags outside your role" }, 403);
 
   // Enforce max_secrets limit on new keys
   if (!existing) {

@@ -25,7 +25,7 @@ export function registerRoleCommands(program: Command) {
         for (const r of roles) {
           const tags = r.allowed_tags || chalk.dim("all");
           console.log(
-            `${r.name.padEnd(16)} ${r.scopes.padEnd(18)} ${tags.toString().padEnd(18)} ${r.description || chalk.dim("—")}`,
+            `${r.name.padEnd(16)} ${r.scopes.padEnd(18)} ${tags.toString().padEnd(18)} ${r.description || chalk.dim(" - ")}`,
           );
         }
         console.log(chalk.dim(`\n${roles.length} role(s)`));
@@ -95,7 +95,7 @@ export function registerRoleCommands(program: Command) {
         for (const p of policies) {
           const tags = p.tags || chalk.dim("all");
           console.log(
-            `${String(p.id).padEnd(6)} ${p.scopes.padEnd(18)} ${tags.toString().padEnd(20)} ${p.description || chalk.dim("—")}`,
+            `${String(p.id).padEnd(6)} ${p.scopes.padEnd(18)} ${tags.toString().padEnd(20)} ${p.description || chalk.dim(" - ")}`,
           );
         }
         console.log(chalk.dim(`\n${policies.length} policy(ies)`));

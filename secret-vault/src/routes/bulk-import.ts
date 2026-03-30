@@ -49,7 +49,7 @@ bulkImport.openapi(importRoute, async (c) => {
     if (!hasAccess(auth, SCOPE_WRITE, item.tags ?? ""))
       return c.json(
         {
-          error: `Access denied — key '${item.key}' ${item.tags ? "has tags outside your role" : "requires tags for your role"}`,
+          error: `Access denied - key '${item.key}' ${item.tags ? "has tags outside your role" : "requires tags for your role"}`,
         },
         403,
       );
@@ -76,7 +76,7 @@ bulkImport.openapi(importRoute, async (c) => {
             400,
           );
       } catch {
-        // Invalid regex in flag — skip enforcement
+        // Invalid regex in flag - skip enforcement
       }
     }
     if (maxSizeKb > 0 && item.value.length > maxSizeKb * 1024)
@@ -85,7 +85,7 @@ bulkImport.openapi(importRoute, async (c) => {
       const tagCount = item.tags.split(",").filter((t) => t.trim()).length;
       if (tagCount > maxTagsPer)
         return c.json(
-          { error: `Too many tags (${tagCount}) on key '${item.key}' — maximum is ${maxTagsPer}` },
+          { error: `Too many tags (${tagCount}) on key '${item.key}' - maximum is ${maxTagsPer}` },
           400,
         );
     }
@@ -151,7 +151,7 @@ bulkImport.openapi(importRoute, async (c) => {
         .first<{ tags: string }>();
       if (existing && !hasAccess(auth, SCOPE_WRITE, existing.tags)) {
         return c.json(
-          { error: `Access denied — cannot overwrite '${item.key}' (tags outside your role)` },
+          { error: `Access denied - cannot overwrite '${item.key}' (tags outside your role)` },
           403,
         );
       }

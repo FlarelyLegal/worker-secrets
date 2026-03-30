@@ -121,7 +121,7 @@ export async function audit(
   );
 }
 
-/** Audit logging for failed auth — no AuthUser available, uses raw method/identity strings. */
+/** Audit logging for failed auth - no AuthUser available, uses raw method/identity strings. */
 export async function auditRaw(
   db: D1Database,
   method: string,

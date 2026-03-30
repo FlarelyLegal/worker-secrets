@@ -30,7 +30,7 @@ export type AuthMode =
  *   (This is the CI/CD / Worker / programmatic path.)
  *
  * - Otherwise → interactive JWT mode.
- *   JWT must exist and not be expired. If expired, error — run `hfs login`.
+ *   JWT must exist and not be expired. If expired, error - run `hfs login`.
  *
  * These two paths never mix. A human uses `hfs login`.
  * A machine uses registered service token env vars.
@@ -84,7 +84,7 @@ export function storeJwt(jwt: string): { exp?: number } {
     const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
     exp = payload.exp as number | undefined;
   } catch {
-    throw new Error("Invalid JWT payload — could not decode token");
+    throw new Error("Invalid JWT payload - could not decode token");
   }
 
   config.set("jwt", jwt);

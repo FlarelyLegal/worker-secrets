@@ -7,10 +7,10 @@ description: Add a new CLI command to the hfs tool. Use when adding user-facing 
 
 ## FILES
 
-- `hfs/src/commands/` — Command modules (`auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`)
-- `hfs/src/deploy/` — Deploy phases (`state.ts`, `phases.ts`, `access.ts`, `assets.ts`, `worker.ts`, `cf-api.ts`)
-- `hfs/src/client.ts` — `VaultClient` HTTP methods against the vault API
-- `hfs/src/config.ts` — Auth resolution, JWT storage, config management
+- `hfs/src/commands/` - Command modules (`auth.ts`, `secrets.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `audit.ts`, `config.ts`, `deploy.ts`, `completion.ts`, `flags.ts`)
+- `hfs/src/deploy/` - Deploy phases (`state.ts`, `phases.ts`, `access.ts`, `assets.ts`, `worker.ts`, `cf-api.ts`)
+- `hfs/src/client.ts` - `VaultClient` HTTP methods against the vault API
+- `hfs/src/config.ts` - Auth resolution, JWT storage, config management
 
 ## CONVENTIONS
 
@@ -19,7 +19,7 @@ description: Add a new CLI command to the hfs tool. Use when adding user-facing 
 - **ALWAYS** use `client()` helper for authenticated `VaultClient` instances
 - **ALWAYS** wrap client calls in try-catch, use `die(msg)` for fatal errors
 - **ALWAYS** use `confirm()` helper before destructive actions, with `-f/--force` bypass
-- **NEVER** use `execSync` with string interpolation — use `execFileSync` with args array
+- **NEVER** use `execSync` with string interpolation - use `execFileSync` with args array
 - **NEVER** store service token credentials on disk
 
 ### Output
@@ -63,7 +63,7 @@ program
 
 ### Notes
 
-- `VaultClient.health()` exists but has no CLI command — add one if needed
+- `VaultClient.health()` exists but has no CLI command - add one if needed
 - Subcommand groups: `const sub = program.command("parent"); sub.command("child")`
 - Existing groups: `config` (set, show, clear), `token` (register, revoke, ls), `user` (ls, add, rm, disable, enable, role), `role` (ls, set, rm), `flag` (ls, get, set, rm)
 
@@ -77,5 +77,5 @@ program
 
 ## REFERENCES
 
-- [VaultClient interface](references/client-interface.md) — types and method signatures
-- [CLI patterns](references/cli-patterns.md) — auth resolution, output conventions
+- [VaultClient interface](references/client-interface.md) - types and method signatures
+- [CLI patterns](references/cli-patterns.md) - auth resolution, output conventions

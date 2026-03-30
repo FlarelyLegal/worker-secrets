@@ -203,7 +203,7 @@ roles.openapi(deleteRoute, async (c) => {
     .first<{ total: number }>();
   if (usersWithRole && usersWithRole.total > 0) {
     return c.json(
-      { error: `Cannot delete role '${name}' — ${usersWithRole.total} user(s) assigned` },
+      { error: `Cannot delete role '${name}' - ${usersWithRole.total} user(s) assigned` },
       400,
     );
   }
@@ -216,7 +216,7 @@ roles.openapi(deleteRoute, async (c) => {
     .first<{ total: number }>();
   if (tokensWithRole && tokensWithRole.total > 0) {
     return c.json(
-      { error: `Cannot delete role '${name}' — ${tokensWithRole.total} token(s) assigned` },
+      { error: `Cannot delete role '${name}' - ${tokensWithRole.total} token(s) assigned` },
       400,
     );
   }

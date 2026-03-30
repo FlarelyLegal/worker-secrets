@@ -15,6 +15,7 @@ import {
 import { getFlag, getFlagValue, loadAllFlags } from "./flags.js";
 import admin from "./routes/admin.js";
 import adminOps from "./routes/admin-ops.js";
+import auditConsumers from "./routes/audit-consumers.js";
 import bulk from "./routes/bulk.js";
 import flags from "./routes/flags.js";
 import policies from "./routes/policies.js";
@@ -128,7 +129,7 @@ const API_TAGS = [
   { name: "Public", description: "Unauthenticated endpoints." },
 ];
 
-// Dynamic server URL + brand — adapts to deployment
+// Dynamic server URL + brand - adapts to deployment
 app.get("/doc/json", async (c) => {
   const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
   if (!enabled) return c.notFound();
@@ -175,16 +176,16 @@ app.get("/doc", async (c) => {
 // --- Auth middleware ---
 
 app.use("*", async (c, next) => {
-  // Load all flags in a single KV batch — cached in context for the request
+  // Load all flags in a single KV batch - cached in context for the request
   const flagCache = await loadAllFlags(c.env.FLAGS);
   c.set("flags", flagCache);
 
-  // Maintenance mode — checked before authentication
+  // Maintenance mode - checked before authentication
   if (getFlag(flagCache, FLAG_MAINTENANCE, false)) {
     return c.json({ error: "Service is in maintenance mode" }, 503);
   }
 
-  // Geo-fencing — restrict all access by country
+  // Geo-fencing - restrict all access by country
   const allowedCountries = (getFlag(flagCache, FLAG_ALLOWED_COUNTRIES, "") as string)
     .split(",")
     .map((s) => s.trim().toUpperCase())
@@ -192,7 +193,7 @@ app.use("*", async (c, next) => {
   if (allowedCountries.length > 0) {
     const country = (c.req.raw as unknown as { cf?: { country?: string } }).cf?.country ?? "";
     if (!allowedCountries.includes(country.toUpperCase())) {
-      return c.json({ error: "Access denied — geo-restricted" }, 403);
+      return c.json({ error: "Access denied - geo-restricted" }, 403);
     }
   }
 
@@ -267,7 +268,7 @@ app.use("*", async (c, next) => {
   c.set("ua", c.req.header("User-Agent") ?? null);
   await next();
 
-  // Webhook — fire latest audit entry for this request to external URL
+  // Webhook - fire latest audit entry for this request to external URL
   fireWebhook(c.env.DB, c.get("requestId"), (p) => c.executionCtx.waitUntil(p), flagCache);
 
   // Background audit cleanup
@@ -296,6 +297,7 @@ app.use("*", async (c, next) => {
 // --- Mount routes ---
 
 app.route("/", admin);
+app.route("/", auditConsumers);
 app.route("/admin", adminOps);
 app.route("/admin", rotateKeyRoute);
 app.route("/users", users);

@@ -101,14 +101,14 @@ export async function checkWarpRequired(
     if (!ztResponse || !ztTimestamp) {
       return {
         allowed: false,
-        reason: "WARP enrollment required — ZT challenge-response missing",
+        reason: "WARP enrollment required - ZT challenge-response missing",
       };
     }
     const valid = await verifyZtChallenge(ztResponse, ztTimestamp, storedFingerprint);
     if (!valid) {
       return {
         allowed: false,
-        reason: "WARP enrollment required — ZT challenge-response invalid",
+        reason: "WARP enrollment required - ZT challenge-response invalid",
       };
     }
   }
@@ -118,7 +118,7 @@ export async function checkWarpRequired(
     if (userZtFingerprint !== storedFingerprint) {
       return {
         allowed: false,
-        reason: "WARP enrollment required — device fingerprint mismatch",
+        reason: "WARP enrollment required - device fingerprint mismatch",
       };
     }
   }

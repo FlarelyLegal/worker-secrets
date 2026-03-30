@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { VALID_SCOPES } from "./schemas.js";
+import { ScopesString } from "./schemas.js";
 
 // --- Users ---
 
@@ -68,30 +68,13 @@ export const RoleCreateBody = z.object({
     .min(1)
     .max(64)
     .regex(/^[a-z][a-z0-9_-]*$/, "lowercase alphanumeric, hyphens, underscores"),
-  scopes: z.string().refine(
-    (s) =>
-      s
-        .split(",")
-        .map((v) => v.trim())
-        .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
-    { message: "Valid scopes: *, read, write, delete (comma-separated)" },
-  ),
+  scopes: ScopesString,
   allowed_tags: z.string().max(500, "allowed_tags exceeds 500 char limit").optional().default(""),
   description: z.string().max(500).optional().default(""),
 });
 
 export const RoleUpdateBody = z.object({
-  scopes: z
-    .string()
-    .refine(
-      (s) =>
-        s
-          .split(",")
-          .map((v) => v.trim())
-          .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
-      { message: "Valid scopes: *, read, write, delete (comma-separated)" },
-    )
-    .optional(),
+  scopes: ScopesString.optional(),
   allowed_tags: z.string().max(500).optional(),
   description: z.string().max(500).optional(),
 });
@@ -111,14 +94,7 @@ export const PolicySchema = z
   .openapi("Policy");
 
 export const PolicyCreateItem = z.object({
-  scopes: z.string().refine(
-    (s) =>
-      s
-        .split(",")
-        .map((v) => v.trim())
-        .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
-    { message: "Valid scopes: *, read, write, delete (comma-separated)" },
-  ),
+  scopes: ScopesString,
   tags: z.string().max(500).optional().default(""),
   description: z.string().max(500).optional().default(""),
 });

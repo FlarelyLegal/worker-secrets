@@ -5,7 +5,9 @@ export interface SecretEntry {
   tags: string;
   expires_at: string | null;
   created_at: string;
+  created_by?: string;
   updated_at: string;
+  updated_by?: string;
 }
 
 export interface ServiceTokenEntry {
@@ -71,6 +73,15 @@ export interface RecipientEntry {
   email: string;
   name: string;
   age_public_key: string;
+}
+
+export interface ConsumerEntry {
+  identity: string;
+  user_agent: string | null;
+  method: string;
+  access_count: number;
+  last_accessed: string;
+  first_accessed: string;
 }
 
 export interface VaultError {

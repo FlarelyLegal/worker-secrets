@@ -24,7 +24,7 @@ export function healthPage(brand: string, data: HealthData): string {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${b} Health | HomeFlare</title>
-  <meta name="description" content="${b} by HomeFlare: health check — database, KV, version, and operational status." />
+  <meta name="description" content="${b} by HomeFlare: health check: database, KV, version, and operational status." />
   ${favicon(initial)}
   <style>${STYLES}
     body { display: flex; align-items: center; justify-content: center; padding: 2rem; }

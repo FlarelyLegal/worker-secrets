@@ -33,8 +33,8 @@ Use the `createRoute()` + `app.openapi()` pattern. See the [zod-openapi skill](.
 
 - [ ] Define request/response schemas in the appropriate `schemas-*.ts` file (see `zod-openapi` skill)
 - [ ] Define route with `createRoute()` including all response codes
-- [ ] Register with `app.openapi(route, handler)` — not `app.get()`
-- [ ] Use `c.req.valid("json")` / `c.req.valid("param")` — not `c.req.json()`
+- [ ] Register with `app.openapi(route, handler)` - not `app.get()`
+- [ ] Use `c.req.valid("json")` / `c.req.valid("param")` - not `c.req.json()`
 - [ ] Guard with `hasScope()` if touching secrets
 - [ ] Call `audit()` for every data access or mutation
 - [ ] Wrap crypto/D1 in try-catch → 500
@@ -45,6 +45,6 @@ Use the `createRoute()` + `app.openapi()` pattern. See the [zod-openapi skill](.
 
 ## REFERENCES
 
-- [Zod + OpenAPI skill](../zod-openapi/SKILL.md) — schema and route definition patterns
-- [Worker types and helpers](references/worker-types.md) — Env, AuthUser, HonoEnv, crypto/audit helpers
-- [Existing endpoints](references/existing-endpoints.md) — full route table with scopes and shapes
+- [Zod + OpenAPI skill](../zod-openapi/SKILL.md) - schema and route definition patterns
+- [Worker types and helpers](references/worker-types.md) - Env, AuthUser, HonoEnv, crypto/audit helpers
+- [Existing endpoints](references/existing-endpoints.md) - full route table with scopes and shapes

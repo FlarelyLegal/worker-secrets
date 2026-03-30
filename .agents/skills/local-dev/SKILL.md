@@ -26,7 +26,7 @@ npm run generate-keys
 
 # Copy .dev.vars.example and fill in values (or create from scratch)
 cp .dev.vars.example .dev.vars
-# Edit .dev.vars — set ENCRYPTION_KEY, ALLOWED_EMAILS, TEAM_DOMAIN, POLICY_AUD
+# Edit .dev.vars - set ENCRYPTION_KEY, ALLOWED_EMAILS, TEAM_DOMAIN, POLICY_AUD
 # Set DEV_AUTH_BYPASS = "true" to skip Access auth locally
 
 # Start local Worker at http://localhost:8787

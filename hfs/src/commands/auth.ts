@@ -35,7 +35,7 @@ export function registerAuthCommands(program: Command): void {
           timeout: 120000,
         }).trim();
 
-        // cloudflared output varies by version — extract the JWT robustly
+        // cloudflared output varies by version - extract the JWT robustly
         const jwt = output.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/)?.[0];
         if (!jwt) {
           die(
@@ -148,7 +148,7 @@ export function registerAuthCommands(program: Command): void {
         }
         if (info.lastLogin) console.log(chalk.dim("last login:   ") + info.lastLogin);
         if (info.totalSecrets !== undefined)
-          console.log(chalk.dim("vault:        ") + `${info.totalSecrets} secret(s)`);
+          console.log(`${chalk.dim("vault:        ")}${info.totalSecrets} secret(s)`);
       } catch (e) {
         die(errorMessage(e));
       }

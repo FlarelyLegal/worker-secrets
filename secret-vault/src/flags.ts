@@ -37,7 +37,7 @@ export function getFlag<T>(cache: FlagCache, key: string, defaultValue: T): T {
   return cache.get(key) as T;
 }
 
-/** Legacy per-key reader — used in auth.ts before flags are in context */
+/** Legacy per-key reader - used in auth.ts before flags are in context */
 export async function getFlagValue<T>(kv: KVNamespace, key: string, defaultValue: T): Promise<T> {
   const raw = await kv.get(key);
   if (!raw) return defaultValue;

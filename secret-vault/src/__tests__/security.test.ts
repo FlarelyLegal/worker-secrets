@@ -112,7 +112,7 @@ describe("version restore preserves envelope encryption", () => {
     expect(restoreBody.ok).toBe(true);
     expect(restoreBody.restored_from).toBe(v1Id);
 
-    // GET the secret — should decrypt to the v1 value
+    // GET the secret - should decrypt to the v1 value
     const getRes = await app.fetch(req(`/secrets/${KEY}`), env, ctx);
     expect(getRes.status).toBe(200);
     const getBody = (await getRes.json()) as { value: string; description: string };

@@ -5,7 +5,7 @@ description: Review code changes for security issues specific to this encrypted 
 
 # Security review
 
-This is an encrypted secret store — security mistakes leak credentials.
+This is an encrypted secret store - security mistakes leak credentials.
 
 ## CONVENTIONS (CRITICAL)
 
@@ -13,23 +13,23 @@ This is an encrypted secret store — security mistakes leak credentials.
 - **ALWAYS** validate JWT signature against Cloudflare JWKS + check issuer + AUD
 - **ALWAYS** reject unregistered service tokens even if Access JWT is valid
 - **ALWAYS** check `users` table first, fall back to `ALLOWED_EMAILS` only if table is empty
-- **ALWAYS** verify `enabled` flag — disabled users are rejected even with valid JWT
+- **ALWAYS** verify `enabled` flag - disabled users are rejected even with valid JWT
 - **ALWAYS** use `isAdmin(auth)` for user/role management endpoints
-- **NEVER** fall back between auth modes — partial config = hard error
+- **NEVER** fall back between auth modes - partial config = hard error
 - **NEVER** store service token credentials on disk
 
 ### Encryption
-- **ONLY `crypto.subtle`** — no third-party crypto
+- **ONLY `crypto.subtle`** - no third-party crypto
 - **ONLY AES-256-GCM** with random 12-byte IV per secret
-- **Envelope encryption** — each secret gets a random DEK; DEK wrapped by master KEK (`ENCRYPTION_KEY`)
-- `ENCRYPTION_KEY` is a Wrangler secret — **NEVER** in code or wrangler.jsonc
-- Key rotation supported via `/admin/rotate-key` — re-wraps all DEKs with a new master key
+- **Envelope encryption** - each secret gets a random DEK; DEK wrapped by master KEK (`ENCRYPTION_KEY`)
+- `ENCRYPTION_KEY` is a Wrangler secret - **NEVER** in code or wrangler.jsonc
+- Key rotation supported via `/admin/rotate-key` - re-wraps all DEKs with a new master key
 
 ### HMAC integrity
 - **ALWAYS** compute HMAC-SHA256 on write, verify on read
-- HMAC key from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` — **NEVER** use the encryption key directly as HMAC key
+- HMAC key from `INTEGRITY_KEY` env var, or HKDF-derived from `ENCRYPTION_KEY` - **NEVER** use the encryption key directly as HMAC key
 - HMAC binds key name + ciphertext + IV + encrypted_dek + dek_iv, preventing ciphertext and DEK swap attacks
-- Tamper detection: if HMAC verification fails, return error — do not decrypt
+- Tamper detection: if HMAC verification fails, return error - do not decrypt
 
 ### Scope enforcement
 - **ALWAYS** call `hasScope(auth, scope)` before every data operation
@@ -38,16 +38,16 @@ This is an encrypted secret store — security mistakes leak credentials.
 - Tag-based RBAC: roles can restrict access via `allowed_tags`
 - Token management: restricted to `interactive` auth only
 - Audit log + user/role management: restricted to `interactive` auth + `admin` role
-- Admin operations (re-encrypt, rotate-key) intentionally bypass tag restrictions — they must process ALL secrets
+- Admin operations (re-encrypt, rotate-key) intentionally bypass tag restrictions - they must process ALL secrets
 
 ### Feature flags
-- Flags are **plaintext** in KV — they are configuration values, not secrets
-- **NEVER** store sensitive data (credentials, keys, tokens) as flags — use encrypted secrets instead
+- Flags are **plaintext** in KV - they are configuration values, not secrets
+- **NEVER** store sensitive data (credentials, keys, tokens) as flags - use encrypted secrets instead
 - Flag operations use the same auth model and scope enforcement as secrets
 - All flag operations are audit-logged
 
 ### Input validation
-- **ALWAYS** validate `ENCRYPTION_KEY` format (64 hex chars) — validated on first use
+- **ALWAYS** validate `ENCRYPTION_KEY` format (64 hex chars) - validated on first use
 - Body size limits enforced via Zod: value 1MB, key 256 chars, description 1000 chars
 - Failed auth attempts logged: `method: "rejected"`, `action: "auth_failed"`
 - Security headers: HSTS, X-Request-ID, CSP (HTML only), X-Content-Type-Options
@@ -57,7 +57,7 @@ This is an encrypted secret store — security mistakes leak credentials.
 - **NEVER** return stack traces, SQL errors, or key fragments in error responses
 
 ### CLI
-- **ALWAYS** use `execFileSync` — never `execSync` with string interpolation
+- **ALWAYS** use `execFileSync` - never `execSync` with string interpolation
 - JWT stored locally is short-lived. Service token creds are env-var-only.
 
 See [auth flow](references/auth-flow.md) for the full authentication walkthrough.
@@ -77,4 +77,4 @@ See [auth flow](references/auth-flow.md) for the full authentication walkthrough
 
 ## KNOWN GAPS
 
-- No rate limiting — relying on Cloudflare edge protection (native Rate Limiting binding available for future use)
+- No rate limiting - relying on Cloudflare edge protection (native Rate Limiting binding available for future use)

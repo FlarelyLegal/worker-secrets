@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { VALID_SCOPES } from "./schemas.js";
+import { ScopesString } from "./schemas.js";
 
 export const ClientIdParam = z.object({
   clientId: z
@@ -25,18 +25,7 @@ export const ServiceTokenSchema = z
 export const TokenCreateBody = z.object({
   name: z.string().min(1, "name is required").max(256, "name exceeds 256 char limit"),
   description: z.string().max(1000).optional().default(""),
-  scopes: z
-    .string()
-    .optional()
-    .default("*")
-    .refine(
-      (s) =>
-        s
-          .split(",")
-          .map((v) => v.trim())
-          .every((v) => VALID_SCOPES.includes(v as (typeof VALID_SCOPES)[number])),
-      { message: "Valid scopes: *, read, write, delete (comma-separated)" },
-    ),
+  scopes: ScopesString.optional().default("*"),
   role: z.string().max(64).optional(),
 });
 
