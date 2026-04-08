@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { maybeCleanupAudit } from "./audit.js";
 import { auditRaw, authenticate } from "./auth.js";
 import {
   ACTION_AUTH_FAILED,
@@ -6,8 +7,6 @@ import {
   AUTH_REJECTED,
   AUTH_SERVICE_TOKEN,
   FLAG_ALLOWED_COUNTRIES,
-  FLAG_AUDIT_CLEANUP_PROBABILITY,
-  FLAG_AUDIT_RETENTION_DAYS,
   FLAG_MAINTENANCE,
   FLAG_PUBLIC_PAGES_ENABLED,
   FLAG_READ_ONLY,
@@ -275,15 +274,7 @@ app.use("*", async (c, next) => {
   fireWebhook(c.env.DB, c.get("requestId"), (p) => c.executionCtx.waitUntil(p), flagCache);
 
   // Background audit cleanup
-  const cleanupProbability = getFlag(flagCache, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);
-  if (Math.random() < cleanupProbability) {
-    const retentionDays = getFlag(flagCache, FLAG_AUDIT_RETENTION_DAYS, 90);
-    c.executionCtx.waitUntil(
-      c.env.DB.prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', ? || ' days')")
-        .bind(`-${Math.max(1, Math.floor(Number(retentionDays)))}`)
-        .run(),
-    );
-  }
+  maybeCleanupAudit(c.env.DB, flagCache, (p) => c.executionCtx.waitUntil(p));
 });
 
 // --- Read-only mode (after auth so unauthenticated users still get 401) ---
