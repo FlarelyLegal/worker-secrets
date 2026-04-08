@@ -8,7 +8,7 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["test/**/*.test.ts", "src/__tests__/**/*.test.ts"],
+          include: ["test/**/*.test.ts"],
           environment: "node",
         },
       },
@@ -34,7 +34,7 @@ export default defineConfig({
         ],
         test: {
           name: "workers",
-          include: ["test/**/*.workers.test.ts"],
+          include: ["test/**/*.workers.test.ts", "src/__tests__/**/*.test.ts"],
         },
       },
     ],

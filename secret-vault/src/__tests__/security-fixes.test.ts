@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import app, { isSafeWebhookUrl } from "../index.js";
+import { app, isSafeWebhookUrl } from "../app.js";
 import { esc } from "../pages.js";
 import { TEST_SCHEMA } from "./setup-db.js";
 
