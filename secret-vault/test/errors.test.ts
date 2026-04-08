@@ -7,7 +7,7 @@ import {
   ReadOnlyError,
   ValidationError,
   VaultError,
-} from "../errors.js";
+} from "../src/errors.js";
 
 describe("VaultError hierarchy", () => {
   it("VaultError has code and status", () => {
