@@ -1,4 +1,9 @@
-import { AUTH_INTERACTIVE } from "./constants.js";
+import {
+  AUTH_INTERACTIVE,
+  FLAG_AUDIT_CLEANUP_PROBABILITY,
+  FLAG_AUDIT_RETENTION_DAYS,
+} from "./constants.js";
+import { getFlag, type FlagCache } from "./flags.js";
 import type { AuthUser, Env } from "./types.js";
 
 /** Compute SHA-256 chain hash including timestamp to prevent reordering. */
@@ -144,4 +149,24 @@ export async function auditRaw(
     requestId,
     warpConnected,
   );
+}
+
+/** Probabilistic audit log cleanup. Call after each request via waitUntil. */
+export function maybeCleanupAudit(
+  db: D1Database,
+  flagCache: FlagCache,
+  waitUntil: (promise: Promise<unknown>) => void,
+): void {
+  const cleanupProbability = getFlag(flagCache, FLAG_AUDIT_CLEANUP_PROBABILITY, 0.01);
+  if (Math.random() < cleanupProbability) {
+    const retentionDays = getFlag(flagCache, FLAG_AUDIT_RETENTION_DAYS, 90);
+    waitUntil(
+      db
+        .prepare(
+          "DELETE FROM audit_log WHERE timestamp < datetime('now', ? || ' days')",
+        )
+        .bind(`-${Math.max(1, Math.floor(Number(retentionDays)))}`)
+        .run(),
+    );
+  }
 }
