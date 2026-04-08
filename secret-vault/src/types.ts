@@ -21,7 +21,7 @@ export type PolicyRule = {
 };
 
 export type AuthUser = {
-  method: "interactive" | "service_token";
+  method: "interactive" | "service_token" | "rpc";
   identity: string;
   name: string;
   role: string;
