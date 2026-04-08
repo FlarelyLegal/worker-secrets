@@ -69,3 +69,5 @@ export const FLAG_REQUIRE_WARP = "require_warp";
 
 export const ACTION_WARP_REJECTED = "warp_rejected";
 export const ACTION_EXPIRED_ACCESS = "expired_access";
+export const ACTION_RE_ENCRYPT = "re_encrypt";
+export const ACTION_ROTATE_KEY = "rotate_key";
