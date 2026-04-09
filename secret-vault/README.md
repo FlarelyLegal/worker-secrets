@@ -73,6 +73,8 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
 | `GET` | `/roles/{name}/policies` | admin | List policies for a role |
 | `PUT` | `/roles/{name}/policies` | admin | Replace all policies for a role |
+| `GET` | `/recipients` | read | List recipients with age keys |
+| `GET` | `/audit/consumers/{key}` | admin | List secret consumers from audit log |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |
 | `PUT` | `/flags/{key}` | admin | Set a flag (auto-detects type) |
@@ -179,7 +181,7 @@ HTTP access requires a valid Access JWT. Prefer Service Bindings (above) for sam
 
 ## Feature flags
 
-22 runtime flags stored in KV (not encrypted). See [Feature Flags Reference](../docs/feature-flags.md) for the full list with defaults and behavior notes.
+24 runtime flags stored in KV (not encrypted). See [Feature Flags Reference](../docs/feature-flags.md) for the full list with defaults and behavior notes.
 
 ## Security
 

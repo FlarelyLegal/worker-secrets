@@ -58,6 +58,8 @@ cd ../hfs && npm run build
 | Directory | What |
 |-----------|------|
 | `secret-vault/src/` | Worker API (Hono + OpenAPI) |
+| `secret-vault/src/services/` | Core business logic (extracted from route handlers) |
+| `secret-vault/src/rpc.ts` | WorkerEntrypoint for Service Binding RPC |
 | `hfs/src/commands/` | CLI commands |
 | `hfs/src/deploy/` | Deploy pipeline |
 | `.agents/skills/` | Agent skills (coding conventions) |
