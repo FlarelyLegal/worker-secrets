@@ -4,9 +4,69 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Correct ServiceToken schema nullability and add interactive-only guard to audit-consumers
+- Upgrade recipients to policy-based tag filtering, update test schema, use ACTION_GET constant
+- Remove unused imports flagged by CodeQL
+- Resolve all biome warnings (non-null assertions, template string literals, formatting)
+
 ### Changed
 
 - Fix critical policy auth bypass + SSRF + JWT spoofing + WARP replay
+
+### Features
+
+- Add VaultError class hierarchy for shared error handling
+- Add ACTION_RE_ENCRYPT, ACTION_ROTATE_KEY constants and 'rpc' auth method
+- Add ServiceContext, RpcOpts, and return types for core service layer
+- Add WorkerEntrypoint shell with rpcCall wrapper and fetch delegation
+- Add decryptSecretRow and encryptSecretValue shared crypto helpers
+- Add RPC methods for secrets, versions, and bulk operations
+- Add shared helpers (buildUpdateSets, adminCount) for service extraction
+- Add all remaining RPC methods (tokens, users, roles, flags, admin, recipients)
+- Export public types for Service Binding consumers
+- Add RPC / Service Binding support with full HTTP parity (#22)
+
+### Miscellaneous
+
+- Pin GitHub Actions to commit SHAs
+- Require Node.js 24+ for hfs CLI
+- Bump @biomejs/biome from 2.4.9 to 2.4.10
+- Bump @biomejs/biome from 2.4.9 to 2.4.10 (#13)
+- Bump undici from 7.24.6 to 8.0.1 in /hfs
+- Bump undici from 7.24.6 to 8.0.1 in /hfs (#14)
+- Bump wrangler from 4.78.0 to 4.80.0 in /secret-vault
+- Bump wrangler from 4.78.0 to 4.80.0 in /secret-vault (#15)
+- Bump @types/node from 25.5.0 to 25.5.2 in /hfs
+- Bump @types/node from 25.5.0 to 25.5.2 in /hfs (#16)
+- Bump @cloudflare/workers-types in /secret-vault
+- Bump @cloudflare/workers-types from 4.20260329.1 to 4.20260404.1 in /secret-vault (#17)
+- Bump hono from 4.12.9 to 4.12.10 in /secret-vault
+- Bump hono from 4.12.9 to 4.12.10 in /secret-vault (#18)
+- Bump vite
+- Bump vite from 8.0.3 to 8.0.5 in /secret-vault in the npm_and_yarn group across 1 directory (#20)
+- Bump vite
+- Bump vite from 8.0.3 to 8.0.5 in /hfs in the npm_and_yarn group across 1 directory (#21)
+- Bump @cloudflare/vitest-pool-workers in /secret-vault
+- Bump @cloudflare/vitest-pool-workers from 0.13.5 to 0.14.1 in /secret-vault (#19)
+
+### Refactor
+
+- Extract maybeCleanupAudit from index middleware to audit.ts
+- Extract secrets core service, refactor HTTP routes to use shared functions
+- Extract versions core service
+- Extract bulk import/export core service
+- Extract tokens core service
+- Extract users core service
+- Extract roles and policies core services
+- Extract flags core service
+- Extract admin core service, replace string literal actions with constants
+- Extract recipients core service
+
+### Testing
+
+- Add comprehensive RPC integration tests
 
 ## [0.28.0] - 2026-03-30
 
