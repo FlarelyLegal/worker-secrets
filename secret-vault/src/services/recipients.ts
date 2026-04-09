@@ -10,10 +10,50 @@ type UserRow = {
   age_public_key: string;
 };
 type RoleRow = { allowed_tags: string };
+type PolicyRow = { scopes: string; tags: string };
 
 export type RecipientsParams = {
   tags?: string;
 };
+
+/**
+ * Resolve accessible tags for a role, checking role_policies first (policy-based RBAC),
+ * then falling back to roles.allowed_tags (legacy model).
+ * Returns null if unrestricted (empty tags = access to everything).
+ */
+async function resolveRoleTags(db: D1Database, role: string): Promise<string[] | null> {
+  // Check for policy-based rules first
+  const { results: policyRows } = await db
+    .prepare("SELECT scopes, tags FROM role_policies WHERE role = ?")
+    .bind(role)
+    .all<PolicyRow>();
+
+  if (policyRows.length > 0) {
+    const allTags: string[] = [];
+    for (const p of policyRows) {
+      if (!p.tags) return null; // empty tags in any policy = unrestricted
+      const parsed = p.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (parsed.length === 0) return null; // unrestricted
+      allTags.push(...parsed);
+    }
+    return [...new Set(allTags)];
+  }
+
+  // Fall back to legacy single-policy from roles table
+  const roleRow = await db
+    .prepare("SELECT allowed_tags FROM roles WHERE name = ?")
+    .bind(role)
+    .first<RoleRow>();
+  if (!roleRow) return []; // unknown role = no access
+  if (!roleRow.allowed_tags) return null; // empty = unrestricted
+  return roleRow.allowed_tags
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
 
 export async function getRecipients(
   ctx: ServiceContext,
@@ -44,17 +84,14 @@ export async function getRecipients(
     const secretTags = tags.split(",").map((t) => t.trim());
     const filtered: UserRow[] = [];
     for (const user of eligible) {
-      const role = await ctx.db
-        .prepare("SELECT allowed_tags FROM roles WHERE name = ?")
-        .bind(user.role)
-        .first<RoleRow>();
-      if (!role) continue;
-      // Empty allowed_tags = access to everything
-      if (!role.allowed_tags) {
+      const roleTags = await resolveRoleTags(ctx.db, user.role);
+      // null = unrestricted access (empty tags)
+      if (roleTags === null) {
         filtered.push(user);
         continue;
       }
-      const roleTags = role.allowed_tags.split(",").map((t) => t.trim());
+      // empty array from unknown role = no access
+      if (roleTags.length === 0) continue;
       if (secretTags.some((t) => roleTags.includes(t))) {
         filtered.push(user);
       }

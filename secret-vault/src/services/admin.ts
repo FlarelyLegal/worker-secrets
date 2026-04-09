@@ -1,4 +1,4 @@
-import { ACTION_RE_ENCRYPT, ACTION_ROTATE_KEY } from "../constants.js";
+import { ACTION_GET, ACTION_RE_ENCRYPT, ACTION_ROTATE_KEY } from "../constants.js";
 import { computeHmac, decrypt, envelopeEncrypt, verifyHmac } from "../crypto.js";
 import type { SecretRow } from "../schemas-secrets.js";
 import type { AuditConsumer, AuditEntry, ServiceContext } from "./types.js";
@@ -163,8 +163,8 @@ export async function getAuditConsumers(
   key: string,
   params?: AuditConsumersParams,
 ): Promise<{ consumers: AuditConsumer[] }> {
-  const conditions: string[] = ["secret_key = ?", "action = 'get'"];
-  const binds: unknown[] = [key];
+  const conditions: string[] = ["secret_key = ?", "action = ?"];
+  const binds: unknown[] = [key, ACTION_GET];
 
   if (params?.from) {
     conditions.push("timestamp >= ?");
