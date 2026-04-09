@@ -33,17 +33,13 @@ export async function listSecrets(
   ctx: ServiceContext,
   params: { limit: number; offset: number; search?: string },
 ): Promise<{ secrets: SecretListItem[]; total: number }> {
-  if (!hasScope(ctx.auth, SCOPE_READ))
-    throw new AccessDeniedError("Insufficient scope");
+  if (!hasScope(ctx.auth, SCOPE_READ)) throw new AccessDeniedError("Insufficient scope");
 
   const conditions: string[] = [];
   const binds: unknown[] = [];
 
   if (params.search) {
-    const escaped = params.search
-      .replace(/\\/g, "\\\\")
-      .replace(/%/g, "\\%")
-      .replace(/_/g, "\\_");
+    const escaped = params.search.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
     conditions.push("key LIKE ? ESCAPE '\\'");
     binds.push(`%${escaped}%`);
   }
@@ -65,7 +61,10 @@ export async function listSecrets(
   const countSql = `SELECT COUNT(*) as total FROM secrets${where}`;
   const listSql = `SELECT key, description, tags, expires_at, created_by, updated_by, created_at, updated_at FROM secrets${where} ORDER BY key LIMIT ? OFFSET ?`;
 
-  const { results: countResult } = await ctx.db.prepare(countSql).bind(...binds).all();
+  const { results: countResult } = await ctx.db
+    .prepare(countSql)
+    .bind(...binds)
+    .all();
   const dbTotal = (countResult[0] as { total: number }).total;
   const { results } = await ctx.db
     .prepare(listSql)
@@ -81,12 +80,8 @@ export async function listSecrets(
 
 // --- Get ---
 
-export async function getSecret(
-  ctx: ServiceContext,
-  key: string,
-): Promise<SecretResult> {
-  if (!hasScope(ctx.auth, SCOPE_READ))
-    throw new AccessDeniedError("Insufficient scope");
+export async function getSecret(ctx: ServiceContext, key: string): Promise<SecretResult> {
+  if (!hasScope(ctx.auth, SCOPE_READ)) throw new AccessDeniedError("Insufficient scope");
 
   const row = await ctx.db
     .prepare("SELECT * FROM secrets WHERE key = ?")
@@ -104,19 +99,13 @@ export async function getSecret(
     const enforceExpiry = getFlag(ctx.flagCache, FLAG_ENFORCE_EXPIRY, false);
     if (enforceExpiry && new Date(row.expires_at).getTime() < Date.now()) {
       await ctx.auditFn(ACTION_EXPIRED_ACCESS, key);
-      throw new AccessDeniedError(
-        `Secret expired at ${row.expires_at} - rotate or re-set it`,
-      );
+      throw new AccessDeniedError(`Secret expired at ${row.expires_at} - rotate or re-set it`);
     }
   }
 
   // Require envelope encryption
   if (!row.encrypted_dek || !row.dek_iv) {
-    const requireEnvelope = getFlag(
-      ctx.flagCache,
-      FLAG_REQUIRE_ENVELOPE_ENCRYPTION,
-      false,
-    );
+    const requireEnvelope = getFlag(ctx.flagCache, FLAG_REQUIRE_ENVELOPE_ENCRYPTION, false);
     if (requireEnvelope)
       throw new AccessDeniedError(
         "Secret uses legacy encryption - run `hfs re-encrypt` to migrate",
@@ -127,13 +116,9 @@ export async function getSecret(
   const hmacRequired = getFlag(ctx.flagCache, FLAG_HMAC_REQUIRED, false);
   let plaintext: string;
   try {
-    plaintext = await decryptSecretRow(
-      row,
-      ctx.env.ENCRYPTION_KEY,
-      key,
-      ctx.env.INTEGRITY_KEY,
-      { hmacRequired },
-    );
+    plaintext = await decryptSecretRow(row, ctx.env.ENCRYPTION_KEY, key, ctx.env.INTEGRITY_KEY, {
+      hmacRequired,
+    });
   } catch (e) {
     if (e instanceof EncryptionError) throw e;
     throw new EncryptionError("Decryption failed");
@@ -170,8 +155,7 @@ export async function deleteSecret(
   ctx: ServiceContext,
   key: string,
 ): Promise<{ ok: true; deleted: string }> {
-  if (!hasScope(ctx.auth, SCOPE_DELETE))
-    throw new AccessDeniedError("Insufficient scope");
+  if (!hasScope(ctx.auth, SCOPE_DELETE)) throw new AccessDeniedError("Insufficient scope");
 
   // Check tag access before deleting
   const row = await ctx.db
@@ -248,8 +232,7 @@ export async function setSecret(
     expires_at?: string | null;
   },
 ): Promise<{ ok: true; key: string }> {
-  if (!hasScope(ctx.auth, SCOPE_WRITE))
-    throw new AccessDeniedError("Insufficient scope");
+  if (!hasScope(ctx.auth, SCOPE_WRITE)) throw new AccessDeniedError("Insufficient scope");
 
   const { value, description, tags, expires_at } = data;
 

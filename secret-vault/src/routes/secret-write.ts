@@ -41,8 +41,7 @@ secretWrite.openapi(putRoute, async (c) => {
     });
     return c.json(result, 201);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 400 | 403 | 500);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400 | 403 | 500);
     throw e;
   }
 });

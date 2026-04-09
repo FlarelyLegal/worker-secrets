@@ -300,7 +300,13 @@ export async function encryptSecretValue(
   encryptionKey: string,
   secretKeyName: string,
   integrityKey?: string,
-): Promise<{ ciphertext: string; iv: string; encrypted_dek: string; dek_iv: string; hmac: string }> {
+): Promise<{
+  ciphertext: string;
+  iv: string;
+  encrypted_dek: string;
+  dek_iv: string;
+  hmac: string;
+}> {
   const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
     plaintext,
     encryptionKey,

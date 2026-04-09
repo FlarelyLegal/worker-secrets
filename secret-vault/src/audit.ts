@@ -3,7 +3,7 @@ import {
   FLAG_AUDIT_CLEANUP_PROBABILITY,
   FLAG_AUDIT_RETENTION_DAYS,
 } from "./constants.js";
-import { getFlag, type FlagCache } from "./flags.js";
+import { type FlagCache, getFlag } from "./flags.js";
 import type { AuthUser, Env } from "./types.js";
 
 /** Compute SHA-256 chain hash including timestamp to prevent reordering. */
@@ -162,9 +162,7 @@ export function maybeCleanupAudit(
     const retentionDays = getFlag(flagCache, FLAG_AUDIT_RETENTION_DAYS, 90);
     waitUntil(
       db
-        .prepare(
-          "DELETE FROM audit_log WHERE timestamp < datetime('now', ? || ' days')",
-        )
+        .prepare("DELETE FROM audit_log WHERE timestamp < datetime('now', ? || ' days')")
         .bind(`-${Math.max(1, Math.floor(Number(retentionDays)))}`)
         .run(),
     );

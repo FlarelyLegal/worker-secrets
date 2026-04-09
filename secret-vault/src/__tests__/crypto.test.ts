@@ -3,10 +3,10 @@ import {
   computeHmac,
   decrypt,
   decryptSecretRow,
+  type EncryptedRow,
   encrypt,
   encryptSecretValue,
   envelopeEncrypt,
-  type EncryptedRow,
 } from "../crypto.js";
 import { EncryptionError } from "../errors.js";
 

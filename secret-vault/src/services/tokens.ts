@@ -1,10 +1,6 @@
-import {
-  ACTION_LIST_TOKENS,
-  ACTION_REGISTER_TOKEN,
-  ACTION_REVOKE_TOKEN,
-} from "../constants.js";
+import { ACTION_LIST_TOKENS, ACTION_REGISTER_TOKEN, ACTION_REVOKE_TOKEN } from "../constants.js";
 import { NotFoundError, ValidationError } from "../errors.js";
-import type { ServiceToken, ServiceContext } from "./types.js";
+import type { ServiceContext, ServiceToken } from "./types.js";
 
 // --- List ---
 
@@ -32,7 +28,14 @@ export async function registerToken(
     age_public_key?: string | null;
   },
 ): Promise<{ ok: true; client_id: string; name: string; scopes: string }> {
-  const { name, description, scopes, role, client_secret_hash: secretHash, age_public_key: ageKey } = data;
+  const {
+    name,
+    description,
+    scopes,
+    role,
+    client_secret_hash: secretHash,
+    age_public_key: ageKey,
+  } = data;
 
   // Verify role exists if provided
   if (role) {

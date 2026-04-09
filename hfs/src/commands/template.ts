@@ -11,6 +11,7 @@ export function registerTemplateCommands(program: Command): void {
     .command("template <file>")
     .description("Render a template file, replacing {{SECRET_KEY}} with secret values")
     .option("-o, --output <path>", "Write output to file instead of stdout")
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional help text
     .option("-r, --resolve", "Resolve ${SECRET} references inside substituted values")
     .addHelpText(
       "after",
@@ -57,7 +58,7 @@ Examples:
         if (opts.resolve) {
           const cache = new Map<string, string>(values);
           const resolveRef = async (ref: string): Promise<string> => {
-            if (cache.has(ref)) return cache.get(ref)!;
+            if (cache.has(ref)) return cache.get(ref) as string;
             const val = await fetchAndDecrypt(ref);
             cache.set(ref, val);
             return val;

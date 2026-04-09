@@ -1,27 +1,28 @@
 // Public API for Service Binding consumers
-export type { default as SecretVaultWorker } from "./rpc.js";
-export type { RpcOpts } from "./services/types.js";
-export type {
-	SecretResult,
-	SecretListItem,
-	VersionResult,
-	VersionListItem,
-	ExportedSecret,
-	ServiceToken,
-	User,
-	Role,
-	Policy,
-	FlagResult,
-	AuditEntry,
-	AuditConsumer,
-	Recipient,
-} from "./services/types.js";
+
 export {
-	VaultError,
-	NotFoundError,
-	AccessDeniedError,
-	ValidationError,
-	EncryptionError,
-	MaintenanceError,
-	ReadOnlyError,
+  AccessDeniedError,
+  EncryptionError,
+  MaintenanceError,
+  NotFoundError,
+  ReadOnlyError,
+  ValidationError,
+  VaultError,
 } from "./errors.js";
+export type { default as SecretVaultWorker } from "./rpc.js";
+export type {
+  AuditConsumer,
+  AuditEntry,
+  ExportedSecret,
+  FlagResult,
+  Policy,
+  Recipient,
+  Role,
+  RpcOpts,
+  SecretListItem,
+  SecretResult,
+  ServiceToken,
+  User,
+  VersionListItem,
+  VersionResult,
+} from "./services/types.js";

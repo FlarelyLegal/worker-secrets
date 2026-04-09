@@ -16,9 +16,7 @@ import type { ExportedSecret, ServiceContext } from "./types.js";
 
 // --- Export ---
 
-export async function exportSecrets(
-  ctx: ServiceContext,
-): Promise<{ secrets: ExportedSecret[] }> {
+export async function exportSecrets(ctx: ServiceContext): Promise<{ secrets: ExportedSecret[] }> {
   if (!hasScope(ctx.auth, SCOPE_READ)) throw new AccessDeniedError("Insufficient scope");
 
   const exportDisabled = getFlag(ctx.flagCache, FLAG_DISABLE_EXPORT, false);

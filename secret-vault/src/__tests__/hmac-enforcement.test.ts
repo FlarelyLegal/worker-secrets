@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { computeHmac, verifyHmac } from "../crypto.js";
 import { app } from "../app.js";
+import { computeHmac, verifyHmac } from "../crypto.js";
 import { TEST_SCHEMA } from "./setup-db.js";
 
 const ctx = {

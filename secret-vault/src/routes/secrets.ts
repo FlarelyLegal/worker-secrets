@@ -43,8 +43,7 @@ secrets.openapi(listRoute, async (c) => {
     const result = await secretsService.listSecrets(ctx, { limit, offset, search });
     return c.json(result, 200);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 403);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
     throw e;
   }
 });
@@ -74,8 +73,7 @@ secrets.openapi(getRoute, async (c) => {
     const result = await secretsService.getSecret(ctx, key);
     return c.json(result, 200);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 403 | 404 | 500);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403 | 404 | 500);
     throw e;
   }
 });
@@ -105,8 +103,7 @@ secrets.openapi(deleteRoute, async (c) => {
     const result = await secretsService.deleteSecret(ctx, key);
     return c.json(result, 200);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 403 | 404);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403 | 404);
     throw e;
   }
 });

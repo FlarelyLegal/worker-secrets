@@ -91,6 +91,7 @@ export function registerProfileCommands(program: Command): void {
     .command("env <name>")
     .description("Export a profile's secrets as shell variables")
     .option("-e, --export", "Prefix each line with 'export '")
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional help text
     .option("-r, --resolve", "Resolve ${SECRET} references in values")
     .option("-j, --json", "Output as JSON object")
     .action(async (name: string, opts: { export?: boolean; resolve?: boolean; json?: boolean }) => {
@@ -106,7 +107,7 @@ export function registerProfileCommands(program: Command): void {
         const cache = new Map<string, string>();
 
         const fetchValue = async (key: string): Promise<string> => {
-          if (cache.has(key)) return cache.get(key)!;
+          if (cache.has(key)) return cache.get(key) as string;
           const secret = await c.get(key);
           const val = await tryDecrypt(secret.value || "", secret.tags, cfg.e2eIdentity);
           cache.set(key, val);

@@ -44,8 +44,7 @@ export async function addUser(
     .bind(lowerEmail)
     .first<{ role: string; enabled: number }>();
   if (existing?.role === ROLE_ADMIN && existing.enabled && role !== ROLE_ADMIN) {
-    if ((await adminCount(ctx.db)) <= 1)
-      throw new ValidationError("Cannot remove the last admin");
+    if ((await adminCount(ctx.db)) <= 1) throw new ValidationError("Cannot remove the last admin");
   }
 
   const identity = ctx.auth.identity;
@@ -166,10 +165,7 @@ export async function removeUser(
     throw new ValidationError("Cannot delete the last admin");
   }
 
-  const result = await ctx.db
-    .prepare("DELETE FROM users WHERE email = ?")
-    .bind(lowerEmail)
-    .run();
+  const result = await ctx.db.prepare("DELETE FROM users WHERE email = ?").bind(lowerEmail).run();
   if (result.meta.changes === 0) throw new NotFoundError("User not found");
 
   await ctx.auditFn(ACTION_DELETE_USER, email);

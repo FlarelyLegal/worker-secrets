@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { accessibleTags, hasAccess, hasScope } from "../auth.js";
 import { app } from "../app.js";
+import { accessibleTags, hasAccess, hasScope } from "../auth.js";
 import type { AuthUser, PolicyRule } from "../types.js";
 import { TEST_SCHEMA } from "./setup-db.js";
 

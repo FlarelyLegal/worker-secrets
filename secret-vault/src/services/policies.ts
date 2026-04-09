@@ -8,10 +8,7 @@ export async function listPolicies(
   ctx: ServiceContext,
   roleName: string,
 ): Promise<{ policies: Policy[] }> {
-  const role = await ctx.db
-    .prepare("SELECT name FROM roles WHERE name = ?")
-    .bind(roleName)
-    .first();
+  const role = await ctx.db.prepare("SELECT name FROM roles WHERE name = ?").bind(roleName).first();
   if (!role) throw new NotFoundError("Role not found");
 
   const { results } = await ctx.db
@@ -30,10 +27,7 @@ export async function setPolicies(
   roleName: string,
   policies: Array<{ scopes: string; tags: string; description: string }>,
 ): Promise<{ ok: true; count: number }> {
-  const role = await ctx.db
-    .prepare("SELECT name FROM roles WHERE name = ?")
-    .bind(roleName)
-    .first();
+  const role = await ctx.db.prepare("SELECT name FROM roles WHERE name = ?").bind(roleName).first();
   if (!role) throw new NotFoundError("Role not found");
 
   const identity = ctx.auth.identity;

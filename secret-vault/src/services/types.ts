@@ -1,5 +1,5 @@
-import type { AuthUser, Env } from "../types.js";
 import type { FlagCache } from "../flags.js";
+import type { AuthUser, Env } from "../types.js";
 
 export type ServiceContext = {
   db: D1Database;

@@ -2,15 +2,15 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { maybeCleanupAudit } from "./audit.js";
 import { auditRaw, authenticate } from "./auth.js";
 import {
-	ACTION_AUTH_FAILED,
-	ACTION_WARP_REJECTED,
-	AUTH_REJECTED,
-	AUTH_SERVICE_TOKEN,
-	FLAG_ALLOWED_COUNTRIES,
-	FLAG_MAINTENANCE,
-	FLAG_PUBLIC_PAGES_ENABLED,
-	FLAG_READ_ONLY,
-	FLAG_REQUIRE_WARP,
+  ACTION_AUTH_FAILED,
+  ACTION_WARP_REJECTED,
+  AUTH_REJECTED,
+  AUTH_SERVICE_TOKEN,
+  FLAG_ALLOWED_COUNTRIES,
+  FLAG_MAINTENANCE,
+  FLAG_PUBLIC_PAGES_ENABLED,
+  FLAG_READ_ONLY,
+  FLAG_REQUIRE_WARP,
 } from "./constants.js";
 import { getFlag, getFlagValue, loadAllFlags } from "./flags.js";
 import admin from "./routes/admin.js";
@@ -37,66 +37,66 @@ export { isSafeWebhookUrl } from "./webhook.js";
 import { fireWebhook } from "./webhook.js";
 
 const app = new OpenAPIHono<HonoEnv>({
-	defaultHook: (result, c) => {
-		if (!result.success) {
-			return c.json({ error: result.error.issues[0].message }, 400);
-		}
-	},
+  defaultHook: (result, c) => {
+    if (!result.success) {
+      return c.json({ error: result.error.issues[0].message }, 400);
+    }
+  },
 });
 
 // Global error handler
 app.onError((err, c) => {
-	console.error(err);
-	return c.json({ error: "Internal error" }, 500);
+  console.error(err);
+  return c.json({ error: "Internal error" }, 500);
 });
 
 // --- Security headers ---
 
 app.use("*", async (c, next) => {
-	const requestId = crypto.randomUUID();
-	c.set("requestId", requestId);
-	await next();
-	c.res.headers.set("X-Content-Type-Options", "nosniff");
-	c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-	c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-	c.res.headers.set("Permissions-Policy", "interest-cohort=()");
-	c.res.headers.set("Cross-Origin-Resource-Policy", "same-site");
-	c.res.headers.set("X-Request-ID", requestId);
-	if (c.res.headers.get("Content-Type")?.includes("text/html")) {
-		c.res.headers.set("X-Frame-Options", "DENY");
-		const isScalar = c.req.path === "/doc";
-		c.res.headers.set(
-			"Content-Security-Policy",
-			isScalar
-				? "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data: https:; font-src https://cdn.jsdelivr.net"
-				: "default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'",
-		);
-	}
+  const requestId = crypto.randomUUID();
+  c.set("requestId", requestId);
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.res.headers.set("Permissions-Policy", "interest-cohort=()");
+  c.res.headers.set("Cross-Origin-Resource-Policy", "same-site");
+  c.res.headers.set("X-Request-ID", requestId);
+  if (c.res.headers.get("Content-Type")?.includes("text/html")) {
+    c.res.headers.set("X-Frame-Options", "DENY");
+    const isScalar = c.req.path === "/doc";
+    c.res.headers.set(
+      "Content-Security-Policy",
+      isScalar
+        ? "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data: https:; font-src https://cdn.jsdelivr.net"
+        : "default-src 'none'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'",
+    );
+  }
 });
 
 // --- CORS (optional, controlled by CORS_ORIGINS env var) ---
 
 app.use("*", async (c, next) => {
-	const origins = c.env.CORS_ORIGINS;
-	if (!origins) return next();
+  const origins = c.env.CORS_ORIGINS;
+  if (!origins) return next();
 
-	const origin = c.req.header("Origin");
-	const allowed = origins.split(",").map((o) => o.trim());
-	if (origin && (allowed.includes("*") || allowed.includes(origin))) {
-		c.res.headers.set("Access-Control-Allow-Origin", allowed.includes("*") ? "*" : origin);
-		c.res.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-		c.res.headers.set(
-			"Access-Control-Allow-Headers",
-			"Content-Type, Cf-Access-Jwt-Assertion, CF-Access-Client-Id, CF-Access-Client-Secret",
-		);
-		c.res.headers.set("Access-Control-Max-Age", "86400");
-	}
+  const origin = c.req.header("Origin");
+  const allowed = origins.split(",").map((o) => o.trim());
+  if (origin && (allowed.includes("*") || allowed.includes(origin))) {
+    c.res.headers.set("Access-Control-Allow-Origin", allowed.includes("*") ? "*" : origin);
+    c.res.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    c.res.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Cf-Access-Jwt-Assertion, CF-Access-Client-Id, CF-Access-Client-Secret",
+    );
+    c.res.headers.set("Access-Control-Max-Age", "86400");
+  }
 
-	if (c.req.method === "OPTIONS") {
-		return new Response(null, { status: 204, headers: c.res.headers });
-	}
+  if (c.req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: c.res.headers });
+  }
 
-	return next();
+  return next();
 });
 
 // --- Public (before auth middleware) ---
@@ -104,57 +104,57 @@ app.use("*", async (c, next) => {
 app.route("/", pub);
 
 const API_DESCRIPTION =
-	"Self-hosted secret management on Cloudflare Workers. " +
-	"Secrets are encrypted at rest with AES-256-GCM in a D1 database. " +
-	"Two auth paths via Cloudflare Access: interactive sessions (IdP, optionally with hardware keys) " +
-	"for humans, and registered service tokens with named identities and scoped " +
-	"permissions (read/write/delete) for CI pipelines and other Workers. " +
-	"Every operation is audit-logged with identity, action, and IP.";
+  "Self-hosted secret management on Cloudflare Workers. " +
+  "Secrets are encrypted at rest with AES-256-GCM in a D1 database. " +
+  "Two auth paths via Cloudflare Access: interactive sessions (IdP, optionally with hardware keys) " +
+  "for humans, and registered service tokens with named identities and scoped " +
+  "permissions (read/write/delete) for CI pipelines and other Workers. " +
+  "Every operation is audit-logged with identity, action, and IP.";
 
 const API_TAGS = [
-	{
-		name: "Secrets",
-		description: "Store, retrieve, update, and delete encrypted secrets. Supports bulk export.",
-	},
-	{
-		name: "Tokens",
-		description:
-			"Register and manage service tokens. Each token gets a name, scoped permissions, " +
-			"and usage tracking. Admin only.",
-	},
-	{ name: "Users", description: "User management with RBAC role assignment (admin only)" },
-	{ name: "Roles", description: "Role definitions with scoped permissions (admin only)" },
-	{ name: "Flags", description: "Feature flags backed by KV (plaintext, not encrypted)" },
-	{ name: "Admin", description: "Authentication status and audit log access." },
-	{ name: "Public", description: "Unauthenticated endpoints." },
+  {
+    name: "Secrets",
+    description: "Store, retrieve, update, and delete encrypted secrets. Supports bulk export.",
+  },
+  {
+    name: "Tokens",
+    description:
+      "Register and manage service tokens. Each token gets a name, scoped permissions, " +
+      "and usage tracking. Admin only.",
+  },
+  { name: "Users", description: "User management with RBAC role assignment (admin only)" },
+  { name: "Roles", description: "Role definitions with scoped permissions (admin only)" },
+  { name: "Flags", description: "Feature flags backed by KV (plaintext, not encrypted)" },
+  { name: "Admin", description: "Authentication status and audit log access." },
+  { name: "Public", description: "Unauthenticated endpoints." },
 ];
 
 // Dynamic server URL + brand - adapts to deployment
 app.get("/doc/json", async (c) => {
-	const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
-	if (!enabled) return c.notFound();
-	const origin = new URL(c.req.url).origin;
-	const brand = c.env.BRAND_NAME || "Secret Vault";
-	return c.json(
-		app.getOpenAPIDocument({
-			openapi: "3.0.0",
-			info: { title: `${brand} API`, version: VERSION, description: API_DESCRIPTION },
-			tags: API_TAGS,
-			servers: [{ url: origin }],
-		}),
-	);
+  const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
+  if (!enabled) return c.notFound();
+  const origin = new URL(c.req.url).origin;
+  const brand = c.env.BRAND_NAME || "Secret Vault";
+  return c.json(
+    app.getOpenAPIDocument({
+      openapi: "3.0.0",
+      info: { title: `${brand} API`, version: VERSION, description: API_DESCRIPTION },
+      tags: API_TAGS,
+      servers: [{ url: origin }],
+    }),
+  );
 });
 
 app.get("/doc", async (c) => {
-	const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
-	if (!enabled) return c.notFound();
-	const raw = c.env.BRAND_NAME || "Secret Vault";
-	const brand = raw
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-	return c.html(`<!DOCTYPE html>
+  const enabled = await getFlagValue(c.env.FLAGS, FLAG_PUBLIC_PAGES_ENABLED, true);
+  if (!enabled) return c.notFound();
+  const raw = c.env.BRAND_NAME || "Secret Vault";
+  const brand = raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+  return c.html(`<!DOCTYPE html>
 <html>
 <head>
   <title>${brand} API | HomeFlare</title>
@@ -164,10 +164,10 @@ app.get("/doc", async (c) => {
 </head>
 <body>
   <script id="api-reference" data-url="/doc/json" data-configuration='${JSON.stringify({
-		theme: "kepler",
-		hideDownloadButton: true,
-		metaData: { title: `${raw} API` },
-	})}'></script>
+    theme: "kepler",
+    hideDownloadButton: true,
+    metaData: { title: `${raw} API` },
+  })}'></script>
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1"></script>
 </body>
 </html>`);
@@ -176,116 +176,116 @@ app.get("/doc", async (c) => {
 // --- Auth middleware ---
 
 app.use("*", async (c, next) => {
-	// Load all flags in a single KV batch - cached in context for the request
-	const flagCache = await loadAllFlags(c.env.FLAGS);
-	c.set("flags", flagCache);
+  // Load all flags in a single KV batch - cached in context for the request
+  const flagCache = await loadAllFlags(c.env.FLAGS);
+  c.set("flags", flagCache);
 
-	// Maintenance mode - checked before authentication
-	if (getFlag(flagCache, FLAG_MAINTENANCE, false)) {
-		return c.json({ error: "Service is in maintenance mode" }, 503);
-	}
+  // Maintenance mode - checked before authentication
+  if (getFlag(flagCache, FLAG_MAINTENANCE, false)) {
+    return c.json({ error: "Service is in maintenance mode" }, 503);
+  }
 
-	// Geo-fencing - restrict all access by country
-	const allowedCountries = (getFlag(flagCache, FLAG_ALLOWED_COUNTRIES, "") as string)
-		.split(",")
-		.map((s) => s.trim().toUpperCase())
-		.filter(Boolean);
-	if (allowedCountries.length > 0) {
-		const country = (c.req.raw as unknown as { cf?: { country?: string } }).cf?.country ?? "";
-		if (!allowedCountries.includes(country.toUpperCase())) {
-			return c.json({ error: "Access denied - geo-restricted" }, 403);
-		}
-	}
+  // Geo-fencing - restrict all access by country
+  const allowedCountries = (getFlag(flagCache, FLAG_ALLOWED_COUNTRIES, "") as string)
+    .split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  if (allowedCountries.length > 0) {
+    const country = (c.req.raw as unknown as { cf?: { country?: string } }).cf?.country ?? "";
+    if (!allowedCountries.includes(country.toUpperCase())) {
+      return c.json({ error: "Access denied - geo-restricted" }, 403);
+    }
+  }
 
-	const authResult = await authenticate(c.req.raw, c.env);
-	if (!authResult) {
-		try {
-			await auditRaw(
-				c.env.DB,
-				AUTH_REJECTED,
-				"unknown",
-				ACTION_AUTH_FAILED,
-				null,
-				c.req.header("CF-Connecting-IP") ?? null,
-				c.req.header("User-Agent") ?? null,
-				c.get("requestId"),
-			);
-		} catch {
-			// Don't fail the 401 if audit logging fails
-		}
-		return c.json({ error: "Unauthorized" }, 401);
-	}
-	const { user, jwtPayload } = authResult;
-	// WARP enforcement (pass JWT payload for device_sessions detection)
-	const warpInfo = extractWarpInfo(c.req.raw, jwtPayload);
-	// Exempt /whoami (diagnostic) and service tokens (machine-to-machine) from WARP enforcement
-	const isWhoami = new URL(c.req.url).pathname === "/whoami";
-	const isServiceToken = user.method === AUTH_SERVICE_TOKEN;
-	const warpRequired =
-		isWhoami || isServiceToken ? false : (getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean);
-	const ztResponse = c.req.header("X-ZT-Response");
-	const ztTimestamp = c.req.header("X-ZT-Timestamp");
-	// Query user's registered ZT fingerprint for device binding
-	let userZtFingerprint: string | undefined;
-	if (user.method === "interactive") {
-		const userZt = await c.env.DB.prepare("SELECT zt_fingerprint FROM users WHERE email = ?")
-			.bind(user.identity.toLowerCase())
-			.first<{ zt_fingerprint: string }>();
-		userZtFingerprint = userZt?.zt_fingerprint || undefined;
-	}
-	const warpCheck = await checkWarpRequired(
-		warpInfo,
-		warpRequired,
-		ztResponse ?? undefined,
-		ztTimestamp ?? undefined,
-		c.env.ZT_CA_FINGERPRINT,
-		userZtFingerprint,
-	);
-	if (!warpCheck.allowed) {
-		try {
-			await auditRaw(
-				c.env.DB,
-				user.method === "interactive" ? "interactive" : user.name,
-				user.identity,
-				ACTION_WARP_REJECTED,
-				null,
-				c.req.header("CF-Connecting-IP") ?? null,
-				c.req.header("User-Agent") ?? null,
-				c.get("requestId"),
-				warpInfo.connected,
-			);
-		} catch {
-			// Don't fail the 403 if audit logging fails
-		}
-		return c.json({ error: warpCheck.reason }, 403);
-	}
-	user.warp = {
-		connected: warpInfo.connected,
-		ztVerified: warpCheck.allowed && warpInfo.connected,
-		deviceId: warpInfo.deviceId,
-	};
+  const authResult = await authenticate(c.req.raw, c.env);
+  if (!authResult) {
+    try {
+      await auditRaw(
+        c.env.DB,
+        AUTH_REJECTED,
+        "unknown",
+        ACTION_AUTH_FAILED,
+        null,
+        c.req.header("CF-Connecting-IP") ?? null,
+        c.req.header("User-Agent") ?? null,
+        c.get("requestId"),
+      );
+    } catch {
+      // Don't fail the 401 if audit logging fails
+    }
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  const { user, jwtPayload } = authResult;
+  // WARP enforcement (pass JWT payload for device_sessions detection)
+  const warpInfo = extractWarpInfo(c.req.raw, jwtPayload);
+  // Exempt /whoami (diagnostic) and service tokens (machine-to-machine) from WARP enforcement
+  const isWhoami = new URL(c.req.url).pathname === "/whoami";
+  const isServiceToken = user.method === AUTH_SERVICE_TOKEN;
+  const warpRequired =
+    isWhoami || isServiceToken ? false : (getFlag(flagCache, FLAG_REQUIRE_WARP, false) as boolean);
+  const ztResponse = c.req.header("X-ZT-Response");
+  const ztTimestamp = c.req.header("X-ZT-Timestamp");
+  // Query user's registered ZT fingerprint for device binding
+  let userZtFingerprint: string | undefined;
+  if (user.method === "interactive") {
+    const userZt = await c.env.DB.prepare("SELECT zt_fingerprint FROM users WHERE email = ?")
+      .bind(user.identity.toLowerCase())
+      .first<{ zt_fingerprint: string }>();
+    userZtFingerprint = userZt?.zt_fingerprint || undefined;
+  }
+  const warpCheck = await checkWarpRequired(
+    warpInfo,
+    warpRequired,
+    ztResponse ?? undefined,
+    ztTimestamp ?? undefined,
+    c.env.ZT_CA_FINGERPRINT,
+    userZtFingerprint,
+  );
+  if (!warpCheck.allowed) {
+    try {
+      await auditRaw(
+        c.env.DB,
+        user.method === "interactive" ? "interactive" : user.name,
+        user.identity,
+        ACTION_WARP_REJECTED,
+        null,
+        c.req.header("CF-Connecting-IP") ?? null,
+        c.req.header("User-Agent") ?? null,
+        c.get("requestId"),
+        warpInfo.connected,
+      );
+    } catch {
+      // Don't fail the 403 if audit logging fails
+    }
+    return c.json({ error: warpCheck.reason }, 403);
+  }
+  user.warp = {
+    connected: warpInfo.connected,
+    ztVerified: warpCheck.allowed && warpInfo.connected,
+    deviceId: warpInfo.deviceId,
+  };
 
-	c.set("auth", user);
-	c.set("ip", c.req.header("CF-Connecting-IP") ?? null);
-	c.set("ua", c.req.header("User-Agent") ?? null);
-	await next();
+  c.set("auth", user);
+  c.set("ip", c.req.header("CF-Connecting-IP") ?? null);
+  c.set("ua", c.req.header("User-Agent") ?? null);
+  await next();
 
-	// Webhook - fire latest audit entry for this request to external URL
-	fireWebhook(c.env.DB, c.get("requestId"), (p) => c.executionCtx.waitUntil(p), flagCache);
+  // Webhook - fire latest audit entry for this request to external URL
+  fireWebhook(c.env.DB, c.get("requestId"), (p) => c.executionCtx.waitUntil(p), flagCache);
 
-	// Background audit cleanup
-	maybeCleanupAudit(c.env.DB, flagCache, (p) => c.executionCtx.waitUntil(p));
+  // Background audit cleanup
+  maybeCleanupAudit(c.env.DB, flagCache, (p) => c.executionCtx.waitUntil(p));
 });
 
 // --- Read-only mode (after auth so unauthenticated users still get 401) ---
 
 app.use("*", async (c, next) => {
-	if (["PUT", "POST", "DELETE"].includes(c.req.method)) {
-		if (getFlag(c.get("flags"), FLAG_READ_ONLY, false)) {
-			return c.json({ error: "Vault is in read-only mode" }, 503);
-		}
-	}
-	return next();
+  if (["PUT", "POST", "DELETE"].includes(c.req.method)) {
+    if (getFlag(c.get("flags"), FLAG_READ_ONLY, false)) {
+      return c.json({ error: "Vault is in read-only mode" }, 503);
+    }
+  }
+  return next();
 });
 
 // --- Mount routes ---

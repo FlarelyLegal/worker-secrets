@@ -23,6 +23,7 @@ export function registerSecretCommands(program: Command): void {
     .option("-q, --quiet", "Print only the value (for piping)")
     .option("-j, --json", "Output as JSON")
     .option("--raw", "Skip e2e decryption (show ciphertext)")
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional help text
     .option("-r, --resolve", "Resolve ${SECRET} references in the value")
     .addHelpText(
       "after",
@@ -64,7 +65,7 @@ Examples:
             const cfg = getConfig();
             const cache = new Map<string, string>();
             secret.value = await interpolate(secret.value, async (ref) => {
-              if (cache.has(ref)) return cache.get(ref)!;
+              if (cache.has(ref)) return cache.get(ref) as string;
               const entry = await client().get(ref);
               let val = entry.value || "";
               if (isE2E(entry.tags) && val) {

@@ -1,6 +1,6 @@
+import { hasScope } from "../access.js";
 import { SCOPE_READ } from "../constants.js";
 import { AccessDeniedError } from "../errors.js";
-import { hasScope } from "../access.js";
 import type { Recipient, ServiceContext } from "./types.js";
 
 type UserRow = {

@@ -35,8 +35,7 @@ bulkExport.openapi(exportRoute, async (c) => {
     const result = await bulkService.exportSecrets(ctx);
     return c.json(result, 200);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 403);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
     throw e;
   }
 });

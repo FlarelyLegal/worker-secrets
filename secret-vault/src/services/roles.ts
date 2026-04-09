@@ -54,10 +54,7 @@ export async function updateRole(
   name: string,
   data: { scopes?: string; allowed_tags?: string; description?: string },
 ): Promise<{ ok: true; name: string }> {
-  const existing = await ctx.db
-    .prepare("SELECT name FROM roles WHERE name = ?")
-    .bind(name)
-    .first();
+  const existing = await ctx.db.prepare("SELECT name FROM roles WHERE name = ?").bind(name).first();
   if (!existing) throw new NotFoundError("Role not found");
 
   const result = buildUpdateSets(data, ctx.auth.identity);
@@ -82,8 +79,7 @@ export async function deleteRole(
   name: string,
 ): Promise<{ ok: true; deleted: string }> {
   // Protect built-in admin role
-  if (name === ROLE_ADMIN)
-    throw new ValidationError("Cannot delete the built-in admin role");
+  if (name === ROLE_ADMIN) throw new ValidationError("Cannot delete the built-in admin role");
 
   // Prevent deleting roles that have users assigned
   const usersWithRole = await ctx.db
@@ -107,10 +103,7 @@ export async function deleteRole(
     );
   }
 
-  const result = await ctx.db
-    .prepare("DELETE FROM roles WHERE name = ?")
-    .bind(name)
-    .run();
+  const result = await ctx.db.prepare("DELETE FROM roles WHERE name = ?").bind(name).run();
   if (result.meta.changes === 0) throw new NotFoundError("Role not found");
 
   await ctx.auditFn(ACTION_DELETE_ROLE, name);

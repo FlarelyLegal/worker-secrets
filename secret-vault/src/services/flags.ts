@@ -63,7 +63,14 @@ export async function getFlagByKey(ctx: ServiceContext, key: string): Promise<Fl
     const parsed: StoredFlag = JSON.parse(raw);
     flag = { key, ...parsed };
   } catch {
-    flag = { key, value: raw, type: "string", description: null, updated_by: null, updated_at: null };
+    flag = {
+      key,
+      value: raw,
+      type: "string",
+      description: null,
+      updated_by: null,
+      updated_at: null,
+    };
   }
 
   await ctx.auditFn(ACTION_GET_FLAG, key);

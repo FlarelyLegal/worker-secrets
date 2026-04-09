@@ -38,8 +38,7 @@ bulkImport.openapi(importRoute, async (c) => {
     const result = await bulkService.importSecrets(ctx, { secrets, overwrite });
     return c.json(result, 200);
   } catch (e) {
-    if (e instanceof VaultError)
-      return c.json({ error: e.message }, e.status as 400 | 403 | 500);
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400 | 403 | 500);
     throw e;
   }
 });
