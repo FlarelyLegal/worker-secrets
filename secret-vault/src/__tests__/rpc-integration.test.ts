@@ -7,7 +7,7 @@ import {
 	SCOPE_ALL,
 	SCOPE_READ,
 } from "../constants.js";
-import { AccessDeniedError, NotFoundError, ValidationError } from "../errors.js";
+import { AccessDeniedError, NotFoundError } from "../errors.js";
 import { loadAllFlags } from "../flags.js";
 import * as adminService from "../services/admin.js";
 import * as secretsService from "../services/secrets.js";
