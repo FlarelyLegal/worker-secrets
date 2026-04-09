@@ -8,7 +8,10 @@ import {
 } from "./constants.js";
 import { MaintenanceError, ReadOnlyError } from "./errors.js";
 import { getFlag, loadAllFlags, type FlagCache } from "./flags.js";
+import * as bulkService from "./services/bulk.js";
+import * as secretsService from "./services/secrets.js";
 import type { RpcOpts, ServiceContext } from "./services/types.js";
+import * as versionsService from "./services/versions.js";
 import type { AuthUser, Env, PolicyRule } from "./types.js";
 import { fireWebhook } from "./webhook.js";
 
@@ -173,5 +176,100 @@ export default class SecretVaultWorker extends WorkerEntrypoint<Env> {
 		return result;
 	}
 
-	// RPC methods will be added in Phase 2 and Phase 3
+	// --- Secrets ---
+
+	async getSecret(key: string, opts?: RpcOpts) {
+		return this.rpcCall("getSecret", opts, (ctx) =>
+			secretsService.getSecret(ctx, key),
+		);
+	}
+
+	async setSecret(
+		key: string,
+		data: {
+			value: string;
+			description?: string;
+			tags?: string;
+			expires_at?: string;
+		},
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("setSecret", opts, (ctx) =>
+			secretsService.setSecret(ctx, key, data),
+		);
+	}
+
+	async deleteSecret(key: string, opts?: RpcOpts) {
+		return this.rpcCall("deleteSecret", opts, (ctx) =>
+			secretsService.deleteSecret(ctx, key),
+		);
+	}
+
+	async listSecrets(
+		params?: { limit?: number; offset?: number; search?: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("listSecrets", opts, (ctx) =>
+			secretsService.listSecrets(ctx, {
+				limit: params?.limit ?? 100,
+				offset: params?.offset ?? 0,
+				search: params?.search,
+			}),
+		);
+	}
+
+	// --- Bulk ---
+
+	async exportSecrets(opts?: RpcOpts) {
+		return this.rpcCall("exportSecrets", opts, (ctx) =>
+			bulkService.exportSecrets(ctx),
+		);
+	}
+
+	async importSecrets(
+		data: {
+			secrets: Array<{
+				key: string;
+				value: string;
+				description?: string;
+				tags?: string;
+				expires_at?: string;
+			}>;
+			overwrite?: boolean;
+		},
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("importSecrets", opts, (ctx) =>
+			bulkService.importSecrets(ctx, {
+				secrets: data.secrets.map((s) => ({
+					key: s.key,
+					value: s.value,
+					description: s.description ?? "",
+					tags: s.tags ?? "",
+					expires_at: s.expires_at ?? null,
+				})),
+				overwrite: data.overwrite ?? false,
+			}),
+		);
+	}
+
+	// --- Versions ---
+
+	async listVersions(key: string, opts?: RpcOpts) {
+		return this.rpcCall("listVersions", opts, (ctx) =>
+			versionsService.listVersions(ctx, key),
+		);
+	}
+
+	async getVersion(key: string, versionId: number, opts?: RpcOpts) {
+		return this.rpcCall("getVersion", opts, (ctx) =>
+			versionsService.getVersion(ctx, key, versionId),
+		);
+	}
+
+	async restoreVersion(key: string, versionId: number, opts?: RpcOpts) {
+		return this.rpcCall("restoreVersion", opts, (ctx) =>
+			versionsService.restoreVersion(ctx, key, versionId),
+		);
+	}
 }
