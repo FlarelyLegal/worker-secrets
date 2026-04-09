@@ -1,9 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, isAdmin } from "../auth.js";
-import { ACTION_SET_ROLE, AUTH_INTERACTIVE } from "../constants.js";
+import { isAdmin } from "../auth.js";
+import { AUTH_INTERACTIVE } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { PoliciesBody, PolicySchema, RoleNameParam } from "../schemas-rbac.js";
+import * as policiesService from "../services/policies.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const policies = new OpenAPIHono<HonoEnv>();
 
@@ -35,16 +38,15 @@ const listPoliciesRoute = createRoute({
 });
 
 policies.openapi(listPoliciesRoute, async (c) => {
-  const { name } = c.req.valid("param");
-  const role = await c.env.DB.prepare("SELECT name FROM roles WHERE name = ?").bind(name).first();
-  if (!role) return c.json({ error: "Role not found" }, 404);
-
-  const { results } = await c.env.DB.prepare(
-    "SELECT id, role, scopes, tags, description, created_by, created_at FROM role_policies WHERE role = ? ORDER BY id",
-  )
-    .bind(name)
-    .all();
-  return c.json({ policies: results as z.infer<typeof PolicySchema>[] }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const { name } = c.req.valid("param");
+    const result = await policiesService.listPolicies(ctx, name);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 404);
+    throw e;
+  }
 });
 
 // --- Set policies ---
@@ -72,37 +74,16 @@ const setPoliciesRoute = createRoute({
 });
 
 policies.openapi(setPoliciesRoute, async (c) => {
-  const { name } = c.req.valid("param");
-  const { policies: policyItems } = c.req.valid("json");
-
-  const role = await c.env.DB.prepare("SELECT name FROM roles WHERE name = ?").bind(name).first();
-  if (!role) return c.json({ error: "Role not found" }, 404);
-
-  const identity = c.get("auth").identity;
-
-  // Replace all policies atomically
-  const stmts: D1PreparedStatement[] = [
-    c.env.DB.prepare("DELETE FROM role_policies WHERE role = ?").bind(name),
-  ];
-  for (const p of policyItems) {
-    stmts.push(
-      c.env.DB.prepare(
-        "INSERT INTO role_policies (role, scopes, tags, description, created_by) VALUES (?, ?, ?, ?, ?)",
-      ).bind(name, p.scopes, p.tags, p.description, identity),
-    );
+  const ctx = buildHttpContext(c);
+  try {
+    const { name } = c.req.valid("param");
+    const { policies: policyItems } = c.req.valid("json");
+    const result = await policiesService.setPolicies(ctx, name, policyItems);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 404);
+    throw e;
   }
-  await c.env.DB.batch(stmts);
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_SET_ROLE,
-    name,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, count: policyItems.length }, 200);
 });
 
 export default policies;
