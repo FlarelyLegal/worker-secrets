@@ -141,7 +141,7 @@ describe("decryptSecretRow", () => {
     ).rejects.toThrow(EncryptionError);
     await expect(
       decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, { hmacRequired: true }),
-    ).rejects.toThrow("Secret lacks HMAC and hmac_required is enabled");
+    ).rejects.toThrow("Secret missing HMAC integrity tag - re-save to add one");
   });
 
   it("decrypts legacy (non-envelope) data without HMAC", async () => {

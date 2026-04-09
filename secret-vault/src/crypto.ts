@@ -274,7 +274,7 @@ export async function decryptSecretRow(
     );
     if (!valid) throw new EncryptionError("Integrity check failed");
   } else if (flags.hmacRequired) {
-    throw new EncryptionError("Secret lacks HMAC and hmac_required is enabled");
+    throw new EncryptionError("Secret missing HMAC integrity tag - re-save to add one");
   }
 
   // Decrypt — envelope or legacy
