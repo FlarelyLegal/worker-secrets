@@ -1,8 +1,11 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { hasScope } from "../auth.js";
 import { SCOPE_READ } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { R403 } from "../schemas.js";
+import * as recipientsService from "../services/recipients.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const recipients = new OpenAPIHono<HonoEnv>();
 
@@ -36,64 +39,19 @@ const recipientsRoute = createRoute({
   },
 });
 
-type UserRow = {
-  email: string;
-  name: string;
-  role: string;
-  age_public_key: string;
-};
-type RoleRow = { allowed_tags: string };
-
 recipients.openapi(recipientsRoute, async (c) => {
   const auth = c.get("auth");
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
-  const { tags } = c.req.valid("query");
-
-  // Fetch all enabled users with age public keys
-  const { results: userResults } = await c.env.DB.prepare(
-    "SELECT email, name, role, age_public_key FROM users WHERE enabled = 1 AND age_public_key IS NOT NULL",
-  ).all();
-
-  // Also include service tokens with age public keys
-  const { results: tokenResults } = await c.env.DB.prepare(
-    "SELECT client_id AS email, name, COALESCE(role, 'custom') AS role, age_public_key FROM service_tokens WHERE age_public_key IS NOT NULL",
-  ).all();
-
-  let eligible = [...(userResults as UserRow[]), ...(tokenResults as UserRow[])];
-
-  // If tags specified, filter to users whose roles grant access to those tags
-  if (tags) {
-    const secretTags = tags.split(",").map((t) => t.trim());
-    const filtered: UserRow[] = [];
-    for (const user of eligible) {
-      const role = await c.env.DB.prepare("SELECT allowed_tags FROM roles WHERE name = ?")
-        .bind(user.role)
-        .first<RoleRow>();
-      if (!role) continue;
-      // Empty allowed_tags = access to everything
-      if (!role.allowed_tags) {
-        filtered.push(user);
-        continue;
-      }
-      const roleTags = role.allowed_tags.split(",").map((t) => t.trim());
-      if (secretTags.some((t) => roleTags.includes(t))) {
-        filtered.push(user);
-      }
-    }
-    eligible = filtered;
+  const ctx = buildHttpContext(c);
+  try {
+    const { tags } = c.req.valid("query");
+    const result = await recipientsService.getRecipients(ctx, { tags });
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
   }
-
-  return c.json(
-    {
-      recipients: eligible.map((u) => ({
-        email: u.email,
-        name: u.name,
-        age_public_key: u.age_public_key,
-      })),
-    },
-    200,
-  );
 });
 
 export default recipients;
