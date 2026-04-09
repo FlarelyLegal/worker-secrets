@@ -8,9 +8,16 @@ import {
 } from "./constants.js";
 import { MaintenanceError, ReadOnlyError } from "./errors.js";
 import { getFlag, loadAllFlags, type FlagCache } from "./flags.js";
+import * as adminService from "./services/admin.js";
 import * as bulkService from "./services/bulk.js";
+import * as flagsService from "./services/flags.js";
+import * as policiesService from "./services/policies.js";
+import * as recipientsService from "./services/recipients.js";
+import * as rolesService from "./services/roles.js";
 import * as secretsService from "./services/secrets.js";
+import * as tokensService from "./services/tokens.js";
 import type { RpcOpts, ServiceContext } from "./services/types.js";
+import * as usersService from "./services/users.js";
 import * as versionsService from "./services/versions.js";
 import type { AuthUser, Env, PolicyRule } from "./types.js";
 import { fireWebhook } from "./webhook.js";
@@ -270,6 +277,232 @@ export default class SecretVaultWorker extends WorkerEntrypoint<Env> {
 	async restoreVersion(key: string, versionId: number, opts?: RpcOpts) {
 		return this.rpcCall("restoreVersion", opts, (ctx) =>
 			versionsService.restoreVersion(ctx, key, versionId),
+		);
+	}
+
+	// --- Tokens ---
+
+	async listTokens(opts?: RpcOpts) {
+		return this.rpcCall("listTokens", opts, (ctx) =>
+			tokensService.listTokens(ctx),
+		);
+	}
+
+	async registerToken(
+		clientId: string,
+		data: {
+			name: string;
+			description?: string;
+			scopes?: string;
+			role?: string;
+			client_secret_hash?: string;
+			age_public_key?: string;
+		},
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("registerToken", opts, (ctx) =>
+			tokensService.registerToken(ctx, clientId, {
+				name: data.name,
+				description: data.description ?? "",
+				scopes: data.scopes ?? "*",
+				role: data.role,
+				client_secret_hash: data.client_secret_hash,
+				age_public_key: data.age_public_key,
+			}),
+		);
+	}
+
+	async revokeToken(clientId: string, opts?: RpcOpts) {
+		return this.rpcCall("revokeToken", opts, (ctx) =>
+			tokensService.revokeToken(ctx, clientId),
+		);
+	}
+
+	// --- Users ---
+
+	async listUsers(opts?: RpcOpts) {
+		return this.rpcCall("listUsers", opts, (ctx) =>
+			usersService.listUsers(ctx),
+		);
+	}
+
+	async addUser(
+		email: string,
+		data: { name: string; role: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("addUser", opts, (ctx) =>
+			usersService.addUser(ctx, email, data),
+		);
+	}
+
+	async updateUser(
+		email: string,
+		data: {
+			name?: string;
+			role?: string;
+			enabled?: boolean;
+			age_public_key?: string | null;
+			zt_fingerprint?: string | null;
+		},
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("updateUser", opts, (ctx) =>
+			usersService.updateUser(ctx, email, data),
+		);
+	}
+
+	async removeUser(email: string, opts?: RpcOpts) {
+		return this.rpcCall("removeUser", opts, (ctx) =>
+			usersService.removeUser(ctx, email),
+		);
+	}
+
+	// --- Roles ---
+
+	async listRoles(opts?: RpcOpts) {
+		return this.rpcCall("listRoles", opts, (ctx) =>
+			rolesService.listRoles(ctx),
+		);
+	}
+
+	async setRole(
+		name: string,
+		data: { scopes: string; allowed_tags?: string; description?: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("setRole", opts, (ctx) =>
+			rolesService.setRole(ctx, name, {
+				scopes: data.scopes,
+				allowed_tags: data.allowed_tags ?? "",
+				description: data.description ?? "",
+			}),
+		);
+	}
+
+	async updateRole(
+		name: string,
+		data: { scopes?: string; allowed_tags?: string; description?: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("updateRole", opts, (ctx) =>
+			rolesService.updateRole(ctx, name, data),
+		);
+	}
+
+	async deleteRole(name: string, opts?: RpcOpts) {
+		return this.rpcCall("deleteRole", opts, (ctx) =>
+			rolesService.deleteRole(ctx, name),
+		);
+	}
+
+	// --- Policies ---
+
+	async listPolicies(roleName: string, opts?: RpcOpts) {
+		return this.rpcCall("listPolicies", opts, (ctx) =>
+			policiesService.listPolicies(ctx, roleName),
+		);
+	}
+
+	async setPolicies(
+		roleName: string,
+		policies: Array<{ scopes: string; tags: string; description?: string }>,
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("setPolicies", opts, (ctx) =>
+			policiesService.setPolicies(ctx, roleName,
+				policies.map((p) => ({
+					scopes: p.scopes,
+					tags: p.tags,
+					description: p.description ?? "",
+				})),
+			),
+		);
+	}
+
+	// --- Flags ---
+
+	async listFlags(opts?: RpcOpts) {
+		return this.rpcCall("listFlags", opts, (ctx) =>
+			flagsService.listFlags(ctx),
+		);
+	}
+
+	async getFlag(key: string, opts?: RpcOpts) {
+		return this.rpcCall("getFlag", opts, (ctx) =>
+			flagsService.getFlagByKey(ctx, key),
+		);
+	}
+
+	async setFlag(
+		key: string,
+		data: { value: unknown; description?: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("setFlag", opts, (ctx) =>
+			flagsService.setFlag(ctx, key, data),
+		);
+	}
+
+	async deleteFlag(key: string, opts?: RpcOpts) {
+		return this.rpcCall("deleteFlag", opts, (ctx) =>
+			flagsService.deleteFlag(ctx, key),
+		);
+	}
+
+	// --- Admin ---
+
+	async whoami(opts?: RpcOpts) {
+		return this.rpcCall("whoami", opts, (ctx) =>
+			adminService.whoami(ctx),
+		);
+	}
+
+	async getAuditLog(
+		params?: {
+			limit?: number;
+			offset?: number;
+			identity?: string;
+			action?: string;
+			key?: string;
+			method?: string;
+			from?: string;
+			to?: string;
+		},
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("getAuditLog", opts, (ctx) =>
+			adminService.getAuditLog(ctx, params ?? {}),
+		);
+	}
+
+	async getAuditConsumers(
+		key: string,
+		params?: { from?: string; to?: string },
+		opts?: RpcOpts,
+	) {
+		return this.rpcCall("getAuditConsumers", opts, (ctx) =>
+			adminService.getAuditConsumers(ctx, key, params),
+		);
+	}
+
+	async reEncrypt(opts?: RpcOpts) {
+		return this.rpcCall("reEncrypt", opts, (ctx) =>
+			adminService.reEncrypt(ctx),
+		);
+	}
+
+	async rotateKey(newKey: string, opts?: RpcOpts) {
+		return this.rpcCall("rotateKey", opts, (ctx) =>
+			adminService.rotateKey(ctx, newKey),
+		);
+	}
+
+	// --- Recipients ---
+
+	async getRecipients(params?: { tags?: string }, opts?: RpcOpts) {
+		return this.rpcCall("getRecipients", opts, (ctx) =>
+			recipientsService.getRecipients(ctx, params),
 		);
 	}
 }
