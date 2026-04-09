@@ -1,5 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { isAdmin } from "../auth.js";
+import { AUTH_INTERACTIVE } from "../constants.js";
 import { VaultError } from "../errors.js";
 import { ErrorSchema } from "../schemas.js";
 import * as adminService from "../services/admin.js";
@@ -7,6 +8,15 @@ import type { HonoEnv } from "../types.js";
 import { buildHttpContext } from "./context.js";
 
 const auditConsumers = new OpenAPIHono<HonoEnv>();
+
+// Admin-only middleware (interactive sessions only)
+auditConsumers.use("*", async (c, next) => {
+  const auth = c.get("auth");
+  if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth)) {
+    return c.json({ error: "Admin only" }, 403);
+  }
+  return next();
+});
 
 const ConsumerEntrySchema = z
   .object({
@@ -58,11 +68,6 @@ const consumersRoute = createRoute({
 });
 
 auditConsumers.openapi(consumersRoute, async (c) => {
-  const auth = c.get("auth");
-  if (!isAdmin(auth)) {
-    return c.json({ error: "Admin only" }, 403);
-  }
-
   const ctx = buildHttpContext(c);
   try {
     const { key } = c.req.valid("param");

@@ -39,6 +39,10 @@ const listRoute = createRoute({
       },
       description: "List of service tokens",
     },
+    403: {
+      content: { "application/json": { schema: ErrorSchema } },
+      description: "Forbidden",
+    },
   },
 });
 
