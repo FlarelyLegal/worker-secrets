@@ -1,15 +1,11 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, hasScope, isAdmin } from "../auth.js";
-import {
-  ACTION_DELETE_FLAG,
-  ACTION_GET_FLAG,
-  ACTION_LIST_FLAGS,
-  ACTION_SET_FLAG,
-  AUTH_INTERACTIVE,
-  SCOPE_READ,
-} from "../constants.js";
+import { hasScope, isAdmin } from "../auth.js";
+import { AUTH_INTERACTIVE, SCOPE_READ } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { ErrorSchema, R403 } from "../schemas.js";
+import * as flagsService from "../services/flags.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const flags = new OpenAPIHono<HonoEnv>();
 
@@ -29,15 +25,6 @@ const FlagBody = z.object({
   value: z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.unknown())]),
   description: z.string().max(1000).optional().default(""),
 });
-
-type FlagData = z.infer<typeof FlagSchema>;
-
-function inferType(value: unknown): FlagData["type"] {
-  if (typeof value === "boolean") return "boolean";
-  if (typeof value === "number") return "number";
-  if (typeof value === "object" && value !== null) return "json";
-  return "string";
-}
 
 // --- List ---
 
@@ -59,27 +46,14 @@ flags.openapi(listRoute, async (c) => {
   const auth = c.get("auth");
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
-  const list = await c.env.FLAGS.list();
-  const result: FlagData[] = [];
-  for (const key of list.keys) {
-    const raw = await c.env.FLAGS.get(key.name);
-    if (raw) {
-      try {
-        result.push({ key: key.name, ...JSON.parse(raw) });
-      } catch {
-        result.push({
-          key: key.name,
-          value: raw,
-          type: "string",
-          description: "",
-          updated_by: "",
-          updated_at: "",
-        });
-      }
-    }
+  const ctx = buildHttpContext(c);
+  try {
+    const result = await flagsService.listFlags(ctx);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
   }
-  await audit(c.env, auth, ACTION_LIST_FLAGS, null, c.get("ip"), c.get("ua"), c.get("requestId"));
-  return c.json({ flags: result }, 200);
 });
 
 // --- Get ---
@@ -108,19 +82,15 @@ flags.openapi(getRoute, async (c) => {
   const auth = c.get("auth");
   if (!hasScope(auth, SCOPE_READ)) return c.json({ error: "Insufficient scope" }, 403);
 
-  const { key } = c.req.valid("param");
-  const raw = await c.env.FLAGS.get(key);
-  if (raw === null) return c.json({ error: "Flag not found" }, 404);
-
-  let flag: FlagData;
+  const ctx = buildHttpContext(c);
   try {
-    flag = { key, ...JSON.parse(raw) };
-  } catch {
-    flag = { key, value: raw, type: "string", description: "", updated_by: "", updated_at: "" };
+    const { key } = c.req.valid("param");
+    const result = await flagsService.getFlagByKey(ctx, key);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 404);
+    throw e;
   }
-
-  await audit(c.env, auth, ACTION_GET_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
-  return c.json(flag, 200);
 });
 
 // --- Set ---
@@ -151,16 +121,16 @@ flags.openapi(setRoute, async (c) => {
   if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth))
     return c.json({ error: "Admin only" }, 403);
 
-  const { key } = c.req.valid("param");
-  const { value, description } = c.req.valid("json");
-  const type = inferType(value);
-  const now = new Date().toISOString();
-
-  const data = { value, type, description, updated_by: auth.identity, updated_at: now };
-  await c.env.FLAGS.put(key, JSON.stringify(data));
-
-  await audit(c.env, auth, ACTION_SET_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
-  return c.json({ key, ...data }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const { key } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const result = await flagsService.setFlag(ctx, key, body);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
+  }
 });
 
 // --- Delete ---
@@ -194,11 +164,15 @@ flags.openapi(deleteRoute, async (c) => {
   if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth))
     return c.json({ error: "Admin only" }, 403);
 
-  const { key } = c.req.valid("param");
-  await c.env.FLAGS.delete(key);
-
-  await audit(c.env, auth, ACTION_DELETE_FLAG, key, c.get("ip"), c.get("ua"), c.get("requestId"));
-  return c.json({ ok: true, deleted: key }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const { key } = c.req.valid("param");
+    const result = await flagsService.deleteFlag(ctx, key);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
+  }
 });
 
 export default flags;
