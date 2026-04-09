@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { decrypt, encrypt } from "../crypto.js";
+import {
+  computeHmac,
+  decrypt,
+  decryptSecretRow,
+  encrypt,
+  encryptSecretValue,
+  envelopeEncrypt,
+  type EncryptedRow,
+} from "../crypto.js";
+import { EncryptionError } from "../errors.js";
 
 const VALID_KEY = "aa".repeat(32); // 64 hex chars = 32 bytes
+const INTEGRITY_KEY = "bb".repeat(32); // separate HMAC key
 
 describe("crypto", () => {
   it("encrypt then decrypt round-trip produces original plaintext", async () => {
@@ -54,5 +64,173 @@ describe("crypto", () => {
     await expect(encrypt("test", shortKey, "k")).rejects.toThrow(
       "ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)",
     );
+  });
+});
+
+describe("decryptSecretRow", () => {
+  it("decrypts envelope-encrypted data with valid HMAC", async () => {
+    const plaintext = "my-secret-value";
+    const keyName = "test-key";
+    const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+      plaintext,
+      VALID_KEY,
+      keyName,
+    );
+    const hmac = await computeHmac(
+      keyName,
+      ciphertext,
+      iv,
+      VALID_KEY,
+      INTEGRITY_KEY,
+      encrypted_dek,
+      dek_iv,
+    );
+    const row: EncryptedRow = {
+      value: ciphertext,
+      iv,
+      encrypted_dek,
+      dek_iv,
+      hmac,
+    };
+    const result = await decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, {
+      hmacRequired: false,
+    });
+    expect(result).toBe(plaintext);
+  });
+
+  it("throws EncryptionError on bad HMAC", async () => {
+    const plaintext = "my-secret-value";
+    const keyName = "test-key";
+    const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+      plaintext,
+      VALID_KEY,
+      keyName,
+    );
+    const row: EncryptedRow = {
+      value: ciphertext,
+      iv,
+      encrypted_dek,
+      dek_iv,
+      hmac: "dGFtcGVyZWQ", // invalid HMAC
+    };
+    await expect(
+      decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, { hmacRequired: false }),
+    ).rejects.toThrow(EncryptionError);
+    await expect(
+      decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, { hmacRequired: false }),
+    ).rejects.toThrow("Integrity check failed");
+  });
+
+  it("throws EncryptionError when hmacRequired=true and no HMAC present", async () => {
+    const plaintext = "my-secret-value";
+    const keyName = "test-key";
+    const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+      plaintext,
+      VALID_KEY,
+      keyName,
+    );
+    const row: EncryptedRow = {
+      value: ciphertext,
+      iv,
+      encrypted_dek,
+      dek_iv,
+      hmac: null,
+    };
+    await expect(
+      decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, { hmacRequired: true }),
+    ).rejects.toThrow(EncryptionError);
+    await expect(
+      decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, { hmacRequired: true }),
+    ).rejects.toThrow("Secret lacks HMAC and hmac_required is enabled");
+  });
+
+  it("decrypts legacy (non-envelope) data without HMAC", async () => {
+    const plaintext = "legacy-secret";
+    const keyName = "legacy-key";
+    const { ciphertext, iv } = await encrypt(plaintext, VALID_KEY, keyName);
+    const row: EncryptedRow = {
+      value: ciphertext,
+      iv,
+      encrypted_dek: null,
+      dek_iv: null,
+      hmac: null,
+    };
+    const result = await decryptSecretRow(row, VALID_KEY, keyName, undefined, {
+      hmacRequired: false,
+    });
+    expect(result).toBe(plaintext);
+  });
+
+  it("decrypts envelope data without HMAC when hmacRequired=false", async () => {
+    const plaintext = "no-hmac-envelope";
+    const keyName = "test-key";
+    const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+      plaintext,
+      VALID_KEY,
+      keyName,
+    );
+    const row: EncryptedRow = {
+      value: ciphertext,
+      iv,
+      encrypted_dek,
+      dek_iv,
+      hmac: null,
+    };
+    const result = await decryptSecretRow(row, VALID_KEY, keyName, undefined, {
+      hmacRequired: false,
+    });
+    expect(result).toBe(plaintext);
+  });
+});
+
+describe("encryptSecretValue", () => {
+  it("produces all required fields and round-trips correctly", async () => {
+    const plaintext = "encrypt-me";
+    const keyName = "my-key";
+    const result = await encryptSecretValue(plaintext, VALID_KEY, keyName, INTEGRITY_KEY);
+
+    expect(result).toHaveProperty("ciphertext");
+    expect(result).toHaveProperty("iv");
+    expect(result).toHaveProperty("encrypted_dek");
+    expect(result).toHaveProperty("dek_iv");
+    expect(result).toHaveProperty("hmac");
+
+    // All fields should be non-empty strings
+    expect(result.ciphertext.length).toBeGreaterThan(0);
+    expect(result.iv.length).toBeGreaterThan(0);
+    expect(result.encrypted_dek.length).toBeGreaterThan(0);
+    expect(result.dek_iv.length).toBeGreaterThan(0);
+    expect(result.hmac.length).toBeGreaterThan(0);
+
+    // Should round-trip via decryptSecretRow
+    const row: EncryptedRow = {
+      value: result.ciphertext,
+      iv: result.iv,
+      encrypted_dek: result.encrypted_dek,
+      dek_iv: result.dek_iv,
+      hmac: result.hmac,
+    };
+    const decrypted = await decryptSecretRow(row, VALID_KEY, keyName, INTEGRITY_KEY, {
+      hmacRequired: true,
+    });
+    expect(decrypted).toBe(plaintext);
+  });
+
+  it("works without separate integrity key (HKDF-derived)", async () => {
+    const plaintext = "no-integrity-key";
+    const keyName = "test-key";
+    const result = await encryptSecretValue(plaintext, VALID_KEY, keyName);
+
+    const row: EncryptedRow = {
+      value: result.ciphertext,
+      iv: result.iv,
+      encrypted_dek: result.encrypted_dek,
+      dek_iv: result.dek_iv,
+      hmac: result.hmac,
+    };
+    const decrypted = await decryptSecretRow(row, VALID_KEY, keyName, undefined, {
+      hmacRequired: true,
+    });
+    expect(decrypted).toBe(plaintext);
   });
 });
