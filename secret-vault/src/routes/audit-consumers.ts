@@ -1,7 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { isAdmin } from "../auth.js";
+import { VaultError } from "../errors.js";
 import { ErrorSchema } from "../schemas.js";
+import * as adminService from "../services/admin.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const auditConsumers = new OpenAPIHono<HonoEnv>();
 
@@ -60,41 +63,16 @@ auditConsumers.openapi(consumersRoute, async (c) => {
     return c.json({ error: "Admin only" }, 403);
   }
 
-  const { key } = c.req.valid("param");
-  const { from, to } = c.req.valid("query");
-
-  const conditions: string[] = ["secret_key = ?", "action = 'get'"];
-  const binds: unknown[] = [key];
-
-  if (from) {
-    conditions.push("timestamp >= ?");
-    binds.push(from);
+  const ctx = buildHttpContext(c);
+  try {
+    const { key } = c.req.valid("param");
+    const { from, to } = c.req.valid("query");
+    const result = await adminService.getAuditConsumers(ctx, key, { from, to });
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
   }
-  if (to) {
-    conditions.push("timestamp <= ?");
-    binds.push(to);
-  }
-
-  const where = `WHERE ${conditions.join(" AND ")}`;
-  const sql = `
-    SELECT
-      identity,
-      user_agent,
-      method,
-      COUNT(*) as access_count,
-      MAX(timestamp) as last_accessed,
-      MIN(timestamp) as first_accessed
-    FROM audit_log
-    ${where}
-    GROUP BY identity, user_agent, method
-    ORDER BY access_count DESC
-  `;
-
-  const { results } = await c.env.DB.prepare(sql)
-    .bind(...binds)
-    .all();
-
-  return c.json({ consumers: results as z.infer<typeof ConsumerEntrySchema>[] }, 200);
 });
 
 export default auditConsumers;
