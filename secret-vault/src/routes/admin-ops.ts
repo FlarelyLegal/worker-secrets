@@ -1,10 +1,11 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, isAdmin } from "../auth.js";
+import { isAdmin } from "../auth.js";
 import { AUTH_INTERACTIVE } from "../constants.js";
-import { computeHmac, decrypt, envelopeEncrypt, verifyHmac } from "../crypto.js";
+import { VaultError } from "../errors.js";
 import { R403, R500 } from "../schemas.js";
-import type { SecretRow } from "../schemas-secrets.js";
+import * as adminService from "../services/admin.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const adminOps = new OpenAPIHono<HonoEnv>();
 
@@ -41,76 +42,14 @@ const reencryptRoute = createRoute({
 });
 
 adminOps.openapi(reencryptRoute, async (c) => {
-  const { results } = await c.env.DB.prepare("SELECT * FROM secrets").all();
-  const rows = results as SecretRow[];
-
-  let migrated = 0;
-  let skipped = 0;
-
-  for (const row of rows) {
-    if (row.encrypted_dek && row.dek_iv) {
-      skipped++;
-      continue;
-    }
-
-    // Verify existing HMAC before migrating (if present)
-    if (row.hmac) {
-      const valid = await verifyHmac(
-        row.key,
-        row.value,
-        row.iv,
-        row.hmac,
-        c.env.ENCRYPTION_KEY,
-        c.env.INTEGRITY_KEY,
-      );
-      if (!valid) {
-        skipped++;
-        continue;
-      }
-    }
-
-    let plaintext: string;
-    try {
-      plaintext = await decrypt(row.value, row.iv, c.env.ENCRYPTION_KEY, row.key);
-    } catch {
-      skipped++;
-      continue;
-    }
-
-    const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
-      plaintext,
-      c.env.ENCRYPTION_KEY,
-      row.key,
-    );
-    const hmac = await computeHmac(
-      row.key,
-      ciphertext,
-      iv,
-      c.env.ENCRYPTION_KEY,
-      c.env.INTEGRITY_KEY,
-      encrypted_dek,
-      dek_iv,
-    );
-
-    await c.env.DB.prepare(
-      "UPDATE secrets SET value = ?, iv = ?, hmac = ?, encrypted_dek = ?, dek_iv = ?, updated_at = datetime('now') WHERE key = ?",
-    )
-      .bind(ciphertext, iv, hmac, encrypted_dek, dek_iv, row.key)
-      .run();
-
-    migrated++;
+  const ctx = buildHttpContext(c);
+  try {
+    const result = await adminService.reEncrypt(ctx);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 500);
+    throw e;
   }
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    "re_encrypt",
-    null,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, migrated, skipped }, 200);
 });
 
 export default adminOps;
