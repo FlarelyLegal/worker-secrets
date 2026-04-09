@@ -86,6 +86,7 @@ export function registerSecretBulkCommands(program: Command): void {
     .command("env <keys...>")
     .description("Output secrets as KEY=value for shell (dashes converted to underscores)")
     .option("-e, --export", "Prefix each line with 'export'")
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional help text
     .option("-r, --resolve", "Resolve ${SECRET} references in each value")
     .addHelpText(
       "after",
@@ -104,7 +105,7 @@ Examples:
         const resolveCache = new Map<string, string>();
 
         const resolveRef = async (ref: string): Promise<string> => {
-          if (resolveCache.has(ref)) return resolveCache.get(ref)!;
+          if (resolveCache.has(ref)) return resolveCache.get(ref) as string;
           const entry = await c.get(ref);
           const val = await tryDecrypt(entry.value || "", entry.tags, cfg.e2eIdentity);
           resolveCache.set(ref, val);

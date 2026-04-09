@@ -24,7 +24,10 @@ export function registerExpiringCommands(program: Command): void {
             return exp <= cutoff;
           })
           .sort((a, b) => {
-            return new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime();
+            return (
+              new Date(a.expires_at as string).getTime() -
+              new Date(b.expires_at as string).getTime()
+            );
           });
 
         if (opts.json) {
@@ -38,14 +41,17 @@ export function registerExpiringCommands(program: Command): void {
         }
 
         const maxKey = Math.max(...expiring.map((s) => s.key.length), 3);
-        const maxIn = Math.max(...expiring.map((s) => expiryLabel(s.expires_at!).plain.length), 10);
+        const maxIn = Math.max(
+          ...expiring.map((s) => expiryLabel(s.expires_at as string).plain.length),
+          10,
+        );
 
         console.log(
           chalk.dim(`${"KEY".padEnd(maxKey + 2)}${"EXPIRES IN".padEnd(maxIn + 2)}EXPIRES AT`),
         );
 
         for (const s of expiring) {
-          const { plain, colored } = expiryLabel(s.expires_at!);
+          const { plain, colored } = expiryLabel(s.expires_at as string);
           const expPadded = colored + " ".repeat(Math.max(0, maxIn + 2 - plain.length));
           console.log(
             chalk.bold(s.key.padEnd(maxKey + 2)) +

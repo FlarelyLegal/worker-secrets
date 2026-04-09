@@ -73,12 +73,99 @@ Interactive API docs at [`/doc`](https://secrets.homeflare.dev/doc). Raw OpenAPI
 | `DELETE` | `/roles/{name}` | admin | Delete a role (must have no users) |
 | `GET` | `/roles/{name}/policies` | admin | List policies for a role |
 | `PUT` | `/roles/{name}/policies` | admin | Replace all policies for a role |
+| `GET` | `/recipients` | read | List recipients with age keys |
+| `GET` | `/audit/consumers/{key}` | admin | List secret consumers from audit log |
 | `GET` | `/flags` | read | List all feature flags |
 | `GET` | `/flags/{key}` | read | Get a flag value |
 | `PUT` | `/flags/{key}` | admin | Set a flag (auto-detects type) |
 | `DELETE` | `/flags/{key}` | admin | Delete a flag |
 
-## Using from other Workers
+## Service Binding / RPC
+
+Other Cloudflare Workers in the same account can call secret-vault methods directly via [Service Bindings](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/) — no HTTP overhead.
+
+### Setup
+
+In your consumer worker's `wrangler.jsonc`:
+
+```jsonc
+{
+  "services": [
+    { "binding": "VAULT", "service": "secret-vault" }
+  ]
+}
+```
+
+In your consumer worker's types:
+
+```ts
+import type { SecretVaultWorker } from "secret-vault/public";
+
+interface Env {
+  VAULT: Service<SecretVaultWorker>;
+}
+```
+
+### Usage
+
+```ts
+// Read a secret
+const { value } = await env.VAULT.getSecret("DB_PASSWORD");
+
+// Write a secret
+await env.VAULT.setSecret("API_KEY", { value: "sk-...", tags: "prod" });
+
+// List secrets
+const { secrets, total } = await env.VAULT.listSecrets({ limit: 50 });
+
+// With custom identity (for audit trail)
+const secret = await env.VAULT.getSecret("KEY", { identity: "billing-worker" });
+
+// With RBAC enforcement
+const secret = await env.VAULT.getSecret("KEY", { role: "reader" });
+```
+
+### Error Handling
+
+RPC methods throw typed errors that serialize across bindings:
+
+```ts
+import { VaultError, NotFoundError } from "secret-vault/public";
+
+try {
+  await env.VAULT.getSecret("missing");
+} catch (e) {
+  if (e instanceof NotFoundError) { /* 404 */ }
+  if (e instanceof VaultError) { console.log(e.code, e.status); }
+}
+```
+
+### Available Methods
+
+| Category | Methods |
+|----------|---------|
+| Secrets | `getSecret`, `setSecret`, `deleteSecret`, `listSecrets` |
+| Versions | `listVersions`, `getVersion`, `restoreVersion` |
+| Bulk | `exportSecrets`, `importSecrets` |
+| Tokens | `listTokens`, `registerToken`, `revokeToken` |
+| Users | `listUsers`, `addUser`, `updateUser`, `removeUser` |
+| Roles | `listRoles`, `setRole`, `updateRole`, `deleteRole` |
+| Policies | `listPolicies`, `setPolicies` |
+| Flags | `listFlags`, `getFlag`, `setFlag`, `deleteFlag` |
+| Admin | `whoami`, `getAuditLog`, `getAuditConsumers`, `reEncrypt`, `rotateKey` |
+| Recipients | `getRecipients` |
+
+### HTTP-Only Features
+
+These behaviors apply only to HTTP requests and are not enforced for RPC:
+- Geo-fencing (`allowed_countries` flag)
+- WARP/Zero Trust device enforcement
+- Security headers (HSTS, CSP)
+- Content negotiation (HTML responses)
+
+RPC callers are implicitly trusted (same-account Service Binding).
+
+## Using from other Workers (HTTP)
 
 ```typescript
 const res = await fetch("https://vault.example.com/secrets/api-key", {
@@ -90,11 +177,11 @@ const res = await fetch("https://vault.example.com/secrets/api-key", {
 const { value } = await res.json();
 ```
 
-Service Bindings are not supported - auth requires a valid Access JWT.
+HTTP access requires a valid Access JWT. Prefer Service Bindings (above) for same-account Workers.
 
 ## Feature flags
 
-22 runtime flags stored in KV (not encrypted). See [Feature Flags Reference](../docs/feature-flags.md) for the full list with defaults and behavior notes.
+24 runtime flags stored in KV (not encrypted). See [Feature Flags Reference](../docs/feature-flags.md) for the full list with defaults and behavior notes.
 
 ## Security
 

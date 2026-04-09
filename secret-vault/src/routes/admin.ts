@@ -1,9 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { isAdmin } from "../auth.js";
 import { AUTH_INTERACTIVE } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { AuditEntrySchema, AuditQuery, ErrorSchema, WhoamiSchema } from "../schemas.js";
+import * as adminService from "../services/admin.js";
 import type { HonoEnv } from "../types.js";
 import { whoamiPage } from "../whoami-page.js";
+import { buildHttpContext } from "./context.js";
 
 const admin = new OpenAPIHono<HonoEnv>();
 
@@ -20,51 +23,8 @@ const whoamiRoute = createRoute({
 });
 
 admin.openapi(whoamiRoute, async (c) => {
-  const auth = c.get("auth");
-
-  // Enrich with user record details
-  const user = await c.env.DB.prepare(
-    "SELECT age_public_key, zt_fingerprint, enabled, last_login_at FROM users WHERE email = ?",
-  )
-    .bind(auth.identity.toLowerCase())
-    .first<{
-      age_public_key: string | null;
-      zt_fingerprint: string;
-      enabled: number;
-      last_login_at: string | null;
-    }>();
-
-  // Count policies for this role
-  const policyCount = await c.env.DB.prepare(
-    "SELECT COUNT(*) as total FROM role_policies WHERE role = ?",
-  )
-    .bind(auth.role)
-    .first<{ total: number }>();
-
-  // Count accessible secrets
-  const secretCount = await c.env.DB.prepare("SELECT COUNT(*) as total FROM secrets").first<{
-    total: number;
-  }>();
-
-  const data = {
-    method: auth.method,
-    identity: auth.identity,
-    name: auth.name,
-    role: auth.role,
-    scopes: auth.scopes,
-    e2e: !!user?.age_public_key,
-    deviceBound: !!user?.zt_fingerprint,
-    policies: policyCount?.total ?? 0,
-    lastLogin: user?.last_login_at ?? null,
-    totalSecrets: secretCount?.total ?? 0,
-    warp: auth.warp
-      ? {
-          connected: auth.warp.connected,
-          ztVerified: auth.warp.ztVerified,
-          deviceId: auth.warp.deviceId,
-        }
-      : undefined,
-  };
+  const ctx = buildHttpContext(c);
+  const data = await adminService.whoami(ctx);
 
   const accept = c.req.header("Accept") || "";
   if (accept.includes("text/html")) {
@@ -102,42 +62,15 @@ admin.openapi(auditRoute, async (c) => {
   if (auth.method !== AUTH_INTERACTIVE || !isAdmin(auth))
     return c.json({ error: "Admin only" }, 403);
 
-  const { limit, offset, identity, action, key, method, from, to } = c.req.valid("query");
-  const conditions: string[] = [];
-  const binds: unknown[] = [];
-
-  if (identity) {
-    conditions.push("identity = ?");
-    binds.push(identity);
+  const ctx = buildHttpContext(c);
+  try {
+    const params = c.req.valid("query");
+    const result = await adminService.getAuditLog(ctx, params);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
   }
-  if (action) {
-    conditions.push("action = ?");
-    binds.push(action);
-  }
-  if (key) {
-    conditions.push("secret_key = ?");
-    binds.push(key);
-  }
-  if (method) {
-    conditions.push("method = ?");
-    binds.push(method);
-  }
-  if (from) {
-    conditions.push("timestamp >= ?");
-    binds.push(from);
-  }
-  if (to) {
-    conditions.push("timestamp <= ?");
-    binds.push(to);
-  }
-
-  const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
-  const sql = `SELECT * FROM audit_log${where} ORDER BY id DESC LIMIT ? OFFSET ?`;
-  const { results } = await c.env.DB.prepare(sql)
-    .bind(...binds, limit, offset)
-    .all();
-
-  return c.json({ entries: results as z.infer<typeof AuditEntrySchema>[] }, 200);
 });
 
 export default admin;

@@ -33,7 +33,7 @@ Two modes, no fallback. Interactive sessions authenticate through Cloudflare Acc
 ## CLI quick start
 
 ```
-npm i -g @FlarelyLegal/hfs-cli --registry=https://npm.pkg.github.com
+npm i -g @homeflare/hfs
 hfs deploy
 hfs config set --url https://secrets.yourcompany.com
 hfs login
@@ -59,7 +59,11 @@ hfs get DB_PASSWORD -q
 - [Feature flags](https://github.com/FlarelyLegal/worker-secrets/blob/main/docs/feature-flags.md): all runtime flags with defaults and behavior
 - [Changelog](https://github.com/FlarelyLegal/worker-secrets/blob/main/CHANGELOG.md): version history
 
+## Service Binding / RPC
+
+Other Cloudflare Workers can call secret-vault directly via Service Bindings (no HTTP). The worker exports a WorkerEntrypoint with 31 typed RPC methods covering all API operations. See secret-vault/README.md for setup and usage.
+
 ## Optional
 
 - [Action README](https://github.com/FlarelyLegal/worker-secrets/tree/main/action): GitHub Actions integration
-- [Source code](https://github.com/FlarelyLegal/worker-secrets): MIT license
+- [Source code](https://github.com/FlarelyLegal/worker-secrets): Apache 2.0 license

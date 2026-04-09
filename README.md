@@ -79,13 +79,12 @@ graph TB
 ```
 
 See [Encryption Architecture](docs/encryption.md) for detailed diagrams of envelope encryption, HMAC binding, e2e modes, team lifecycle, and key rotation.
-```
 
 ## Packages
 
 | Package | What | Docs |
 |---------|------|------|
-| [`secret-vault/`](secret-vault/) | Cloudflare Worker API | [README](secret-vault/README.md) |
+| [`secret-vault/`](secret-vault/) | Cloudflare Worker API — also exposes RPC via Service Bindings | [README](secret-vault/README.md) |
 | [`hfs/`](hfs/) | CLI for humans and scripts | [README](hfs/README.md) |
 
 ## Quick start
@@ -146,8 +145,8 @@ hfs audit consumers API_KEY               # who accessed this secret?
 
 ```bash
 npm run lint                    # Biome check
-cd secret-vault && npm test     # 48 Worker tests
-cd hfs && npm test              # 38 CLI tests (86 total)
+cd secret-vault && npm test     # Worker tests
+cd hfs && npm test              # CLI tests
 ```
 
 ## OpenAPI

@@ -1,11 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, isAdmin } from "../auth.js";
-import {
-  ACTION_LIST_TOKENS,
-  ACTION_REGISTER_TOKEN,
-  ACTION_REVOKE_TOKEN,
-  AUTH_INTERACTIVE,
-} from "../constants.js";
+import { isAdmin } from "../auth.js";
+import { AUTH_INTERACTIVE } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { ErrorSchema } from "../schemas.js";
 import {
   ClientIdParam,
@@ -14,7 +10,9 @@ import {
   TokenCreateResponse,
   TokenDeleteResponse,
 } from "../schemas-tokens.js";
+import * as tokensService from "../services/tokens.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const tokens = new OpenAPIHono<HonoEnv>();
 
@@ -41,23 +39,22 @@ const listRoute = createRoute({
       },
       description: "List of service tokens",
     },
+    403: {
+      content: { "application/json": { schema: ErrorSchema } },
+      description: "Forbidden",
+    },
   },
 });
 
 tokens.openapi(listRoute, async (c) => {
-  const { results } = await c.env.DB.prepare(
-    "SELECT client_id, name, description, scopes, role, created_by, created_at, updated_at, last_used_at FROM service_tokens ORDER BY name",
-  ).all();
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_LIST_TOKENS,
-    null,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ tokens: results as z.infer<typeof ServiceTokenSchema>[] }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const result = await tokensService.listTokens(ctx);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
+  }
 });
 
 // --- Register ---
@@ -84,57 +81,16 @@ const registerRoute = createRoute({
 });
 
 tokens.openapi(registerRoute, async (c) => {
-  const { clientId } = c.req.valid("param");
-  const {
-    name,
-    description,
-    scopes,
-    role,
-    client_secret_hash: secretHash,
-    age_public_key: ageKey,
-  } = c.req.valid("json");
-
-  // Verify role exists if provided
-  if (role) {
-    const roleExists = await c.env.DB.prepare("SELECT name FROM roles WHERE name = ?")
-      .bind(role)
-      .first();
-    if (!roleExists) return c.json({ error: `Role '${role}' does not exist` }, 400);
+  const ctx = buildHttpContext(c);
+  try {
+    const { clientId } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const result = await tokensService.registerToken(ctx, clientId, body);
+    return c.json(result, 201);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400);
+    throw e;
   }
-
-  const identity = c.get("auth").identity;
-  await c.env.DB.prepare(
-    `INSERT INTO service_tokens (client_id, name, description, scopes, role, created_by, client_secret_hash, age_public_key, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-     ON CONFLICT(client_id) DO UPDATE SET
-       name = excluded.name, description = excluded.description,
-       scopes = excluded.scopes, role = excluded.role,
-       client_secret_hash = COALESCE(excluded.client_secret_hash, client_secret_hash),
-       age_public_key = COALESCE(excluded.age_public_key, age_public_key),
-       updated_at = datetime('now')`,
-  )
-    .bind(
-      clientId,
-      name,
-      description,
-      scopes,
-      role || null,
-      identity,
-      secretHash || null,
-      ageKey || null,
-    )
-    .run();
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_REGISTER_TOKEN,
-    clientId,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, client_id: clientId, name, scopes }, 201);
 });
 
 // --- Revoke ---
@@ -158,22 +114,15 @@ const revokeRoute = createRoute({
 });
 
 tokens.openapi(revokeRoute, async (c) => {
-  const { clientId } = c.req.valid("param");
-  const result = await c.env.DB.prepare("DELETE FROM service_tokens WHERE client_id = ?")
-    .bind(clientId)
-    .run();
-
-  if (result.meta.changes === 0) return c.json({ error: "Token not found" }, 404);
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_REVOKE_TOKEN,
-    clientId,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, revoked: clientId }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const { clientId } = c.req.valid("param");
+    const result = await tokensService.revokeToken(ctx, clientId);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 404);
+    throw e;
+  }
 });
 
 export default tokens;

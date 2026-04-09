@@ -8,7 +8,14 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 
 | Task | Location | Notes |
 |------|----------|-------|
-| Worker entry | `secret-vault/src/index.ts` | OpenAPIHono app, security headers, middleware, route mounting |
+| Worker entry | `secret-vault/src/index.ts` | Re-exports WorkerEntrypoint from rpc.ts and isSafeWebhookUrl from webhook.ts |
+| Worker app | `secret-vault/src/app.ts` | Hono app, security headers, CORS, auth middleware, read-only middleware, route mounting |
+| Worker RPC | `secret-vault/src/rpc.ts` | WorkerEntrypoint class, RPC methods, rpcCall() wrapper, resolveAuth(), buildContext() |
+| Worker public types | `secret-vault/src/public.ts` | Public type exports for Service Binding consumers |
+| Worker errors | `secret-vault/src/errors.ts` | VaultError class hierarchy (NotFound, AccessDenied, Validation, Encryption, Maintenance, ReadOnly) |
+| Worker services | `secret-vault/src/services/` | Core business logic extracted from route handlers (secrets, versions, bulk, tokens, users, roles, policies, flags, admin, recipients) |
+| Worker service types | `secret-vault/src/services/types.ts` | ServiceContext, RpcOpts, all return types for service functions |
+| Worker route context | `secret-vault/src/routes/context.ts` | buildHttpContext() — converts Hono context to ServiceContext |
 | Worker schemas | `secret-vault/src/schemas*.ts` | Split by domain: `schemas.ts` (common), `schemas-secrets.ts`, `schemas-tokens.ts`, `schemas-rbac.ts` |
 | Worker auth | `secret-vault/src/auth.ts` | authenticate, JWKS cache, resolveRole (re-exports access + audit) |
 | Worker access | `secret-vault/src/access.ts` | hasScope, hasAccess, accessibleTags, isAdmin, hasTagAccess (policy-based RBAC) |
@@ -16,7 +23,7 @@ Encrypted secret management on Cloudflare Workers. Two packages: Worker API (`se
 | Worker crypto | `secret-vault/src/crypto.ts` | Envelope encryption (per-secret DEK, master KEK), AES-256-GCM encrypt/decrypt, hex validation, key cache |
 | Worker constants | `secret-vault/src/constants.ts` | Typed constants replacing magic strings (actions, scopes, headers, defaults) |
 | Worker routes | `secret-vault/src/routes/` | `secrets.ts`, `secret-write.ts`, `versions.ts`, `tokens.ts`, `users.ts`, `roles.ts`, `policies.ts`, `bulk.ts` (mounts `bulk-export.ts` + `bulk-import.ts`), `admin.ts`, `admin-ops.ts`, `rotate-key.ts`, `public.ts`, `flags.ts`, `audit-consumers.ts`, `recipients.ts` |
-| Worker flags | `secret-vault/src/flags.ts` | `getFlagValue()` helper for reading typed flags from KV |
+| Worker flags | `secret-vault/src/flags.ts` | loadAllFlags(), getFlag() (from cache), getFlagValue() (legacy per-key) |
 | Worker types | `secret-vault/src/types.ts` | Env, AuthUser, HonoEnv |
 | Worker pages | `secret-vault/src/pages.ts` | Landing page HTML + shared styles (re-exports `health-page.ts`) |
 | Worker version | `secret-vault/src/version.ts` | Auto-synced from VERSION file during build |

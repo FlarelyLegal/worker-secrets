@@ -12,10 +12,10 @@ export const ServiceTokenSchema = z
   .object({
     client_id: z.string().openapi({ example: "abc123.access" }),
     name: z.string().openapi({ example: "github-actions" }),
-    description: z.string(),
-    scopes: z.string().openapi({ example: "read,write" }),
+    description: z.string().nullable(),
+    scopes: z.string().nullable().openapi({ example: "read,write" }),
     role: z.string().nullable().openapi({ example: "operator" }),
-    created_by: z.string(),
+    created_by: z.string().nullable(),
     created_at: z.string(),
     updated_at: z.string(),
     last_used_at: z.string().nullable(),

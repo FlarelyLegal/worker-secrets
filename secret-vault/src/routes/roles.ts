@@ -1,16 +1,12 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { audit, isAdmin } from "../auth.js";
-import {
-  ACTION_DELETE_ROLE,
-  ACTION_LIST_ROLES,
-  ACTION_SET_ROLE,
-  ACTION_UPDATE_ROLE,
-  AUTH_INTERACTIVE,
-  ROLE_ADMIN,
-} from "../constants.js";
+import { isAdmin } from "../auth.js";
+import { AUTH_INTERACTIVE } from "../constants.js";
+import { VaultError } from "../errors.js";
 import { ErrorSchema, R403 } from "../schemas.js";
 import { RoleCreateBody, RoleNameParam, RoleSchema, RoleUpdateBody } from "../schemas-rbac.js";
+import * as rolesService from "../services/roles.js";
 import type { HonoEnv } from "../types.js";
+import { buildHttpContext } from "./context.js";
 
 const roles = new OpenAPIHono<HonoEnv>();
 
@@ -40,19 +36,14 @@ const listRoute = createRoute({
 });
 
 roles.openapi(listRoute, async (c) => {
-  const { results } = await c.env.DB.prepare(
-    "SELECT name, scopes, allowed_tags, description, created_by, created_at, updated_by, updated_at FROM roles ORDER BY name",
-  ).all();
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_LIST_ROLES,
-    null,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ roles: results as z.infer<typeof RoleSchema>[] }, 200);
+  const ctx = buildHttpContext(c);
+  try {
+    const result = await rolesService.listRoles(ctx);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 403);
+    throw e;
+  }
 });
 
 // --- Create ---
@@ -77,31 +68,16 @@ const createRoleRoute = createRoute({
 });
 
 roles.openapi(createRoleRoute, async (c) => {
-  const { name } = c.req.valid("param");
-  const { scopes, allowed_tags, description } = c.req.valid("json");
-  const identity = c.get("auth").identity;
-
-  await c.env.DB.prepare(
-    `INSERT INTO roles (name, scopes, allowed_tags, description, created_by, updated_by)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(name) DO UPDATE SET
-       scopes = excluded.scopes, allowed_tags = excluded.allowed_tags,
-       description = excluded.description,
-       updated_by = excluded.updated_by, updated_at = datetime('now')`,
-  )
-    .bind(name, scopes, allowed_tags, description, identity, identity)
-    .run();
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_SET_ROLE,
-    name,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, name }, 201);
+  const ctx = buildHttpContext(c);
+  try {
+    const { name } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const result = await rolesService.setRole(ctx, name, body);
+    return c.json(result, 201);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400);
+    throw e;
+  }
 });
 
 // --- Update (partial) ---
@@ -127,47 +103,16 @@ const updateRoute = createRoute({
 });
 
 roles.openapi(updateRoute, async (c) => {
-  const { name } = c.req.valid("param");
-  const body = c.req.valid("json");
-
-  const existing = await c.env.DB.prepare("SELECT name FROM roles WHERE name = ?")
-    .bind(name)
-    .first();
-  if (!existing) return c.json({ error: "Role not found" }, 404);
-
-  const sets: string[] = [];
-  const binds: unknown[] = [];
-  if (body.scopes !== undefined) {
-    sets.push("scopes = ?");
-    binds.push(body.scopes);
+  const ctx = buildHttpContext(c);
+  try {
+    const { name } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const result = await rolesService.updateRole(ctx, name, body);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400 | 404);
+    throw e;
   }
-  if (body.allowed_tags !== undefined) {
-    sets.push("allowed_tags = ?");
-    binds.push(body.allowed_tags);
-  }
-  if (body.description !== undefined) {
-    sets.push("description = ?");
-    binds.push(body.description);
-  }
-  if (sets.length === 0) return c.json({ error: "No fields to update" }, 400);
-
-  sets.push("updated_by = ?", "updated_at = datetime('now')");
-  binds.push(c.get("auth").identity, name);
-
-  await c.env.DB.prepare(`UPDATE roles SET ${sets.join(", ")} WHERE name = ?`)
-    .bind(...binds)
-    .run();
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_UPDATE_ROLE,
-    name,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, name }, 200);
 });
 
 // --- Delete ---
@@ -192,48 +137,15 @@ const deleteRoute = createRoute({
 });
 
 roles.openapi(deleteRoute, async (c) => {
-  const { name } = c.req.valid("param");
-
-  // Protect built-in admin role
-  if (name === ROLE_ADMIN) return c.json({ error: "Cannot delete the built-in admin role" }, 400);
-
-  // Prevent deleting roles that have users assigned
-  const usersWithRole = await c.env.DB.prepare("SELECT COUNT(*) as total FROM users WHERE role = ?")
-    .bind(name)
-    .first<{ total: number }>();
-  if (usersWithRole && usersWithRole.total > 0) {
-    return c.json(
-      { error: `Cannot delete role '${name}' - ${usersWithRole.total} user(s) assigned` },
-      400,
-    );
+  const ctx = buildHttpContext(c);
+  try {
+    const { name } = c.req.valid("param");
+    const result = await rolesService.deleteRole(ctx, name);
+    return c.json(result, 200);
+  } catch (e) {
+    if (e instanceof VaultError) return c.json({ error: e.message }, e.status as 400 | 404);
+    throw e;
   }
-
-  // Also check service tokens
-  const tokensWithRole = await c.env.DB.prepare(
-    "SELECT COUNT(*) as total FROM service_tokens WHERE role = ?",
-  )
-    .bind(name)
-    .first<{ total: number }>();
-  if (tokensWithRole && tokensWithRole.total > 0) {
-    return c.json(
-      { error: `Cannot delete role '${name}' - ${tokensWithRole.total} token(s) assigned` },
-      400,
-    );
-  }
-
-  const result = await c.env.DB.prepare("DELETE FROM roles WHERE name = ?").bind(name).run();
-  if (result.meta.changes === 0) return c.json({ error: "Role not found" }, 404);
-
-  await audit(
-    c.env,
-    c.get("auth"),
-    ACTION_DELETE_ROLE,
-    name,
-    c.get("ip"),
-    c.get("ua"),
-    c.get("requestId"),
-  );
-  return c.json({ ok: true, deleted: name }, 200);
 });
 
 // Policy sub-routes are in policies.ts, mounted via index.ts

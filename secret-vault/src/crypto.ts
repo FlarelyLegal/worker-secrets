@@ -1,3 +1,13 @@
+import { EncryptionError } from "./errors.js";
+
+export type EncryptedRow = {
+  value: string;
+  iv: string;
+  encrypted_dek?: string | null;
+  dek_iv?: string | null;
+  hmac?: string | null;
+};
+
 // --- Key caching ---
 
 let _cachedKey: CryptoKey | null = null;
@@ -235,4 +245,81 @@ export async function verifyHmac(
   const data = new TextEncoder().encode(parts.join(":"));
   const sig = fromBase64url(hmac);
   return crypto.subtle.verify("HMAC", hmacKey, sig, data);
+}
+
+// --- Shared crypto helpers ---
+
+/**
+ * Decrypt a stored secret row, verifying HMAC integrity first.
+ * Supports both envelope-encrypted and legacy direct-encrypted rows.
+ */
+export async function decryptSecretRow(
+  row: EncryptedRow,
+  encryptionKey: string,
+  secretKeyName: string,
+  integrityKey: string | undefined,
+  flags: { hmacRequired: boolean },
+): Promise<string> {
+  // HMAC verification
+  if (row.hmac) {
+    const valid = await verifyHmac(
+      secretKeyName,
+      row.value,
+      row.iv,
+      row.hmac,
+      encryptionKey,
+      integrityKey,
+      row.encrypted_dek ?? undefined,
+      row.dek_iv ?? undefined,
+    );
+    if (!valid) throw new EncryptionError("Integrity check failed");
+  } else if (flags.hmacRequired) {
+    throw new EncryptionError("Secret missing HMAC integrity tag - re-save to add one");
+  }
+
+  // Decrypt — envelope or legacy
+  if (row.encrypted_dek && row.dek_iv) {
+    return envelopeDecrypt(
+      row.value,
+      row.iv,
+      row.encrypted_dek,
+      row.dek_iv,
+      encryptionKey,
+      secretKeyName,
+    );
+  }
+  return decrypt(row.value, row.iv, encryptionKey, secretKeyName);
+}
+
+/**
+ * Encrypt a secret value using envelope encryption and compute HMAC.
+ * Returns all fields needed for storage.
+ */
+export async function encryptSecretValue(
+  plaintext: string,
+  encryptionKey: string,
+  secretKeyName: string,
+  integrityKey?: string,
+): Promise<{
+  ciphertext: string;
+  iv: string;
+  encrypted_dek: string;
+  dek_iv: string;
+  hmac: string;
+}> {
+  const { ciphertext, iv, encrypted_dek, dek_iv } = await envelopeEncrypt(
+    plaintext,
+    encryptionKey,
+    secretKeyName,
+  );
+  const hmac = await computeHmac(
+    secretKeyName,
+    ciphertext,
+    iv,
+    encryptionKey,
+    integrityKey,
+    encrypted_dek,
+    dek_iv,
+  );
+  return { ciphertext, iv, encrypted_dek, dek_iv, hmac };
 }
